@@ -44,8 +44,9 @@ class ExpirationApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Expiration Tracker")
-        self.root.geometry("3840x2160")
-        self.items = [] 
+        self.root.geometry("1024x600")
+        self.root.attributes("-fullscreen", False)
+        self.items = []
         self.current_view = 'list'
 
         # Frames
