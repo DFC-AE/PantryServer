@@ -1,2 +1,2 @@
 # PantryServer
-WE bout to get the Fridge BRICKED UP!!!
+In our hands, we bout to get your Fridge BRICKED UP!!!
