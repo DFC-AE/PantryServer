@@ -39,30 +39,6 @@ class Item:
         else:
             return gradient_colors[days]
 
-import tkinter as tk
-from datetime import datetime
-from tkinter import simpledialog
-
-# -------- Item Class --------
-class Item:
-    def __init__(self, name, expiration_date):
-        self.name = name
-        self.expiration_date = datetime.strptime(expiration_date, "%Y-%m-%d")
-
-    def days_until_expired(self):
-        return (self.expiration_date - datetime.now()).days
-
-    def get_color(self):
-        days = self.days_until_expired()
-        if days < 0:
-            return "red"
-        elif days <= 2:
-            return "orange"
-        elif days <= 5:
-            return "yellow"
-        else:
-            return "green"
-
 # -------- Main App --------
 class ExpirationApp:
     def __init__(self, root):
