@@ -122,7 +122,7 @@ class ExpirationApp:
         except ValueError:
             tk.messagebox.showerror("Error", "Please enter the date in YYYY-MM-DD format.")
 
-            
+
         # Update the list display with current items, sorted by expiration
     def update_list(self):
         # Clear existing item widgets
