@@ -27,25 +27,46 @@ read -p 'Enter ZFS Main Pool Name: ' pool &&
 
 ### Main Script ###
 
+echo "Executing Main Script..."
+
 ### Update System ###
+
+echo "Updating Operating System..."
 sudo apt-get update &&
 sudo apt-get upgrade -y &&
+echo "Successfully Updated Operating System!"
 
 ### Install ZFS ###
+echo "Installing ZFS File System..."
 sudo apt-get install -y raspberrypi-kernel-headers zfs-dkms zfsutils-linux &&
+echo "Successfully Installed ZFS File System!"
 
 ### Update System Again ###
+echo "Updating System After Post ZFS Installation..."
 sudo apt full-upgrade -y &&
 sudo apt dist upgrade -y &&
+echo "Successfully Updated Operating System incorporating ZFS!"
 
 ### Create Mountpoint for ZFS Mirror ###
+echo "Creating Mountpoint for ZFS Mirror..."
 mkdir -p /mnt/zfs/"$pool" &&
+ls /mnt/zfs
+echo "Successfully Created ZFS Mountpoint!"
+
+### Create Directory for ZFS Keyfiles ###
+echo "Creating Directory for ZFS Keyfiles..."
+sudo mkdir -p "$dir_key" &&
+ls "$dir_key"
+echo "Successfully Created Directory for ZFS Keyfiles!"
 
 ### Create ZFS Pool KeyFile ###
+echo "Creating "$pool" KeyFile..."
 sudo dd if=/dev/random of="$dir_key"/"$pool".key bs=64 count=1 &&
 ls "$dir_key"/"$pool".key
+echo "Successfully Created "$pool" Keyfile!"
 
 ### Create ZFS Mirror ###
+echo "Creating ZFS Mirror "$pool"..."
 lsblk
 read -p 'Enter First Device to be used for ZFS Mirror: ' dev_1 &&
 read -p 'Enter Second Device to be used for ZFS Mirror: ' dev_2 &&
@@ -59,8 +80,10 @@ sudo zpool create \
 	-o keylocation=file://"$dir_key"/"$pool".key \
 	"$pool" mirror \
 	"$dev_1" "$dev_2" &&
+echo "Successfully Created ZFS Mirror "$pool"!"
 
 ### Tune and Optimize Pool ###
+#echo "Optimizing "$pool"..."
 #sudo zpool set autoexpand=on "$pool" &&
 #sudo zpool set autoreplace=on "$pool" &&
 
@@ -72,56 +95,69 @@ sudo zpool create \
 #sudo zfs set primarycache=all "$pool" &&
 #sudo zfs set secondarycache=all "$pool" &&
 #sudo zfs set sync=standard "$pool" &&
+#echo "Successfully Optimized "$pool"!"
 
 ## Enable Deduplication ##
+echo "Enabling Deduplication..."
 sudo zfs set dedup=on "$pool" &&
+echo "Successfully Enabled Deduplication!"
 
-### Create Directory for Dataset Keyfiles ###
-sudo mkdir -p "$dir_key" &&
+## Bind Pool to NFS Server ##
+echo "Binding "$pool" to NFS Server..."
+sudo mount --bind "$dir_pool"/"$pool" "$dir_srv"/"$pool" &&
+echo "Successfully Mounted "$pool" for NFS Access!"
 
-### Create Keys ###
-sudo dd if=/dev/random of="$dir_key" bs=64 count=1 iflag=fullblock &&
+### Data Set Configuration ###
 
-### Set Up ZFS Datasets ###
-lsblk
-sudo zfs create \
-	-o compression=on \
-	-o encryption=on \
-	-o keyformat=raw \
-	-o keyloaction=file:///"$dir_key"/"$key" \
-	"$pool"/"$dataset" &&
+## Create Keys ##
+#sudo dd if=/dev/random of="$dir_key" bs=64 count=1 iflag=fullblock &&
 
-### Load Datasets ###
-sudo zfs load-key "$pool"/"$dataset" &&
+## Set Up ZFS Datasets ##
+#lsblk
+#sudo zfs create \
+#	-o compression=on \
+#	-o encryption=on \
+#	-o keyformat=raw \
+#	-o keyloaction=file:///"$dir_key"/"$key" \
+#	"$pool"/"$dataset" &&
 
-### Mount Datasets ###
-sudo zfs mount "$pool"/"$dataset" &&
+## Load Datasets ##
+#sudo zfs load-key "$pool"/"$dataset" &&
 
-### Bind Datasets to NFS Server ###
-sudo mount --bind "$dir_pool"/"$pool"                  "$dir_srv"/"$pool" &&
+## Mount Datasets ##
+#sudo zfs mount "$pool"/"$dataset" &&
 
-### Add Pool and Datasets to Crypttab ###
+## Bind Datasets to NFS Server ##
+#sudo mount --bind "$dir_pool"/"$pool"                  "$dir_srv"/"$pool" &&
+
+### End Dataset Configuration ###
+
+### Edit Configuration Files ###
+
+## Add Pool and Datasets to Crypttab ##
 sudo tee /etc/crypttab <<EOF
 ## USB Data Server ##
 EOF
 
-### Add Pool and Datasets to FSTab ###
+## Add Pool and Datasets to FSTab ##
 sudo tee /etc/fstab <<EOF
 ## USB Data Server ##
 /mnt/zfs/media                  /srv/nfs/media                  none    bind,defaults,nofail,x-systemd.requires=zfs-mount.service       0       0
 EOF
 
-### Read Total Memory ###
+## Read Total Memory ##
 cat /proc/meminfo | grep MemTotal
 
-### Tune ZFS ARC Memory Usage ###
+## Tune ZFS ARC Memory Usage ##
 su root &&
 cat "$dir_arc"
 echo "$bits" >> "$dir_arc" &&
 cat "$dir_arc"
 exit &&
 
+### End Configuration ###
+
 ### End Main Script ###
 
 ### Salutation ###
-echo "Successfully Completed Setup of ZFS Pool and all Datasets."
+echo "Successfully Completed Setup of ZFS Pool "$pool" and all Datasets!"
