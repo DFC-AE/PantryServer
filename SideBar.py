@@ -46,8 +46,8 @@ class ExpirationApp:
         self.root.title("Expiration Tracker")
 
         # Make the window full-screen
-        self.root.attributes("-fullscreen", True)
-
+        #self.root.attributes("-fullscreen", False)
+        self.root.geometry("1024x600")
         self.items = []  # List to hold Item objects
 
         # Main container frame
