@@ -1,4 +1,4 @@
-- Update date imputs, negative dates
+- Update date imputs, negative dates - Completed for List View
 - Dark mode / Light mode
 - More design
 - Edit buttons
