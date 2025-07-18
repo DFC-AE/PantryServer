@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 - Update date imputs, negative dates
+=======
+- Update date imputs, negative dates - Completed for List View
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
 - Dark mode / Light mode
 - More design
 - Edit buttons

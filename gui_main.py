@@ -10,6 +10,7 @@ class Item:
 
     # Calculate how many days until the item expires
     def days_until_expired(self):
+<<<<<<< HEAD
         if (self.expiration_date - datetime.now()).days >= 0 :
             return (self.expiration_date - datetime.now()).days
         else:
@@ -18,6 +19,14 @@ class Item:
     # Return a color based on how close the item is to expiring
     def get_color(self):
         days = self.days_until_expired()
+=======
+        return (self.expiration_date - datetime.now()).days + 1
+
+
+    # Return a color based on how close the item is to expiring
+    def get_color(self):
+        days = self.days_until_expired() - 1
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
         gradient_colors = [
             "#FF0000",  # 1
             "#FF1A00",  # 2
@@ -103,8 +112,26 @@ class ExpirationApp:
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
+<<<<<<< HEAD
         self.cards_container = tk.Frame(self.card_frame, bg="white")
         self.cards_container.pack(fill=tk.BOTH, expand=True)
+=======
+        # Card view scrollbar
+        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
+        card_scrollbar = tk.Scrollbar(self.card_frame, orient=tk.VERTICAL, command=self.card_canvas.yview)
+        self.cards_container = tk.Frame(self.card_canvas, bg="white")
+
+        self.cards_container.bind(
+            "<Configure>",
+            lambda e: self.card_canvas.configure(scrollregion=self.card_canvas.bbox("all"))
+        )
+
+        self.card_canvas.create_window((0, 0), window=self.cards_container, anchor="nw")
+        self.card_canvas.configure(yscrollcommand=card_scrollbar.set)
+
+        self.card_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        card_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
 
     # -------- Detail View --------
     def create_detail_view(self):
@@ -131,14 +158,27 @@ class ExpirationApp:
     # -------- Update both views --------
     def refresh_views(self):
         # List View
+<<<<<<< HEAD
+=======
+        self.items.sort(key=lambda item: item.expiration_date)
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
         for widget in self.list_items_frame.winfo_children():
             widget.destroy()
 
         for idx, item in enumerate(self.items):
             color = item.get_color()
             days = item.days_until_expired()
+<<<<<<< HEAD
             text = f"{item.name} - Expires in {days} days"
             btn = tk.Button(
+=======
+            if days >= 0 :
+                text = f"{item.name} - Expires in {check_dates(days)} days"
+            else:
+                color = "#FF0000"
+                text = f"{item.name} - Expired {check_dates(days)} days ago"
+            l_btn = tk.Button(
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
                 self.list_items_frame,
                 text=text,
                 bg=color,
@@ -147,7 +187,11 @@ class ExpirationApp:
                 height=2,
                 command=lambda i=item: self.show_detail_view(i)
             )
+<<<<<<< HEAD
             btn.pack(fill=tk.X, padx=10, pady=5)
+=======
+            l_btn.pack(fill=tk.X, padx=10, pady=5)
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
 
         # Card View
         for widget in self.cards_container.winfo_children():
@@ -158,16 +202,29 @@ class ExpirationApp:
         for item in self.items:
             color = item.get_color()
             days = item.days_until_expired()
+<<<<<<< HEAD
             frame = tk.Frame(self.cards_container, bg=color, bd=2, relief=tk.RAISED)
             frame.grid(row=row, column=col, padx=20, pady=20, ipadx=20, ipady=20)
 
             label = tk.Label(
                 frame,
                 text=f"{item.name}\nExpires in {days} days",
+=======
+            if days >= 0 :
+                text = f"{item.name} - Expires in {check_dates(days)} days"
+            else:
+                color = "#FF0000"
+                text = f"{item.name} - Expired {check_dates(days)} days ago" 
+                           
+            c_btn = tk.Button(
+                self.cards_container,
+                text= text,
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
                 bg=color,
                 fg="black",
                 font=("Arial", 18),
                 justify="center",
+<<<<<<< HEAD
                 wraplength=150
             )
             label.pack(padx=10, pady=10)
@@ -179,6 +236,12 @@ class ExpirationApp:
                 command=lambda i=item: self.show_detail_view(i)
             )
             btn.pack(pady=5)
+=======
+                wraplength=150 ,
+                command=lambda i=item: self.show_detail_view(i)
+            )
+            c_btn.grid(row=row, column=col, padx=20, pady=20, ipadx=20, ipady=20)
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
 
             col += 1
             if col >= 3:
@@ -205,10 +268,18 @@ class ExpirationApp:
         self.card_frame.pack_forget()
 
         days = item.days_until_expired()
+<<<<<<< HEAD
         detail_text = (
             f"Item: {item.name}\n"
             f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
             f"Days Left: {days}"
+=======
+        days_left_counter = lambda days: days if days > 0 else "0"
+        detail_text = (
+            f"Item: {item.name}\n"
+            f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
+            f"Days Left: {days_left_counter(days)}"
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
         )
         self.detail_label.config(text=detail_text)
         self.detail_frame.pack(fill=tk.BOTH, expand=True)
@@ -220,7 +291,21 @@ class ExpirationApp:
         else:
             self.show_card_view()
 
+<<<<<<< HEAD
 # -------- Run --------
 root = tk.Tk()
 app = ExpirationApp(root)
 root.mainloop()
+=======
+# -------- Makes sure the dates aren't negative-----
+def check_dates(days):
+    if days >= 0 :
+        return days
+    else:
+        return days * -1
+
+# -------- Run --------
+root = tk.Tk()
+app = ExpirationApp(root)
+root.mainloop()
+>>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
