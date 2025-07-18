@@ -273,7 +273,7 @@ class ExpirationApp:
             f"Item: {item.name}\n"
             f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
             f"Days Left: {days}"
-=======
+======= )
         days_left_counter = lambda days: days if days > 0 else "0"
         detail_text = (
             f"Item: {item.name}\n"
