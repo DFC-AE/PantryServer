@@ -149,8 +149,17 @@ class ExpirationApp:
         for idx, item in enumerate(self.items):
             color = item.get_color()
             days = item.days_until_expired()
-            if days >= 0 :
+	    ## Expiring ##
+            if days == 1 :
+                text = f"{item.name} - Expires tomorrow"
+            elif days == 0 :
+                text = f"{item.name} - Expires today"
+            elif days > 1 :
                 text = f"{item.name} - Expires in {check_dates(days)} days"
+            ## Expired ##
+            elif days == -1 :
+                color = "#FF0000"
+                text = f"{item.name} - Expired yesterday"
             else:
                 color = "#FF0000"
                 text = f"{item.name} - Expired {check_dates(days)} days ago"
