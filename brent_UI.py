@@ -10,12 +10,12 @@ class Item:
 
     # Calculate how many days until the item expires
     def days_until_expired(self):
-        return (self.expiration_date - datetime.now()).days
+        return (self.expiration_date - datetime.now()).days + 1
 
 
     # Return a color based on how close the item is to expiring
     def get_color(self):
-        days = self.days_until_expired()
+        days = self.days_until_expired() - 1
         gradient_colors = [
             "#FF0000",  # 1
             "#FF1A00",  # 2
@@ -150,10 +150,10 @@ class ExpirationApp:
             color = item.get_color()
             days = item.days_until_expired()
             if days >= 0 :
-                text = f"{item.name} - Expires in {days} days"
+                text = f"{item.name} - Expires in {check_dates(days)} days"
             else:
                 color = "#FF0000"
-                text = f"{item.name} - Expired {days * -1} ago"
+                text = f"{item.name} - Expired {check_dates(days)} days ago"
             l_btn = tk.Button(
                 self.list_items_frame,
                 text=text,
@@ -174,10 +174,15 @@ class ExpirationApp:
         for item in self.items:
             color = item.get_color()
             days = item.days_until_expired()
-            
+            if days >= 0 :
+                text = f"{item.name} - Expires in {check_dates(days)} days"
+            else:
+                color = "#FF0000"
+                text = f"{item.name} - Expired {check_dates(days)} days ago" 
+                           
             c_btn = tk.Button(
                 self.cards_container,
-                text=f"{item.name}\nExpires in {days} days",
+                text= text,
                 bg=color,
                 fg="black",
                 font=("Arial", 18),
@@ -212,10 +217,11 @@ class ExpirationApp:
         self.card_frame.pack_forget()
 
         days = item.days_until_expired()
+        days_left_counter = lambda days: days if days > 0 else "0"
         detail_text = (
             f"Item: {item.name}\n"
             f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
-            f"Days Left: {days}"
+            f"Days Left: {days_left_counter(days)}"
         )
         self.detail_label.config(text=detail_text)
         self.detail_frame.pack(fill=tk.BOTH, expand=True)
@@ -226,6 +232,13 @@ class ExpirationApp:
             self.show_list_view()
         else:
             self.show_card_view()
+
+# -------- Makes sure the dates aren't negative-----
+def check_dates(days):
+    if days >= 0 :
+        return days
+    else:
+        return days * -1
 
 # -------- Run --------
 root = tk.Tk()
