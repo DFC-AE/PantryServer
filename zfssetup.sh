@@ -22,61 +22,110 @@ dir_srv=/srv/nfs
 #key=
 #pool=data
 
+## Welcome Message ##
+dialog \
+        --msgbox "Welcome to the Raspberry Pi ZFS Setup Installer."
+
+### User Input ###
+
+## Installation Type ##
+method="$(dialog \
+        --stdout \
+	--radiolist "Please Select Installation Method:" 0 0 0 \
+        1 "Automatic" on \
+#        2 "/dev/sdb" off \
+#        3 "/dev/sdc" off \
+	2 "Custom" off)"
+
+if "$method" = Automatic ; then
+	dev_1 = /dev/sdb
+	dev_2 = /dev/sdc
+	pool=Server
+else
+## Pool Name ##
+pool="$(dialog \
+	--stdout \
+        --title "ZFS Setup Script" \
+        --inputbox "Please Enter the Name for the Main ZFS Pool:" 0 0)"
+
+#printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
+#read -p 'Enter ZFS Main Pool Name: ' pool &&
+
+## Device Locations ##
+dev_1="$(dialog \
+        --stdout \
+	--radiolist "Select Devices for ZFS Mirror:" 0 0 0 \
+        1 "/dev/sda" off \
+        2 "/dev/sdb" on \
+        3 "/dev/sdc" off \
+	4 "/dev/sdd" off)"
+
+dev_2="$(dialog \
+        --stdout \
+	--radiolist "Select Devices for ZFS Mirror:" 0 0 0 \
+        1 "/dev/sda" off \
+        2 "/dev/sdb" off \
+        3 "/dev/sdc" on \
+	4 "/dev/sdd" off)"
+
+#lsblk
+#printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '~' &&
+#read -p 'Enter First Device to be used for ZFS Mirror: ' dev_1 &&
+#printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '~' &&
+#read -p 'Enter Second Device to be used for ZFS Mirror: ' dev_2 &&
+#printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '~' &&
+
+fi &&
+
 ### Main Script ###
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Executing Main Script..."
 
-### User Input ###
-printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
-read -p 'Enter ZFS Main Pool Name: ' pool &&
-
-### Update System ###
+## Update System ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Updating Operating System..."
 sudo apt-get update &&
 sudo apt-get upgrade -y &&
 echo "Successfully Updated Operating System!"
 
-### Install ZFS ###
+## Install ZFS ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Installing ZFS File System..."
 sudo apt-get install -y raspberrypi-kernel-headers zfs-dkms zfsutils-linux &&
 echo "Successfully Installed ZFS File System!"
 
-### Update System Again ###
+## Update System Again ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Updating System After Post ZFS Installation..."
 sudo apt full-upgrade -y &&
 sudo apt dist upgrade -y &&
 echo "Successfully Updated Operating System incorporating ZFS!"
 
-### Create Mountpoint for ZFS Mirror ###
+## Create Mountpoint for ZFS Mirror ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Creating Mountpoint for ZFS Mirror..."
 mkdir -p /mnt/zfs/"$pool" &&
 ls /mnt/zfs
 echo "Successfully Created ZFS Mountpoint!"
 
-### Create Directory for ZFS Keyfiles ###
+## Create Directory for ZFS Keyfiles ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Creating Directory for ZFS Keyfiles..."
 sudo mkdir -p "$dir_key" &&
 ls "$dir_key"
 echo "Successfully Created Directory for ZFS Keyfiles!"
 
-### Create ZFS Pool KeyFile ###
+## Create ZFS Pool KeyFile ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Creating "$pool" KeyFile..."
 sudo dd if=/dev/random of="$dir_key"/"$pool".key bs=64 count=1 &&
 ls "$dir_key"/"$pool".key
 echo "Successfully Created "$pool" Keyfile!"
 
-### Create ZFS Mirror ###
+## Create ZFS Mirror ##
 printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 echo "Creating ZFS Mirror "$pool"..."
-lsblk
-read -p 'Enter First Device to be used for ZFS Mirror: ' dev_1 &&
-read -p 'Enter Second Device to be used for ZFS Mirror: ' dev_2 &&
+printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '~' &&
 #sudo zpool create -R "$dir_pool" "$pool" mirror "$dev_1" "$dev_2" &&
 sudo zpool create \
 	-R "$dir_pool" \
@@ -89,7 +138,7 @@ sudo zpool create \
 	"$dev_1" "$dev_2" &&
 echo "Successfully Created ZFS Mirror "$pool"!"
 
-### Tune and Optimize Pool ###
+## Tune and Optimize Pool ##
 #printf '%*s\n' "${COLUMS:-$(tput cols)}" '' | tr ' ' '#' &&
 #echo "Optimizing "$pool"..."
 #sudo zpool set autoexpand=on "$pool" &&
