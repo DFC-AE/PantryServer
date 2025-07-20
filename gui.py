@@ -130,7 +130,7 @@ cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
 
 def open_camera():
 	## Capture Video Frame by Frame ##
-	_, frame = vid.read()
+	_, frame = cpt.read()
 
 	## Translate Color Space ##
 	opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
