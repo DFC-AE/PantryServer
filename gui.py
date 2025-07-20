@@ -140,7 +140,11 @@ class ExpirationApp:
         add_btn.pack(side=tk.RIGHT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.TOP, padx=10)
+        add_btn.pack(side=tk.BOTTOM, padx=10)
+
+        ## Add Calendar ##
+        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+        cal.pack(padx=10, pady=10)
 
         # Scrollable canvas
         self.list_canvas = tk.Canvas(self.list_frame, bg="white")
