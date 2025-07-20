@@ -38,6 +38,8 @@ def toggle():
                 ## Change Window to Light Theme ##
 #                window.config(background="#26242f")
                 root.config(background="#26242f")
+#                self.list_canvas = tk.Canvas(list_frame, background="#26242f")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
                 switch_value = False
 
         else:
@@ -52,6 +54,8 @@ def toggle():
                 ## Change Window to Dark Theme ##
 #                window.config(background="white")
                 root.config(background="white")
+#                self.list_canvas = tk.Canvas(list_frame, background="white")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
                 switch_value = True
 
 ## Create Toggle Button ##
@@ -147,9 +151,11 @@ class ExpirationApp:
         cal.pack(padx=10, pady=10)
 
         # Scrollable canvas
-        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+#        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+        self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
         scrollbar = tk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.list_canvas.yview)
-        self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+#        self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+        self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
 
         self.list_items_frame.bind(
             "<Configure>",
@@ -179,9 +185,11 @@ class ExpirationApp:
         add_btn.pack(side=tk.RIGHT, padx=10)
 
         # Card view scrollbar
-        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
+#        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
+        self.card_canvas = tk.Canvas(self.card_frame, bg="#26242f")
         card_scrollbar = tk.Scrollbar(self.card_frame, orient=tk.VERTICAL, command=self.card_canvas.yview)
-        self.cards_container = tk.Frame(self.card_canvas, bg="white")
+#        self.cards_container = tk.Frame(self.card_canvas, bg="white")
+        self.cards_container = tk.Frame(self.card_canvas, bg="#26242f")
 
         self.cards_container.bind(
             "<Configure>",
