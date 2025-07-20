@@ -121,7 +121,8 @@ switch.pack(padx=10, pady=10)
 
 ### Camera Input ###
 cpt = cv2.VideoCapture(0)
-cpt_wdt, cpt_hgt = 360, 360
+cpt_wdt = 360
+cpt_hgt = 360
 cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
 cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
 
@@ -230,6 +231,9 @@ class ExpirationApp:
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
         add_btn.pack(side=tk.BOTTOM, padx=10)
 
+        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+        add_btn.pack(side=tk.TOP, padx=10)
+
         ## Add Calendar ##
         cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
         cal.pack(padx=10, pady=10)
@@ -263,10 +267,17 @@ class ExpirationApp:
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.TOP, padx=10)
+        add_btn.pack(side=tk.BOTTOM, padx=10)
 
         add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
+
+        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+        add_btn.pack(side=tk.TOP, padx=10)
+
+        ## Add Calendar ##
+        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+        cal.pack(padx=10, pady=10)
 
         # Card view scrollbar
 #        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
