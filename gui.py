@@ -58,9 +58,13 @@ def toggle():
 #switch = Button(window,
 switch = Button(root,
 #               image=light,
-                borderwidth=0,
+		text="Dark Mode",
+#                borderwidth=0,
                 background="white",
-                activebackground="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
                 command=toggle)
 ## Position Toggle Button ##
 switch.pack(padx=10, pady=10)
