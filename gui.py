@@ -1,6 +1,24 @@
+## Import Libraries ##
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, Button, Label
 from datetime import datetime, timedelta
+from tkcalendar import *
+
+root = tk.Tk()
+
+## Add Calendar ##
+cal = DateEntry(root, date_pattern="yyyy-mm-dd")
+cal.pack(padx=10, pady=10)
+
+## Automatically Get Current Date ##
+def get_date():
+	selected_date = cal.get()
+	print(f"Selected Date: {selected_date}")
+
+## Add Button and Label ##
+#Button(root,
+#	text= "Click Here to Input Selected Date",
+#	command = get_date).pack(pady = 10)
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
@@ -131,7 +149,9 @@ class ExpirationApp:
         if not name:
             return
 
-        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
+#        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
+#        expiration_date = selected_date
+        expiration_date = cal.get()
         try:
             item = Item(name, expiration_date)
             self.items.append(item)
@@ -255,6 +275,6 @@ def check_dates(days):
         return days * -1
 
 # -------- Run --------
-root = tk.Tk()
+#root = tk.Tk()
 app = ExpirationApp(root)
 root.mainloop()
