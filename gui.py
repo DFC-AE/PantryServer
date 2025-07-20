@@ -20,7 +20,7 @@ def get_date():
 #	text= "Click Here to Input Selected Date",
 #	command = get_date).pack(pady = 10)
 
-## Light and Dark Mode Toggle ##
+### Light and Dark Mode Toggle ###
 switch_value = True
 
 ## Toggle Function ##
@@ -136,8 +136,11 @@ class ExpirationApp:
         toggle_btn = tk.Button(top_bar, text="Switch to Card View", command=self.show_card_view)
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
-        add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
+
+        add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn.pack(side=tk.TOP, padx=10)
 
         # Scrollable canvas
         self.list_canvas = tk.Canvas(self.list_frame, bg="white")
@@ -166,6 +169,9 @@ class ExpirationApp:
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn.pack(side=tk.TOP, padx=10)
+
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
         # Card view scrollbar
