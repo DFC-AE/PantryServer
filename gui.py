@@ -20,6 +20,51 @@ def get_date():
 #	text= "Click Here to Input Selected Date",
 #	command = get_date).pack(pady = 10)
 
+## Light and Dark Mode Toggle ##
+switch_value = True
+
+## Toggle Function ##
+def toggle():
+        global switch_value
+        if switch_value == True:
+                switch.config(#image=dark,
+                                text="Light Mode",
+                                background="#26242f",
+                                foreground="white",
+                                activeforeground="red",
+                                activebackground="white")
+                                #activebackground="#26242f")
+
+                ## Change Window to Light Theme ##
+#                window.config(background="#26242f")
+                root.config(background="#26242f")
+                switch_value = False
+
+        else:
+                switch.config(#image=light,
+                                text="Dark Mode",
+                                background="white",
+                                foreground="black",
+                                activeforeground="blue",
+                                #activebackground="white")
+                                activebackground="#26242f")
+
+                ## Change Window to Dark Theme ##
+#                window.config(background="white")
+                root.config(background="white")
+                switch_value = True
+
+## Create Toggle Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+                borderwidth=0,
+                background="white",
+                activebackground="white",
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
     def __init__(self, name, expiration_date):
