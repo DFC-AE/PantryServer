@@ -3,8 +3,16 @@ import tkinter as tk
 from tkinter import simpledialog, Button, Label
 from datetime import datetime, timedelta
 from tkcalendar import *
+import cv2
+from PIL import Image, ImageTk
 
+## Quit with Esc ##
 root = tk.Tk()
+root.bind('<Escape>', lambda e: root.quit())
+
+## Quit with Esc ##
+#app = tk.Tk()
+#app.bind('<Escape>', lambda e: app.quit())
 
 ## Add Calendar ##
 cal = DateEntry(root, date_pattern="yyyy-mm-dd")
@@ -58,7 +66,9 @@ def toggle():
 #                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
                 switch_value = True
 
-## Create Toggle Button ##
+### Buttons and Switches ###
+
+## Create Light Dark Button ##
 #switch = Button(window,
 switch = Button(root,
 #               image=light,
@@ -69,9 +79,83 @@ switch = Button(root,
 		foreground="black",
                 activebackground="#26242f",
 		activeforeground="white",
+		anchor="w",
                 command=toggle)
 ## Position Toggle Button ##
 switch.pack(padx=10, pady=10)
+
+## Create Item Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+#                command=add_item_popup)
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
+## Create View Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+		text="View",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="e",
+#                command=show_card_view)
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
+### Camera Input ###
+cpt = cv2.VideoCapture(0)
+cpt_wdt, cpt_hgt = 360, 360
+cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
+cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
+
+#label_widget = Label(app)
+#label_widget.pack()
+
+def open_camera():
+	## Capture Video Frame by Frame ##
+	_, frame = vid.read()
+
+	## Translate Color Space ##
+	opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+
+	## Capture Last Frame ##
+	captured_image = Image.fromarray(opencv_image)
+
+	## Convert Image to PhotoImage ##
+	photo_image = ImageTk.PhotoImage(image=captured_image)
+
+	## Display PhotoImage in Label ##
+	label_widget.photo_image = photo_image
+
+	## Configure Label Image ##
+	label_widget.configure(image=photo_image)
+
+	## Repeat on 10 Second Loop ##
+	label_widget.after(10, open_camera)
+
+## Camera Button ##
+#cam_btn = Button(app,
+cam_btn = Button(root,
+		text="Open Scanner",
+		command=open_camera)
+cam_btn.pack()
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
