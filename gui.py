@@ -1,18 +1,41 @@
 ## Import Libraries ##
 import tkinter as tk
 from tkinter import simpledialog, Button, Label
+## For Calendar ##
 from datetime import datetime, timedelta
 from tkcalendar import *
+## For Camera ##
 import cv2
 from PIL import Image, ImageTk
+## For Restart ##
+import os
+import sys
+import shutil
+
+root = tk.Tk()
 
 ## Quit with Esc ##
-root = tk.Tk()
 root.bind('<Escape>', lambda e: root.quit())
+#root.bind('<Escape>', lambda e: root.destroy())
 
 ## Quit with Esc ##
 #app = tk.Tk()
 #app.bind('<Escape>', lambda e: app.quit())
+
+def restart_program():
+#	os.execv(sys.argv[0], sys.argv)
+	print("Restarting Program...")
+	executable = sys.executable
+	## Windows ##
+	if os.name == 'nt':
+		os.system(f'start {executable} {" ".join(sys.argv)}')
+	## Linux Mac ##
+	else:
+		os.execv(executable, [executable] + sys.argv)
+	sys.exit()
+
+## Restart with Tab ##
+root.bind('<Tab>', lambda e: restart_program())
 
 ## Add Calendar ##
 cal = DateEntry(root, date_pattern="yyyy-mm-dd")
@@ -159,7 +182,7 @@ def open_camera():
 	## Repeat on 1 Second Loop ##
 	label_widget.after(1, open_camera)
 
-### Camera Button ###
+### Camera Buttons ###
 ## Open Button ##
 #cam_btn = Button(app,
 cam_btn = Button(root,
@@ -168,8 +191,9 @@ cam_btn = Button(root,
 cam_btn.pack()
 ## Close Button ##
 cam_btn = Button(root,
-		text="Close Scanner")
-#		command=open_camera)
+#		text="Close Scanner",
+		text="Restart Program",
+		command=restart_program)
 cam_btn.pack()
 
 # Class to represent each item (food/drink) with name and expiration date
