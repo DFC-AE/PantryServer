@@ -121,13 +121,21 @@ switch.pack(padx=10, pady=10)
 
 ### Camera Input ###
 cpt = cv2.VideoCapture(0)
-cpt_wdt = 360
-cpt_hgt = 360
+## Resolution ##
+cpt_wdt = 1920
+cpt_hgt = 1080
+#cpt_wdt = 600
+#cpt_hgt = 480
 cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
 cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
 
-#label_widget = Label(app)
-#label_widget.pack()
+## Create Camera Widget ##
+label_widget = Label(root)
+label_widget.pack()
+
+## Bind q to Quit Camera ##
+#root.bind('<q>'), lambda e: label_widget.quit()
+#root.bind('<q>'), lambda e: cpt.quit()
 
 def open_camera():
 	## Capture Video Frame by Frame ##
@@ -148,14 +156,20 @@ def open_camera():
 	## Configure Label Image ##
 	label_widget.configure(image=photo_image)
 
-	## Repeat on 10 Second Loop ##
-	label_widget.after(10, open_camera)
+	## Repeat on 1 Second Loop ##
+	label_widget.after(1, open_camera)
 
-## Camera Button ##
+### Camera Button ###
+## Open Button ##
 #cam_btn = Button(app,
 cam_btn = Button(root,
 		text="Open Scanner",
 		command=open_camera)
+cam_btn.pack()
+## Close Button ##
+cam_btn = Button(root,
+		text="Close Scanner")
+#		command=open_camera)
 cam_btn.pack()
 
 # Class to represent each item (food/drink) with name and expiration date
