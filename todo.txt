@@ -7,7 +7,7 @@
 - More design
 - Edit buttons
 - 4 categories
-    : Camera mode
+    : Camera mode - WIP Partially working
     : Inventory
     : Grocery list
     : Expired
