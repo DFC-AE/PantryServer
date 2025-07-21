@@ -11,6 +11,9 @@ from PIL import Image, ImageTk
 import os
 import sys
 import shutil
+## Barcode Scanner ##
+from pyzbar.pyzbar import decode
+import matplotlib.pyplot as plt
 
 root = tk.Tk()
 
@@ -89,6 +92,26 @@ def toggle():
 #                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
                 switch_value = True
 
+## Add Item ##
+#def add_item_popup(self):
+items = []
+def add_item():
+	name = simpledialog.askstring("Add Item", "Enter item name:")
+	if not name:
+		return
+
+#        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
+#        expiration_date = selected_date
+	expiration_date = cal.get()
+	try:
+		item = Item(name, expiration_date)
+#		self.items.append(item)
+#		self.refresh_views()
+		items.append(item)
+#		refresh_views()
+	except ValueError:
+		tk.messagebox.showerror("Error", "Please enter date in YYYY-MM-DD format.")
+
 ### Buttons and Switches ###
 
 ## Create Light Dark Button ##
@@ -120,8 +143,8 @@ switch = Button(root,
 		activeforeground="white",
 #		side=tk.BOTTOM,
 		anchor="center",
-#                command=add_item_popup)
-                command=toggle)
+                command=add_item)
+#                command=toggle)
 ## Position Toggle Button ##
 switch.pack(padx=10, pady=10)
 
@@ -195,6 +218,64 @@ cam_btn = Button(root,
 		text="Restart Program",
 		command=restart_program)
 cam_btn.pack()
+
+### Barcode Scanner ###
+def detect_barcode(image):
+	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+	## Detect Barcode ##
+	barcodes = decode(gray)
+
+	## Loop through Codes ##
+	for barcode in barcodes:
+		## Extract Data ##
+		barcode_data = barcode.data.decode("utf-8")
+		barcode_type = barcode.type
+
+		## Print Barcode Data ##
+		print("Barcode Data:", barcode_data)
+		print("Barcode Type:", barcode_type)
+
+		## Encompass Barcode ##
+		(x, y, w, h) = barcode.rect
+		cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+		## Place Data on Image ##
+		cv2.putText(image, f"{barcode_data} ({barcode_type})",
+		(x, y - 10),
+		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+		## Convert Image from BGR to RGB ##
+		image_rgb = cv2.cvtColor(image,
+					cv2.COLOR_BGR2RGB)
+
+	def show_barcode(image):
+		plt.imshow(image_rgb)
+		plt.axis('off')
+		plt.show()
+
+	show_barcode(image)
+
+## Read Input Image ##
+image = cv2.imread("barcode.png")
+#image = opencv_image
+#_, frame = cpt.read()
+#image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+## Barcode Button ##
+#cam_btn = Button(app,
+cam_btn = Button(root,
+		text="Detect Barcode",
+		command=detect_barcode(image))
+cam_btn.pack()
+
+## Show Barcode Button ##
+#cam_btn = Button(root,
+#		text="Detect Barcode",
+#		command=show_barcode(image))
+#cam_btn.pack()
+
+#detect_barcode(image)
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
