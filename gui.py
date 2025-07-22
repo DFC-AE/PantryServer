@@ -56,6 +56,18 @@ welcome = Label(root,
 		font=("Comic Sans", 33)).pack()
 #welcome.pack(pady = 20)
 
+## Create Background Grid ##
+#frame_left = Frame(root,
+#		width=200,
+#		height=200,
+#		background='grey')
+#frame_left.grid(row=0, column=0, padx=10, pady=5)
+#frame_right = Frame(root,
+#		width=650,
+#		height=400,
+#		background='grey')
+#frame_right.grid(row=0, column=1, padx=10, pady=5)
+
 ### Import and Resize Button Images ###
 #light = PhotoImage(file="light.png")
 ## Button Size ##
@@ -167,7 +179,7 @@ switch = Button(root,
 	image=homeImg,
 	width=50,
 	command=toggle)
-switch.pack()
+switch.pack(side='bottom', padx=10, pady=10)
 
 ## Add Item ##
 #def add_item_popup(self):
@@ -373,18 +385,18 @@ class ExpirationApp:
         toggle_btn = tk.Button(top_bar, text="Switch to Card View", command=self.show_card_view)
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
-        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
-        add_btn.pack(side=tk.RIGHT, padx=10)
+ #       add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
+ #       add_btn.pack(side=tk.RIGHT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.BOTTOM, padx=10)
+        add_btn.pack(side=tk.RIGHT, padx=10)
 
-        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
-        add_btn.pack(side=tk.TOP, padx=10)
+ #       add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+ #       add_btn.pack(side=tk.TOP, padx=10)
 
         ## Add Calendar ##
-        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
-        cal.pack(padx=10, pady=10)
+ #       cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+ #       cal.pack(padx=10, pady=10)
 
         # Scrollable canvas
 #        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
@@ -415,17 +427,17 @@ class ExpirationApp:
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.BOTTOM, padx=10)
-
-        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
-        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
-        add_btn.pack(side=tk.TOP, padx=10)
+#        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
+#        add_btn.pack(side=tk.RIGHT, padx=10)
+
+#        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+#        add_btn.pack(side=tk.TOP, padx=10)
 
         ## Add Calendar ##
-        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
-        cal.pack(padx=10, pady=10)
+#        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+#        cal.pack(padx=10, pady=10)
 
         # Card view scrollbar
 #        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
@@ -517,8 +529,7 @@ class ExpirationApp:
                 text = f"{item.name} - Expires in {check_dates(days)} days"
             else:
                 color = "#FF0000"
-                text = f"{item.name} - Expired {check_dates(days)} days ago" 
-                           
+                text = f"{item.name} - Expired {check_dates(days)} days ago"
             c_btn = tk.Button(
                 self.cards_container,
                 text= text,
@@ -616,7 +627,7 @@ btn_cam = Button(root,
 #		side=tk.BOTTOM,
 		anchor="center",
                 command=open_camera)
-btn_cam.pack(padx=10, pady=10)
+btn_cam.pack(side='left', padx=10, pady=10)
 
 ## Create Scan Button ##
 btn_scan = Button(root,
@@ -631,7 +642,7 @@ btn_scan = Button(root,
 #		side=tk.BOTTOM,
 		anchor="center",
                 command=detect_barcode(img_code))
-btn_scan.pack(padx=10, pady=10)
+btn_scan.pack(side='right', padx=10, pady=10)
 
 ## Create Light Dark Button ##
 btn_mode = Button(root,
@@ -645,7 +656,7 @@ btn_mode = Button(root,
 		activeforeground="white",
 		anchor="e",
                 command=toggle)
-btn_mode.pack(padx=10, pady=10)
+btn_mode.pack(side='bottom', padx=10, pady=10)
 
 ## Create View Button ##
 #switch = Button(window,
@@ -659,9 +670,10 @@ btn_view = Button(root,
                 activebackground="#26242f",
 		activeforeground="white",
 		anchor="w",
+#		sticky="w",
 #                command=show_card_view)
                 command=toggle)
-btn_view.pack(padx=10, pady=10)
+btn_view.pack(side='bottom', padx=150, pady=10)
 
 # -------- Run --------
 #root = tk.Tk()
