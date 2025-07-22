@@ -17,16 +17,33 @@ import matplotlib.pyplot as plt
 
 root = tk.Tk()
 
-## Import and Resize Button Images ##
+### Import and Resize Button Images ###
 #dark = PhotoImage(file="light.png")
 #dark = PhotoImage(file="dark.png")
 #light = PhotoImage(file="light.png")
 img_wdt = 50
 img_hgt = 50
 #dark = Image.open("light.png")
-light = Image.open("light.png")
-light = light.resize((img_wdt, img_hgt), Image.LANCZOS)
-photoImg = ImageTk.PhotoImage(light)
+## Light Image ##
+img_light = Image.open("pics/light.png")
+img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
+lightImg = ImageTk.PhotoImage(img_light)
+## Item Image ##
+img_item = Image.open("pics/item.png")
+img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
+itemImg = ImageTk.PhotoImage(img_item)
+## Camera Image ##
+img_cam = Image.open("pics/cam.jpg")
+img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
+camImg = ImageTk.PhotoImage(img_cam)
+## Scan Image ##
+img_scan = Image.open("pics/scan.jpg")
+img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
+scanImg = ImageTk.PhotoImage(img_scan)
+## View Image ##
+img_view = Image.open("pics/view.png")
+img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
+viewImg = ImageTk.PhotoImage(img_view)
 
 ## Quit with Esc ##
 root.bind('<Escape>', lambda e: root.quit())
@@ -72,7 +89,7 @@ switch_value = True
 def toggle():
         global switch_value
         if switch_value == True:
-                switch.config(#image="dark",
+                switch.config(#image="lightImg",
                                 text="Light Mode",
                                 background="#26242f",
                                 foreground="white",
@@ -88,7 +105,7 @@ def toggle():
                 switch_value = False
 
         else:
-                switch.config(#image="light",
+                switch.config(#image="lightImg",
                                 text="Dark Mode",
                                 background="white",
                                 foreground="black",
@@ -104,11 +121,11 @@ def toggle():
                 switch_value = True
 
 ## Test Button ##
-switch = Button(root,
-	image=photoImg,
-	width=50,
-	command=toggle)
-switch.pack()
+#switch = Button(root,
+#	image=itemImg,
+#	width=50,
+#	command=toggle)
+#switch.pack()
 
 ## Add Item ##
 #def add_item_popup(self):
@@ -132,28 +149,10 @@ def add_item():
 
 ### Buttons and Switches ###
 
-## Create Light Dark Button ##
-#switch = Button(window,
-btn_mode = Button(root,
-#               image=light,
-               image=photoImg,
-#		text="Dark Mode",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-		anchor="w",
-                command=toggle)
-## Position Toggle Button ##
-btn_mode.pack(padx=10, pady=10)
-
 ## Create Item Button ##
 #switch = Button(window,
 btn_item = Button(root,
-#               image=light,
-               image=photoImg,
+               image=itemImg,
 #		text="Add Item",
 #                borderwidth=0,
                 background="white",
@@ -164,15 +163,57 @@ btn_item = Button(root,
 #		side=tk.BOTTOM,
 		anchor="center",
                 command=add_item)
-#                command=toggle)
-## Position Toggle Button ##
 btn_item.pack(padx=10, pady=10)
+
+## Create Camera Button ##
+btn_cam = Button(root,
+               image=camImg,
+#		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+                command=add_item)
+btn_cam.pack(padx=10, pady=10)
+
+## Create Scan Button ##
+btn_scan = Button(root,
+               image=scanImg,
+#		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+                command=add_item)
+btn_scan.pack(padx=10, pady=10)
+
+## Create Light Dark Button ##
+btn_mode = Button(root,
+               image=lightImg,
+#		text="Dark Mode",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="w",
+                command=toggle)
+btn_mode.pack(padx=10, pady=10)
 
 ## Create View Button ##
 #switch = Button(window,
 btn_view = Button(root,
-#               image=light,
-		text="View",
+               image=viewImg,
+#		text="View",
 #                borderwidth=0,
                 background="white",
 #		foreground="#26242f",
@@ -182,7 +223,6 @@ btn_view = Button(root,
 		anchor="e",
 #                command=show_card_view)
                 command=toggle)
-## Position Toggle Button ##
 btn_view.pack(padx=10, pady=10)
 
 ### Camera Input ###
@@ -281,7 +321,7 @@ def detect_barcode(image):
 	show_barcode(image)
 
 ## Read Input Image ##
-image = cv2.imread("barcode.png")
+image = cv2.imread("pics/barcode.png")
 #image = opencv_image
 #_, frame = cpt.read()
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
