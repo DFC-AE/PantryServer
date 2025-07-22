@@ -1,6 +1,200 @@
+## Import Libraries ##
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, Button, Label
+## For Calendar ##
 from datetime import datetime, timedelta
+from tkcalendar import *
+## For Camera ##
+import cv2
+from PIL import Image, ImageTk
+## For Restart ##
+import os
+import sys
+import shutil
+
+root = tk.Tk()
+
+## Quit with Esc ##
+root.bind('<Escape>', lambda e: root.quit())
+#root.bind('<Escape>', lambda e: root.destroy())
+
+## Quit with Esc ##
+#app = tk.Tk()
+#app.bind('<Escape>', lambda e: app.quit())
+
+def restart_program():
+#	os.execv(sys.argv[0], sys.argv)
+	print("Restarting Program...")
+	executable = sys.executable
+	## Windows ##
+	if os.name == 'nt':
+		os.system(f'start {executable} {" ".join(sys.argv)}')
+	## Linux Mac ##
+	else:
+		os.execv(executable, [executable] + sys.argv)
+	sys.exit()
+
+## Restart with Tab ##
+root.bind('<Tab>', lambda e: restart_program())
+
+## Add Calendar ##
+cal = DateEntry(root, date_pattern="yyyy-mm-dd")
+cal.pack(padx=10, pady=10)
+
+## Automatically Get Current Date ##
+def get_date():
+	selected_date = cal.get()
+	print(f"Selected Date: {selected_date}")
+
+## Add Button and Label ##
+#Button(root,
+#	text= "Click Here to Input Selected Date",
+#	command = get_date).pack(pady = 10)
+
+### Light and Dark Mode Toggle ###
+switch_value = True
+
+## Toggle Function ##
+def toggle():
+        global switch_value
+        if switch_value == True:
+                switch.config(#image=dark,
+                                text="Light Mode",
+                                background="#26242f",
+                                foreground="white",
+                                activeforeground="red",
+                                activebackground="white")
+                                #activebackground="#26242f")
+
+                ## Change Window to Light Theme ##
+#                window.config(background="#26242f")
+                root.config(background="#26242f")
+#                self.list_canvas = tk.Canvas(list_frame, background="#26242f")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
+                switch_value = False
+
+        else:
+                switch.config(#image=light,
+                                text="Dark Mode",
+                                background="white",
+                                foreground="black",
+                                activeforeground="blue",
+                                #activebackground="white")
+                                activebackground="#26242f")
+
+                ## Change Window to Dark Theme ##
+#                window.config(background="white")
+                root.config(background="white")
+#                self.list_canvas = tk.Canvas(list_frame, background="white")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+                switch_value = True
+
+### Buttons and Switches ###
+
+## Create Light Dark Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+		text="Dark Mode",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="w",
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
+## Create Item Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+#                command=add_item_popup)
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
+## Create View Button ##
+#switch = Button(window,
+switch = Button(root,
+#               image=light,
+		text="View",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="e",
+#                command=show_card_view)
+                command=toggle)
+## Position Toggle Button ##
+switch.pack(padx=10, pady=10)
+
+### Camera Input ###
+cpt = cv2.VideoCapture(0)
+## Resolution ##
+cpt_wdt = 1920
+cpt_hgt = 1080
+#cpt_wdt = 600
+#cpt_hgt = 480
+cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
+cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
+
+## Create Camera Widget ##
+label_widget = Label(root)
+label_widget.pack()
+
+## Bind q to Quit Camera ##
+#root.bind('<q>'), lambda e: label_widget.quit()
+#root.bind('<q>'), lambda e: cpt.quit()
+
+def open_camera():
+	## Capture Video Frame by Frame ##
+	_, frame = cpt.read()
+
+	## Translate Color Space ##
+	opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+
+	## Capture Last Frame ##
+	captured_image = Image.fromarray(opencv_image)
+
+	## Convert Image to PhotoImage ##
+	photo_image = ImageTk.PhotoImage(image=captured_image)
+
+	## Display PhotoImage in Label ##
+	label_widget.photo_image = photo_image
+
+	## Configure Label Image ##
+	label_widget.configure(image=photo_image)
+
+	## Repeat on 1 Second Loop ##
+	label_widget.after(1, open_camera)
+
+### Camera Buttons ###
+## Open Button ##
+#cam_btn = Button(app,
+cam_btn = Button(root,
+		text="Open Scanner",
+		command=open_camera)
+cam_btn.pack()
+## Close Button ##
+cam_btn = Button(root,
+#		text="Close Scanner",
+		text="Restart Program",
+		command=restart_program)
+cam_btn.pack()
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
@@ -69,13 +263,25 @@ class ExpirationApp:
         toggle_btn = tk.Button(top_bar, text="Switch to Card View", command=self.show_card_view)
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
-        add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
+        add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn.pack(side=tk.BOTTOM, padx=10)
+
+        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+        add_btn.pack(side=tk.TOP, padx=10)
+
+        ## Add Calendar ##
+        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+        cal.pack(padx=10, pady=10)
+
         # Scrollable canvas
-        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+#        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+        self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
         scrollbar = tk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.list_canvas.yview)
-        self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+#        self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+        self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
 
         self.list_items_frame.bind(
             "<Configure>",
@@ -99,12 +305,24 @@ class ExpirationApp:
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
+        add_btn.pack(side=tk.BOTTOM, padx=10)
+
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
+        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
+        add_btn.pack(side=tk.TOP, padx=10)
+
+        ## Add Calendar ##
+        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
+        cal.pack(padx=10, pady=10)
+
         # Card view scrollbar
-        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
+#        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
+        self.card_canvas = tk.Canvas(self.card_frame, bg="#26242f")
         card_scrollbar = tk.Scrollbar(self.card_frame, orient=tk.VERTICAL, command=self.card_canvas.yview)
-        self.cards_container = tk.Frame(self.card_canvas, bg="white")
+#        self.cards_container = tk.Frame(self.card_canvas, bg="white")
+        self.cards_container = tk.Frame(self.card_canvas, bg="#26242f")
 
         self.cards_container.bind(
             "<Configure>",
@@ -131,7 +349,9 @@ class ExpirationApp:
         if not name:
             return
 
-        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
+#        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
+#        expiration_date = selected_date
+        expiration_date = cal.get()
         try:
             item = Item(name, expiration_date)
             self.items.append(item)
@@ -149,8 +369,17 @@ class ExpirationApp:
         for idx, item in enumerate(self.items):
             color = item.get_color()
             days = item.days_until_expired()
-            if days >= 0 :
+	    ## Expiring ##
+            if days == 1 :
+                text = f"{item.name} - Expires tomorrow"
+            elif days == 0 :
+                text = f"{item.name} - Expires today"
+            elif days > 1 :
                 text = f"{item.name} - Expires in {check_dates(days)} days"
+            ## Expired ##
+            elif days == -1 :
+                color = "#FF0000"
+                text = f"{item.name} - Expired yesterday"
             else:
                 color = "#FF0000"
                 text = f"{item.name} - Expired {check_dates(days)} days ago"
@@ -217,6 +446,11 @@ class ExpirationApp:
         self.card_frame.pack_forget()
 
         days = item.days_until_expired()
+        detail_text = (
+            f"Item: {item.name}\n"
+            f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
+            f"Days Left: {check_dates}"
+        )
         days_left_counter = lambda days: days if days > 0 else "0"
         detail_text = (
             f"Item: {item.name}\n"
@@ -241,6 +475,6 @@ def check_dates(days):
         return days * -1
 
 # -------- Run --------
-root = tk.Tk()
+#root = tk.Tk()
 app = ExpirationApp(root)
 root.mainloop()
