@@ -15,12 +15,39 @@ import shutil
 from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 
+## Create Root Page ##
 root = tk.Tk()
+## Adjustments ##
+root.geometry("480x320")
+
+### Import and Resize Background Image ##
+## Background Size ##
+## Geeek Pi ##
+#bck_wdt = 320
+#bck_hgt = 460
+## 720 ##
+#bck_wdt = 720
+#bck_hgt = 1280
+## 1080 ##
+bck_wdt = 1080
+bck_hgt = 1920
+## Background Image ##
+#img_back = Image.open("pics/back.jpeg")
+img_back = Image.open("pics/back.jpg")
+img_back = img_back.resize((bck_wdt, bck_hgt), Image.LANCZOS)
+backImg = ImageTk.PhotoImage(img_back)
+
+background = Label(root,
+		image = backImg)
+background.place(x=0, y=0)
+
+welcome = Label(root,
+		text = "Welcome to your Pantry Server")
+welcome.pack(pady = 20)
 
 ### Import and Resize Button Images ###
-#dark = PhotoImage(file="light.png")
-#dark = PhotoImage(file="dark.png")
 #light = PhotoImage(file="light.png")
+## Button Size ##
 img_wdt = 50
 img_hgt = 50
 #dark = Image.open("light.png")
