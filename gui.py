@@ -292,10 +292,11 @@ def detect_barcode(image):
 
 	def show_barcode(image):
 		plt.imshow(image_rgb)
+	#	plt.imshow(img_code)
 		plt.axis('off')
 		plt.show()
 
-	show_barcode(image)
+#	show_barcode(image_rgb)
 
 ## Read Input Image ##
 img_code = cv2.imread("pics/barcode.png")
@@ -385,11 +386,11 @@ class ExpirationApp:
         toggle_btn = tk.Button(top_bar, text="Switch to Card View", command=self.show_card_view)
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
- #       add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
- #       add_btn.pack(side=tk.RIGHT, padx=10)
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
+        add_btn.pack(side=tk.RIGHT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.RIGHT, padx=10)
+        add_btn.pack(side=tk.TOP, padx=10)
 
  #       add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
  #       add_btn.pack(side=tk.TOP, padx=10)
@@ -427,10 +428,10 @@ class ExpirationApp:
         toggle_btn.pack(side=tk.LEFT, padx=10)
 
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
-        add_btn.pack(side=tk.RIGHT, padx=10)
+        add_btn.pack(side=tk.TOP, padx=10)
 
-#        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
-#        add_btn.pack(side=tk.RIGHT, padx=10)
+        add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
+        add_btn.pack(side=tk.RIGHT, padx=10)
 
 #        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
 #        add_btn.pack(side=tk.TOP, padx=10)
@@ -459,15 +460,15 @@ class ExpirationApp:
 
     # -------- Detail View --------
     def create_detail_view(self):
-        self.detail_label = tk.Label(self.detail_frame, text="", font=("Arial", 28), justify="left")
+        self.detail_label = tk.Label(self.detail_frame, text="", font=("Arial", 15), justify="left")
         self.detail_label.pack(pady=30)
 
-        back_btn = tk.Button(self.detail_frame, text="Back", font=("Arial", 20), command=self.back_to_previous_view)
-        back_btn.pack(pady=10)
+        back_btn = tk.Button(self.detail_frame, text="Back", font=("Arial", 15), command=self.back_to_previous_view)
+        back_btn.pack(side='bottom', padx=10, pady=10)
 
     # -------- Popups & Add --------
     def add_item_popup(self):
-        name = simpledialog.askstring("Add Item", "Enter item name:")
+        name = simpledialog.askstring("Add Item", "Enter Item Name:")
         if not name:
             return
 
@@ -479,7 +480,7 @@ class ExpirationApp:
             self.items.append(item)
             self.refresh_views()
         except ValueError:
-            tk.messagebox.showerror("Error", "Please enter date in YYYY-MM-DD format.")
+            tk.messagebox.showerror("Error", "Please Enter Date in YYYY-MM-DD Format.")
 
     # -------- Update both views --------
     def refresh_views(self):
@@ -641,6 +642,7 @@ btn_scan = Button(root,
 		activeforeground="white",
 #		side=tk.BOTTOM,
 		anchor="center",
+#                command=show_barcode(img_code))
                 command=detect_barcode(img_code))
 btn_scan.pack(side='right', padx=10, pady=10)
 
