@@ -1,6 +1,6 @@
 ## Import Libraries ##
 import tkinter as tk
-from tkinter import simpledialog, Button, Label
+from tkinter import simpledialog, Button, Label, PhotoImage
 ## For Calendar ##
 from datetime import datetime, timedelta
 from tkcalendar import *
@@ -16,6 +16,17 @@ from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 
 root = tk.Tk()
+
+## Import and Resize Button Images ##
+#dark = PhotoImage(file="light.png")
+#dark = PhotoImage(file="dark.png")
+#light = PhotoImage(file="light.png")
+img_wdt = 50
+img_hgt = 50
+#dark = Image.open("light.png")
+light = Image.open("light.png")
+light = light.resize((img_wdt, img_hgt), Image.LANCZOS)
+photoImg = ImageTk.PhotoImage(light)
 
 ## Quit with Esc ##
 root.bind('<Escape>', lambda e: root.quit())
@@ -61,7 +72,7 @@ switch_value = True
 def toggle():
         global switch_value
         if switch_value == True:
-                switch.config(#image=dark,
+                switch.config(#image="dark",
                                 text="Light Mode",
                                 background="#26242f",
                                 foreground="white",
@@ -77,7 +88,7 @@ def toggle():
                 switch_value = False
 
         else:
-                switch.config(#image=light,
+                switch.config(#image="light",
                                 text="Dark Mode",
                                 background="white",
                                 foreground="black",
@@ -91,6 +102,13 @@ def toggle():
 #                self.list_canvas = tk.Canvas(list_frame, background="white")
 #                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
                 switch_value = True
+
+## Test Button ##
+switch = Button(root,
+	image=photoImg,
+	width=50,
+	command=toggle)
+switch.pack()
 
 ## Add Item ##
 #def add_item_popup(self):
@@ -116,9 +134,10 @@ def add_item():
 
 ## Create Light Dark Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_mode = Button(root,
 #               image=light,
-		text="Dark Mode",
+               image=photoImg,
+#		text="Dark Mode",
 #                borderwidth=0,
                 background="white",
 #		foreground="#26242f",
@@ -128,13 +147,14 @@ switch = Button(root,
 		anchor="w",
                 command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_mode.pack(padx=10, pady=10)
 
 ## Create Item Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_item = Button(root,
 #               image=light,
-		text="Add Item",
+               image=photoImg,
+#		text="Add Item",
 #                borderwidth=0,
                 background="white",
 #		foreground="#26242f",
@@ -146,11 +166,11 @@ switch = Button(root,
                 command=add_item)
 #                command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_item.pack(padx=10, pady=10)
 
 ## Create View Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_view = Button(root,
 #               image=light,
 		text="View",
 #                borderwidth=0,
@@ -163,7 +183,7 @@ switch = Button(root,
 #                command=show_card_view)
                 command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_view.pack(padx=10, pady=10)
 
 ### Camera Input ###
 cpt = cv2.VideoCapture(0)
@@ -204,6 +224,10 @@ def open_camera():
 
 	## Repeat on 1 Second Loop ##
 	label_widget.after(1, open_camera)
+
+	## Close Video with ESC ##
+#	if cv2.waitKey(10) == 27:
+#		break
 
 ### Camera Buttons ###
 ## Open Button ##
