@@ -28,6 +28,10 @@ img_hgt = 50
 img_light = Image.open("pics/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
+## Home Image ##
+img_home = Image.open("pics/home.png")
+img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
+homeImg = ImageTk.PhotoImage(img_home)
 ## Item Image ##
 img_item = Image.open("pics/item.png")
 img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -121,11 +125,11 @@ def toggle():
                 switch_value = True
 
 ## Test Button ##
-#switch = Button(root,
-#	image=itemImg,
-#	width=50,
-#	command=toggle)
-#switch.pack()
+switch = Button(root,
+	image=homeImg,
+	width=50,
+	command=toggle)
+switch.pack()
 
 ## Add Item ##
 #def add_item_popup(self):
@@ -147,83 +151,6 @@ def add_item():
 	except ValueError:
 		tk.messagebox.showerror("Error", "Please enter date in YYYY-MM-DD format.")
 
-### Buttons and Switches ###
-
-## Create Item Button ##
-#switch = Button(window,
-btn_item = Button(root,
-               image=itemImg,
-#		text="Add Item",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-#		side=tk.BOTTOM,
-		anchor="center",
-                command=add_item)
-btn_item.pack(padx=10, pady=10)
-
-## Create Camera Button ##
-btn_cam = Button(root,
-               image=camImg,
-#		text="Add Item",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-#		side=tk.BOTTOM,
-		anchor="center",
-                command=add_item)
-btn_cam.pack(padx=10, pady=10)
-
-## Create Scan Button ##
-btn_scan = Button(root,
-               image=scanImg,
-#		text="Add Item",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-#		side=tk.BOTTOM,
-		anchor="center",
-                command=add_item)
-btn_scan.pack(padx=10, pady=10)
-
-## Create Light Dark Button ##
-btn_mode = Button(root,
-               image=lightImg,
-#		text="Dark Mode",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-		anchor="w",
-                command=toggle)
-btn_mode.pack(padx=10, pady=10)
-
-## Create View Button ##
-#switch = Button(window,
-btn_view = Button(root,
-               image=viewImg,
-#		text="View",
-#                borderwidth=0,
-                background="white",
-#		foreground="#26242f",
-		foreground="black",
-                activebackground="#26242f",
-		activeforeground="white",
-		anchor="e",
-#                command=show_card_view)
-                command=toggle)
-btn_view.pack(padx=10, pady=10)
 
 ### Camera Input ###
 cpt = cv2.VideoCapture(0)
@@ -272,16 +199,16 @@ def open_camera():
 ### Camera Buttons ###
 ## Open Button ##
 #cam_btn = Button(app,
-cam_btn = Button(root,
-		text="Open Scanner",
-		command=open_camera)
-cam_btn.pack()
+#cam_btn = Button(root,
+#		text="Open Scanner",
+#		command=open_camera)
+#cam_btn.pack()
 ## Close Button ##
-cam_btn = Button(root,
+#cam_btn = Button(root,
 #		text="Close Scanner",
-		text="Restart Program",
-		command=restart_program)
-cam_btn.pack()
+#		text="Restart Program",
+#		command=restart_program)
+#cam_btn.pack()
 
 ### Barcode Scanner ###
 def detect_barcode(image):
@@ -321,17 +248,17 @@ def detect_barcode(image):
 	show_barcode(image)
 
 ## Read Input Image ##
-image = cv2.imread("pics/barcode.png")
+img_code = cv2.imread("pics/barcode.png")
 #image = opencv_image
 #_, frame = cpt.read()
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 ## Barcode Button ##
 #cam_btn = Button(app,
-cam_btn = Button(root,
-		text="Detect Barcode",
-		command=detect_barcode(image))
-cam_btn.pack()
+#cam_btn = Button(root,
+#		text="Detect Barcode",
+#		command=detect_barcode(image))
+#cam_btn.pack()
 
 ## Show Barcode Button ##
 #cam_btn = Button(root,
@@ -618,6 +545,85 @@ def check_dates(days):
         return days
     else:
         return days * -1
+
+### Buttons and Switches ###
+
+## Create Item Button ##
+#switch = Button(window,
+btn_item = Button(root,
+               image=itemImg,
+#		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+#		anchor="center",
+		anchor="n",
+                command=add_item)
+btn_item.pack(padx=10, pady=10)
+
+## Create Camera Button ##
+btn_cam = Button(root,
+               image=camImg,
+#		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+                command=open_camera)
+btn_cam.pack(padx=10, pady=10)
+
+## Create Scan Button ##
+btn_scan = Button(root,
+               image=scanImg,
+#		text="Add Item",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+#		side=tk.BOTTOM,
+		anchor="center",
+                command=detect_barcode(img_code))
+btn_scan.pack(padx=10, pady=10)
+
+## Create Light Dark Button ##
+btn_mode = Button(root,
+               image=lightImg,
+#		text="Dark Mode",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="e",
+                command=toggle)
+btn_mode.pack(padx=10, pady=10)
+
+## Create View Button ##
+#switch = Button(window,
+btn_view = Button(root,
+               image=viewImg,
+#		text="View",
+#                borderwidth=0,
+                background="white",
+#		foreground="#26242f",
+		foreground="black",
+                activebackground="#26242f",
+		activeforeground="white",
+		anchor="w",
+#                command=show_card_view)
+                command=toggle)
+btn_view.pack(padx=10, pady=10)
 
 # -------- Run --------
 #root = tk.Tk()
