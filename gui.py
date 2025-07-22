@@ -104,11 +104,11 @@ def toggle():
                 switch_value = True
 
 ## Test Button ##
-b = Button(root,
+switch = Button(root,
 	image=photoImg,
 	width=50,
 	command=toggle)
-b.pack()
+switch.pack()
 
 ## Add Item ##
 #def add_item_popup(self):
@@ -134,7 +134,7 @@ def add_item():
 
 ## Create Light Dark Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_mode = Button(root,
 #               image=light,
                image=photoImg,
 #		text="Dark Mode",
@@ -147,11 +147,11 @@ switch = Button(root,
 		anchor="w",
                 command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_mode.pack(padx=10, pady=10)
 
 ## Create Item Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_item = Button(root,
 #               image=light,
                image=photoImg,
 #		text="Add Item",
@@ -166,11 +166,11 @@ switch = Button(root,
                 command=add_item)
 #                command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_item.pack(padx=10, pady=10)
 
 ## Create View Button ##
 #switch = Button(window,
-switch = Button(root,
+btn_view = Button(root,
 #               image=light,
 		text="View",
 #                borderwidth=0,
@@ -183,7 +183,7 @@ switch = Button(root,
 #                command=show_card_view)
                 command=toggle)
 ## Position Toggle Button ##
-switch.pack(padx=10, pady=10)
+btn_view.pack(padx=10, pady=10)
 
 ### Camera Input ###
 cpt = cv2.VideoCapture(0)
