@@ -221,13 +221,23 @@ def add_item():
 #		self.items.append(item)
 #		self.refresh_views()
 		items.append(item)
+		## Open Previous List ##
+		with open('items.txt', 'w+') as i:
+			## Write Elements to List ##
+			for item in items:
+				i.write('%s\n' %items)
+			print("Items Documented Successfully")
+
+		## Close Item File ##
+		i.close()
+
 		## Save Item Input to List or Discard ##
-		try:
-			with open("items.txt", "w") as out:
+#		try:
+#			with open("items.txt", "w") as out:
 #			with open("items.txt", "a") as out:
-				out.write('\n'.join(items))
-		except:
-			print ("Unable to Write Data. Discarding...")
+#				out.write('\n'.join(items))
+#		except:
+#			print ("Unable to Write Data. Discarding...")
 
 #		refresh_views()
 	except ValueError:
@@ -625,12 +635,21 @@ class ExpirationApp:
         try:
             item = Item(name, expiration_date)
             self.items.append(item)
+            ## Open Previous List ##
+            with open('items.txt', 'w+') as i:
+                        ## Write Elements to List ##
+                        for item in items:
+                               i.write('%s\n' %items)
+                        print("Items Documented Successfully")
+
+            ## Close Item File ##
+            i.close()
             ## Save Item Input to List or Discard ##
-            try:
-                   with open("items.txt", "w") as out:
-                        out.write('\n'.join(self.items))
-            except:
-                   print ("Unable to Write Data. Discarding...")
+#            try:
+#                   with open("items.txt", "w") as out:
+#                        out.write('\n'.join(self.items))
+#            except:
+#                   print ("Unable to Write Data. Discarding...")
             self.refresh_views()
         except ValueError:
             tk.messagebox.showerror("Error", "Please Enter Date in YYYY-MM-DD Format.")
@@ -858,9 +877,9 @@ app = ExpirationApp(root)
 root.mainloop()
 
 ## Save Item Input to List or Discard ##
-try:
+#try:
 #	with open("items.txt", "w") as out:
-	with open("items.txt", "a") as out:
-		out.write('\n'.join(items))
-except:
-	print ("Unable to Write Data. Discarding...")
+#	with open("items.txt", "a") as out:
+#		out.write('\n'.join(items))
+#except:
+#	print ("Unable to Write Data. Discarding...")
