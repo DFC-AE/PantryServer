@@ -1,6 +1,6 @@
 ## Import Libraries ##
 import tkinter as tk
-from tkinter import simpledialog, Button, Label, PhotoImage
+from tkinter import simpledialog, Button, Frame, Label, PhotoImage, Toplevel
 ## For Calendar ##
 from datetime import datetime, timedelta
 from tkcalendar import *
@@ -14,6 +14,8 @@ import shutil
 ## Barcode Scanner ##
 from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 ### Create Home Page ###
 root = tk.Tk()
@@ -98,6 +100,14 @@ scanImg = ImageTk.PhotoImage(img_scan)
 img_view = Image.open("pics/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
 viewImg = ImageTk.PhotoImage(img_view)
+
+### Import Barcode Image ###
+## Scan ##
+img_code = cv2.imread("pics/barcode.png")
+## Code ##
+img_scan1 = Image.open("pics/barcode.png")
+img_scan1 = img_scan1.resize((300, 100), Image.Resampling.LANCZOS)
+img_scan2 = ImageTk.PhotoImage(img_scan1)
 
 ## Quit with Esc ##
 root.bind('<Escape>', lambda e: root.quit())
@@ -290,16 +300,81 @@ def detect_barcode(image):
 		image_rgb = cv2.cvtColor(image,
 					cv2.COLOR_BGR2RGB)
 
-	def show_barcode(image):
-		plt.imshow(image_rgb)
+#	def show_barcode(image):
+#		plt.imshow(image_rgb)
 	#	plt.imshow(img_code)
-		plt.axis('off')
-		plt.show()
+#		plt.axis('off')
+#		plt.show()
 
-#	show_barcode(image_rgb)
+		show_barcode(image_rgb)
+
+## Show Barcode ##
+def show_barcode(image):
+	## The Figure to Contain the Barcode ##
+#	fig = Figure(figsize = (5, 5), dpi = 100)
+
+	## Create Tkinter Canvas for Barcode ##
+#	canvas_code = FigureCanvasTkAgg(fig, master = window_code)
+#	canvas_code.draw()
+
+	## Place Canvas Inside Tkinter Window ##
+#	canvas_code.get_tk_widget().pack()
+
+	## Creating the Matplotlib Toolbar ##
+#	toolbar = NavigationToolbar2Tk(canvas_code, window_code)
+#	toolbar.update()
+
+	## Place Toolbar inside Tkinter Window ##
+#	canvas_code.get_tk_widget().pack()
+
+#	plt.imshow(image_rgb)
+#	plt.imshow(img_code)
+	plt.imshow(image)
+	plt.axis('off')
+	plt.title('Scanned Barcode:', fontweight ="bold")
+	plt.show()
+#	root.plt.imshow(image)
+#	root.plt.axis('off')
+#	root.plt.title('Scanned Barcode:', fontweight ="bold")
+#	root.plt.show()
+
+### Open Barcode Window ###
+## Barcode Window ##
+#window_code = tk()
+#window_code = tk.Tk()
+#window_code.title('Scanned Barcode')
+#window_code.geometry("250x250")
+#window_code.mainloop()
+
+## Black and White Inlayed Window ##
+#window_root = Frame(root,
+#			background="black",
+#			width=500,
+#			height=500)
+#window_root.pack()
+#window_code = Frame(window_root,
+
+## Open with Button ##
+def open_window_scan():
+	window_scan = Toplevel(root)
+	window_scan.title("Barcode Window")
+	window_scan.geometry("300x100")
+
+	Label(window_scan,
+		image=img_scan2).pack(pady=20)
+
+## Inside Center Home ##
+#window_code = Frame(root,
+#			background="white",
+#			width=100,
+#			height=100)
+#window_code.pack(pady=20,padx=20)
+
+#label_code = Label(window_code, image=img_scan2)
+#label_code.pack()
 
 ## Read Input Image ##
-img_code = cv2.imread("pics/barcode.png")
+#img_code = cv2.imread("pics/barcode.png")
 #image = opencv_image
 #_, frame = cpt.read()
 #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -643,7 +718,9 @@ btn_scan = Button(root,
 #		side=tk.BOTTOM,
 		anchor="center",
 #                command=show_barcode(img_code))
-                command=detect_barcode(img_code))
+#                command=show_barcode(detect_barcode))
+#                command=detect_barcode(img_code))
+		comman=open_window_scan)
 btn_scan.pack(side='right', padx=10, pady=10)
 
 ## Create Light Dark Button ##
@@ -674,8 +751,20 @@ btn_view = Button(root,
 		anchor="w",
 #		sticky="w",
 #                command=show_card_view)
-                command=toggle)
+#                command=show_barcode(img_code))
+		command=open_window_scan)
+#                command=toggle)
 btn_view.pack(side='bottom', padx=150, pady=10)
+
+## Barcode Frame ##
+#window_code = Frame(root,
+#			background="white",
+#			width=100,
+#			height=100)
+#window_code.pack(pady=20,padx=20)
+
+#label_code = Label(window_code, image=img_scan2)
+#label_code.pack()
 
 # -------- Run --------
 #root = tk.Tk()
