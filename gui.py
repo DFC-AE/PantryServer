@@ -19,6 +19,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 ### Create Home Page ###
 root = tk.Tk()
+# Frames
+list_frame = tk.Frame(root)
+card_frame = tk.Frame(root)
+detail_frame = tk.Frame(root)
+
 
 ### Import and Resize Background Image ##
 ## Background Size ##
@@ -130,7 +135,7 @@ def restart_program():
 	sys.exit()
 
 ## Restart with Tab ##
-root.bind('<Home>', lambda e: restart_program())
+root.bind('<Prior>', lambda e: restart_program())
 
 ## Add Calendar ##
 cal = DateEntry(root, date_pattern="yyyy-mm-dd")
@@ -164,8 +169,8 @@ def toggle():
                 ## Change Window to Light Theme ##
 #                window.config(background="#26242f")
                 root.config(background="#26242f")
-#                self.list_canvas = tk.Canvas(list_frame, background="#26242f")
-#                self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
+                list_canvas = tk.Canvas(list_frame, background="#26242f")
+                list_items_frame = tk.Frame(list_canvas, bg="#26242f")
                 switch_value = False
 
         else:
@@ -180,8 +185,8 @@ def toggle():
                 ## Change Window to Dark Theme ##
 #                window.config(background="white")
                 root.config(background="white")
-#                self.list_canvas = tk.Canvas(list_frame, background="white")
-#                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+                list_canvas = tk.Canvas(list_frame, background="white")
+                list_items_frame = tk.Frame(list_canvas, bg="white")
                 switch_value = True
 
 ## Test Button ##
@@ -222,12 +227,31 @@ cpt_hgt = 1080
 cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
 cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
 
+## Create External Camera Window ##
+#cam = tk.Tk()
+
+## Quit Camera with Home Key ##
+#cam.bind('<Home>', lambda e: cam.quit())
+
 ## Create Camera Widget ##
-label_widget = Label(root)
-label_widget.pack()
+## External ##
+#cam_widget = Label(cam,
+#cam_widget = tk.Label(cam,
+## Internal ##
+cam_widget = tk.Label(root,
+#			textvariable="test",
+			background="black",
+#			justify="left",
+			cursor="hand2")
+#cam_widget.pack()
+cam_widget.pack(fill = "both")
+#root.label_widget = Label(root)
+#root.label_widget.pack()
 
 ## Bind q to Quit Camera ##
-#root.bind('<q>'), lambda e: label_widget.quit()
+#root.bind('<Next>'), lambda e: cam_widget.quit()
+cam_widget.bind('<Next>'), lambda e: cam_widget.quit()
+#cam_widget.bind('<Next>'), lambda e: cam_widget.destroy()
 #root.bind('<q>'), lambda e: cpt.quit()
 
 def open_camera():
@@ -244,18 +268,18 @@ def open_camera():
 	photo_image = ImageTk.PhotoImage(image=captured_image)
 
 	## Display PhotoImage in Label ##
-	label_widget.photo_image = photo_image
+	cam_widget.photo_image = photo_image
 
 	## Configure Label Image ##
-	label_widget.configure(image=photo_image)
+	cam_widget.configure(image=photo_image)
 
 	## Repeat on 1 Second Loop ##
-	label_widget.after(1, open_camera)
+	cam_widget.after(1, open_camera)
 
 	## Close Video with ESC ##
 #	if cv2.waitKey(10) == 27:
 #		break
-	label_widget.bind('<Insert>', lambda e: label_widget.quit())
+	cam_widget.bind('<Insert>', lambda e: cam_widget.quit())
 
 
 ### Camera Buttons ###
@@ -350,6 +374,7 @@ def show_barcode(image):
 	plt.axis('off')
 	plt.title('Scanned Barcode:', fontweight ="bold")
 	plt.show()
+#	plt.show(root)
 #	root.plt.imshow(image)
 #	root.plt.axis('off')
 #	root.plt.title('Scanned Barcode:', fontweight ="bold")
@@ -491,12 +516,16 @@ class ExpirationApp:
  #       cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
  #       cal.pack(padx=10, pady=10)
 
-        # Scrollable canvas
-#        self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+        ## Scrollable Canvas ##
+#        if switch_value == True:
+#                self.list_canvas = tk.Canvas(self.list_frame, bg="white")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
+#        else:
+#                self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
+#                self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
         self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
-        scrollbar = tk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.list_canvas.yview)
-#        self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
         self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
+        scrollbar = tk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.list_canvas.yview)
 
         self.list_items_frame.bind(
             "<Configure>",
@@ -704,6 +733,7 @@ btn_item = Button(root,
 #		side=tk.BOTTOM,
 #		anchor="center",
 		anchor="n",
+		cursor="hand2",
                 command=add_item)
 btn_item.pack(padx=10, pady=10)
 
@@ -719,6 +749,7 @@ btn_cam = Button(root,
 		activeforeground="white",
 #		side=tk.BOTTOM,
 		anchor="center",
+		cursor="hand2",
                 command=open_camera)
 #btn_cam.pack(side='left', padx=10, pady=10)
 btn_cam.pack(side='right', padx=10, pady=10)
@@ -735,6 +766,7 @@ btn_scan = Button(root,
 		activeforeground="white",
 #		side=tk.BOTTOM,
 		anchor="center",
+		cursor="hand2",
                 command=detect_barcode(img_code))
 #                command=show_barcode(detect_barcode))
 #                command=detect_barcode(image))
@@ -752,6 +784,7 @@ btn_mode = Button(root,
                 activebackground="#26242f",
 		activeforeground="white",
 		anchor="e",
+		cursor="hand2",
                 command=toggle)
 #btn_mode.pack(side='bottom', padx=10, pady=10)
 btn_mode.pack(side='left', padx=10, pady=10)
@@ -769,6 +802,7 @@ btn_view = Button(root,
 		activeforeground="white",
 		anchor="w",
 #		sticky="w",
+		cursor="hand2",
 #                command=show_card_view)
 #                command=show_barcode(img_code))
 		command=open_window_scan)
