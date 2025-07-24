@@ -19,11 +19,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 ### Create Home Page ###
 root = tk.Tk()
-# Frames
+## Frames ##
 list_frame = tk.Frame(root)
 card_frame = tk.Frame(root)
 detail_frame = tk.Frame(root)
-
 
 ### Import and Resize Background Image ##
 ## Background Size ##
@@ -199,6 +198,16 @@ switch.pack(side='bottom', padx=10, pady=10)
 ## Add Item ##
 #def add_item_popup(self):
 items = []
+
+## Import Old Item Data ##
+try:
+	items_old = open("items.txt", "r").read().split('\n')
+	items.extend(items_old)
+except:
+	print ("Unable to Load Previously Input Item List")
+	items = []
+
+## Add Item Function ##
 def add_item():
 	name = simpledialog.askstring("Add Item", "Enter item name:")
 	if not name:
@@ -212,6 +221,14 @@ def add_item():
 #		self.items.append(item)
 #		self.refresh_views()
 		items.append(item)
+		## Save Item Input to List or Discard ##
+		try:
+			with open("items.txt", "w") as out:
+#			with open("items.txt", "a") as out:
+				out.write('\n'.join(items))
+		except:
+			print ("Unable to Write Data. Discarding...")
+
 #		refresh_views()
 	except ValueError:
 		tk.messagebox.showerror("Error", "Please enter date in YYYY-MM-DD format.")
@@ -479,9 +496,18 @@ class ExpirationApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Expiration Tracker")
+#        self.root.geometry("1024x600")
         self.root.geometry("1024x600")
         self.root.attributes("-fullscreen", False)
         self.items = []
+	## Import Old Item Data ##
+#        try:
+#               items_old = open("items.txt", "r").read().split('\n')
+#               self.items.extend(items_old)
+#        except:
+#               print ("Unable to Load Previously Input Item List")
+#               selt.items = []
+
         self.current_view = 'list'
 
         # Frames
@@ -599,6 +625,12 @@ class ExpirationApp:
         try:
             item = Item(name, expiration_date)
             self.items.append(item)
+            ## Save Item Input to List or Discard ##
+            try:
+                   with open("items.txt", "w") as out:
+                        out.write('\n'.join(self.items))
+            except:
+                   print ("Unable to Write Data. Discarding...")
             self.refresh_views()
         except ValueError:
             tk.messagebox.showerror("Error", "Please Enter Date in YYYY-MM-DD Format.")
@@ -824,3 +856,11 @@ btn_view.pack(side='left', padx=10, pady=10)
 #root = tk.Tk()
 app = ExpirationApp(root)
 root.mainloop()
+
+## Save Item Input to List or Discard ##
+try:
+#	with open("items.txt", "w") as out:
+	with open("items.txt", "a") as out:
+		out.write('\n'.join(items))
+except:
+	print ("Unable to Write Data. Discarding...")
