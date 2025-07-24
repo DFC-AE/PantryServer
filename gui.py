@@ -130,7 +130,7 @@ def restart_program():
 	sys.exit()
 
 ## Restart with Tab ##
-root.bind('<Tab>', lambda e: restart_program())
+root.bind('<Home>', lambda e: restart_program())
 
 ## Add Calendar ##
 cal = DateEntry(root, date_pattern="yyyy-mm-dd")
@@ -255,6 +255,8 @@ def open_camera():
 	## Close Video with ESC ##
 #	if cv2.waitKey(10) == 27:
 #		break
+	label_widget.bind('<Insert>', lambda e: label_widget.quit())
+
 
 ### Camera Buttons ###
 ## Open Button ##
@@ -272,7 +274,22 @@ def open_camera():
 
 ### Barcode Scanner ###
 def detect_barcode(image):
+	## Code in Testing ##
+	## Capture Video Frame by Frame ##
+	_, frame = cpt.read()
+
+	## Translate Color Space ##
+	opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+
+	## Capture Last Frame ##
+	captured_image = Image.fromarray(opencv_image)
+
+	## Convert Image to PhotoImage ##
+	photo_image = ImageTk.PhotoImage(image=captured_image)
+
+	## Previous Working Code ##
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 	## Detect Barcode ##
 	barcodes = decode(gray)
@@ -703,7 +720,8 @@ btn_cam = Button(root,
 #		side=tk.BOTTOM,
 		anchor="center",
                 command=open_camera)
-btn_cam.pack(side='left', padx=10, pady=10)
+#btn_cam.pack(side='left', padx=10, pady=10)
+btn_cam.pack(side='right', padx=10, pady=10)
 
 ## Create Scan Button ##
 btn_scan = Button(root,
@@ -717,10 +735,10 @@ btn_scan = Button(root,
 		activeforeground="white",
 #		side=tk.BOTTOM,
 		anchor="center",
-#                command=show_barcode(img_code))
+                command=detect_barcode(img_code))
 #                command=show_barcode(detect_barcode))
-#                command=detect_barcode(img_code))
-		comman=open_window_scan)
+#                command=detect_barcode(image))
+#		comman=open_window_scan)
 btn_scan.pack(side='right', padx=10, pady=10)
 
 ## Create Light Dark Button ##
@@ -735,7 +753,8 @@ btn_mode = Button(root,
 		activeforeground="white",
 		anchor="e",
                 command=toggle)
-btn_mode.pack(side='bottom', padx=10, pady=10)
+#btn_mode.pack(side='bottom', padx=10, pady=10)
+btn_mode.pack(side='left', padx=10, pady=10)
 
 ## Create View Button ##
 #switch = Button(window,
@@ -754,7 +773,8 @@ btn_view = Button(root,
 #                command=show_barcode(img_code))
 		command=open_window_scan)
 #                command=toggle)
-btn_view.pack(side='bottom', padx=150, pady=10)
+#btn_view.pack(side='bottom', padx=150, pady=10)
+btn_view.pack(side='left', padx=10, pady=10)
 
 ## Barcode Frame ##
 #window_code = Frame(root,
