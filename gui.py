@@ -16,13 +16,84 @@ from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+## For Random Background ##
+import random
 
 ### Create Home Page ###
 root = tk.Tk()
+
+### Create Splash Screen ###
+## Import Splash Screen Image ##
+img_wdt = 50
+img_hgt = 50
+#img_frig = Image.open("pics/frig.jpg")
+img_frig = Image.open("pics/frig.png")
+img_frig = img_frig.resize((img_wdt, img_hgt), Image.LANCZOS)
+frigImg = ImageTk.PhotoImage(img_frig)
+## Create Splash Screen ##
+splash_root = tk.Tk()
+splash_root.geometry("500x500")
+splash_label = Label(splash_root,
+			text="Splash Screen",
+			font=500)
+#			image="frigImg")
+splash_label.pack()
+
+def splash():
+	## Destory Splash Window ##
+	splash_root.quit()
+#	splash_root.destory()
+
+splash_root.after(5000, splash)
+
+### Create Home Page ###
+#root = tk.Tk()
+
+### Home Page Adjustments ###
+## Geeek Pi ##
+root.geometry("480x320")
+## 1080 ##
+#root.geometry("1920x1080")
+## Resize to Background Image ##
+#root.geometry("%dx%d" % (bck_wdt, bck_hgt))
+## Transparency ##
+#root.wm_attributes("-fullscreen", 'black')
+root.wm_attributes("-fullscreen")
+
 ## Frames ##
 list_frame = tk.Frame(root)
 card_frame = tk.Frame(root)
 detail_frame = tk.Frame(root)
+
+### Import and Resize Random Background Image ##
+def get_random_image(backgrounds):
+	try:
+		files = os.listdir(backgrounds)
+		## Filter to only Select Images ##
+#		images = [file for file in files
+#				if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+#				if not images:
+#					print("No Background Image Found")
+#					return None
+		## Choose Random Image ##
+		random_image = random.choice(backgrounds)
+		random_image_path = os.path.join(backgrounds, random_image)
+		print(f"Selected Background Image:")
+		return random_image_path
+	except Exception as e:
+		print(f"Failed to Select Random Background Image: {e}")
+		return None
+
+def display_background(backgrounds):
+	try:
+		if backgrounds and os.path.isfile(backgrounds):
+			with Image.open(backgrounds) as img:
+				img.show()
+				print(f"Displayed image: {backgrounds}")
+		else:
+			print(f"Invalid Image Path: {backgrounds}")
+	except Exception as e:
+		print(f"An Error Occurred while Displaying the Image: {e}")
 
 ### Import and Resize Background Image ##
 ## Background Size ##
@@ -35,26 +106,32 @@ detail_frame = tk.Frame(root)
 ## 1080 ##
 bck_wdt = 1080
 bck_hgt = 1920
-## Background Image ##
+
+## Randomly Select Background Image ##
 #img_back = Image.open("pics/back.jpeg")
 img_back = Image.open("pics/back.jpg")
+#img_back = Image.open("get_background_image()")
+#back = os.listdir("backgrounds")
+#random_back = random.choice("back")
+#random_back_path = os.path.join("backgrounds", random_back)
+#random_back_path = os.path.join(folder_path, random_back)
+#print(f"random_back_path")
+
+## Open Background Image ##
+#img_back = Image.open("random_back_path")
+#img_back = Image.open(random_back)
+#img_back = Image.open(os.listdir("backgrounds"))
+#img_back = Image.open(get_random_image("backgrounds"))
+
 img_back = img_back.resize((bck_wdt, bck_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
-
-## Adjustments ##
-## Geeek Pi ##
-root.geometry("480x320")
-## 1080 ##
-#root.geometry("1920x1080")
-## Resize to Background Image ##
-#root.geometry("%dx%d" % (bck_wdt, bck_hgt))
-## Transparency ##
-#root.wm_attributes("-fullscreen", 'black')
-root.wm_attributes("-fullscreen")
+#backImg = ImageTk.PhotoImage(random.choice("backgrounds"))
 
 ## Create Background ##
 background = Label(root,
 		image = backImg)
+#		image = get_background_image())
+#		image = random_image_path)
 background.place(x=0, y=0)
 ## Background Greeting ##
 welcome = Label(root,
@@ -84,6 +161,10 @@ img_hgt = 50
 img_light = Image.open("pics/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
+## Fridge Image ##
+img_frig = Image.open("pics/frig.jpg")
+img_frig = img_frig.resize((img_wdt, img_hgt), Image.LANCZOS)
+frigImg = ImageTk.PhotoImage(img_frig)
 ## Home Image ##
 img_home = Image.open("pics/home.png")
 img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
