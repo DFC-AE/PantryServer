@@ -3,11 +3,11 @@
 =======
 - Update date imputs, negative dates - Completed for List View
 >>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
-- Dark mode / Light mode - Completed but needs to be integrated better into main gui
+- Dark mode / Light mode
 - More design
 - Edit buttons
 - 4 categories
-    : Camera mode - WIP Partially Working
+    : Camera mode
     : Inventory
     : Grocery list
     : Expired
@@ -16,3 +16,4 @@
     : Name
     : Date
 - Fix item boxes they don't display the expiration date
+- open food facts
