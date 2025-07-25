@@ -1,6 +1,6 @@
 ## Import Libraries ##
 import tkinter as tk
-from tkinter import simpledialog, Button, Frame, Label, PhotoImage, Toplevel
+from tkinter import simpledialog, Button, Frame, Label, PhotoImage, Toplevel, messagebox
 ## For Calendar ##
 from datetime import datetime, timedelta
 from tkcalendar import *
@@ -26,10 +26,7 @@ root = tk.Tk()
 ## Import Splash Screen Image ##
 img_wdt = 50
 img_hgt = 50
-#img_frig = Image.open("pics/frig.jpg")
-img_frig = Image.open("pics/frig.png")
-img_frig = img_frig.resize((img_wdt, img_hgt), Image.LANCZOS)
-frigImg = ImageTk.PhotoImage(img_frig)
+
 ## Create Splash Screen ##
 splash_root = tk.Tk()
 splash_root.geometry("500x500")
@@ -46,18 +43,9 @@ def splash():
 
 splash_root.after(5000, splash)
 
-### Create Home Page ###
-#root = tk.Tk()
-
 ### Home Page Adjustments ###
 ## Geeek Pi ##
 root.geometry("480x320")
-## 1080 ##
-#root.geometry("1920x1080")
-## Resize to Background Image ##
-#root.geometry("%dx%d" % (bck_wdt, bck_hgt))
-## Transparency ##
-#root.wm_attributes("-fullscreen", 'black')
 root.wm_attributes("-fullscreen")
 
 ## Frames ##
@@ -69,12 +57,6 @@ detail_frame = tk.Frame(root)
 def get_random_image(backgrounds):
 	try:
 		files = os.listdir(backgrounds)
-		## Filter to only Select Images ##
-#		images = [file for file in files
-#				if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
-#				if not images:
-#					print("No Background Image Found")
-#					return None
 		## Choose Random Image ##
 		random_image = random.choice(backgrounds)
 		random_image_path = os.path.join(backgrounds, random_image)
@@ -97,74 +79,36 @@ def display_background(backgrounds):
 
 ### Import and Resize Background Image ##
 ## Background Size ##
-## Geeek Pi ##
-#bck_wdt = 320
-#bck_hgt = 460
-## 720 ##
-#bck_wdt = 720
-#bck_hgt = 1280
-## 1080 ##
 bck_wdt = 1080
 bck_hgt = 1920
 
-## Randomly Select Background Image ##
-#img_back = Image.open("pics/back.jpeg")
 img_back = Image.open("pics/back.jpg")
-#img_back = Image.open("get_background_image()")
-#back = os.listdir("backgrounds")
-#random_back = random.choice("back")
-#random_back_path = os.path.join("backgrounds", random_back)
-#random_back_path = os.path.join(folder_path, random_back)
-#print(f"random_back_path")
+
 
 ## Open Background Image ##
-#img_back = Image.open("random_back_path")
-#img_back = Image.open(random_back)
-#img_back = Image.open(os.listdir("backgrounds"))
-#img_back = Image.open(get_random_image("backgrounds"))
-
 img_back = img_back.resize((bck_wdt, bck_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
-#backImg = ImageTk.PhotoImage(random.choice("backgrounds"))
 
 ## Create Background ##
 background = Label(root,
 		image = backImg)
-#		image = get_background_image())
-#		image = random_image_path)
+
 background.place(x=0, y=0)
 ## Background Greeting ##
 welcome = Label(root,
 		text = " Welcome to your Pantry Companion ",
 		font=("Comic Sans", 33)).pack()
-#welcome.pack(pady = 20)
 
-## Create Background Grid ##
-#frame_left = Frame(root,
-#		width=200,
-#		height=200,
-#		background='grey')
-#frame_left.grid(row=0, column=0, padx=10, pady=5)
-#frame_right = Frame(root,
-#		width=650,
-#		height=400,
-#		background='grey')
-#frame_right.grid(row=0, column=1, padx=10, pady=5)
 
 ### Import and Resize Button Images ###
-#light = PhotoImage(file="light.png")
 ## Button Size ##
 img_wdt = 50
 img_hgt = 50
-#dark = Image.open("light.png")
 ## Light Image ##
 img_light = Image.open("pics/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
-## Fridge Image ##
-img_frig = Image.open("pics/frig.jpg")
-img_frig = img_frig.resize((img_wdt, img_hgt), Image.LANCZOS)
-frigImg = ImageTk.PhotoImage(img_frig)
+
 ## Home Image ##
 img_home = Image.open("pics/home.png")
 img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -196,14 +140,9 @@ img_scan2 = ImageTk.PhotoImage(img_scan1)
 
 ## Quit with Esc ##
 root.bind('<Escape>', lambda e: root.quit())
-#root.bind('<Escape>', lambda e: root.destroy())
 
-## Quit with Esc ##
-#app = tk.Tk()
-#app.bind('<Escape>', lambda e: app.quit())
 
 def restart_program():
-#	os.execv(sys.argv[0], sys.argv)
 	print("Restarting Program...")
 	executable = sys.executable
 	## Windows ##
@@ -226,11 +165,6 @@ def get_date():
 	selected_date = cal.get()
 	print(f"Selected Date: {selected_date}")
 
-## Add Button and Label ##
-#Button(root,
-#	text= "Click Here to Input Selected Date",
-#	command = get_date).pack(pady = 10)
-
 ### Light and Dark Mode Toggle ###
 switch_value = True
 
@@ -247,7 +181,6 @@ def toggle():
                                 #activebackground="#26242f")
 
                 ## Change Window to Light Theme ##
-#                window.config(background="#26242f")
                 root.config(background="#26242f")
                 list_canvas = tk.Canvas(list_frame, background="#26242f")
                 list_items_frame = tk.Frame(list_canvas, bg="#26242f")
@@ -263,7 +196,6 @@ def toggle():
                                 activebackground="#26242f")
 
                 ## Change Window to Dark Theme ##
-#                window.config(background="white")
                 root.config(background="white")
                 list_canvas = tk.Canvas(list_frame, background="white")
                 list_items_frame = tk.Frame(list_canvas, bg="white")
@@ -277,7 +209,6 @@ switch = Button(root,
 switch.pack(side='bottom', padx=10, pady=10)
 
 ## Add Item ##
-#def add_item_popup(self):
 items = []
 
 ## Import Old Item Data ##
@@ -294,8 +225,6 @@ def add_item():
 	if not name:
 		return
 
-#        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
-#        expiration_date = selected_date
 	expiration_date = cal.get()
 	try:
 		item = Item(name, expiration_date)
@@ -312,15 +241,6 @@ def add_item():
 		## Close Item File ##
 		i.close()
 
-		## Save Item Input to List or Discard ##
-#		try:
-#			with open("items.txt", "w") as out:
-#			with open("items.txt", "a") as out:
-#				out.write('\n'.join(items))
-#		except:
-#			print ("Unable to Write Data. Discarding...")
-
-#		refresh_views()
 	except ValueError:
 		tk.messagebox.showerror("Error", "Please enter date in YYYY-MM-DD format.")
 
@@ -330,21 +250,9 @@ cpt = cv2.VideoCapture(0)
 ## Resolution ##
 cpt_wdt = 1920
 cpt_hgt = 1080
-#cpt_wdt = 600
-#cpt_hgt = 480
 cpt.set(cv2.CAP_PROP_FRAME_WIDTH, cpt_wdt)
 cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, cpt_hgt)
 
-## Create External Camera Window ##
-#cam = tk.Tk()
-
-## Quit Camera with Home Key ##
-#cam.bind('<Home>', lambda e: cam.quit())
-
-## Create Camera Widget ##
-## External ##
-#cam_widget = Label(cam,
-#cam_widget = tk.Label(cam,
 ## Internal ##
 cam_widget = tk.Label(root,
 #			textvariable="test",
@@ -353,14 +261,7 @@ cam_widget = tk.Label(root,
 			cursor="hand2")
 #cam_widget.pack()
 cam_widget.pack(fill = "both")
-#root.label_widget = Label(root)
-#root.label_widget.pack()
-
-## Bind q to Quit Camera ##
-#root.bind('<Next>'), lambda e: cam_widget.quit()
 cam_widget.bind('<Next>'), lambda e: cam_widget.quit()
-#cam_widget.bind('<Next>'), lambda e: cam_widget.destroy()
-#root.bind('<q>'), lambda e: cpt.quit()
 
 def open_camera():
 	## Capture Video Frame by Frame ##
@@ -389,21 +290,6 @@ def open_camera():
 #		break
 	cam_widget.bind('<Insert>', lambda e: cam_widget.quit())
 
-
-### Camera Buttons ###
-## Open Button ##
-#cam_btn = Button(app,
-#cam_btn = Button(root,
-#		text="Open Scanner",
-#		command=open_camera)
-#cam_btn.pack()
-## Close Button ##
-#cam_btn = Button(root,
-#		text="Close Scanner",
-#		text="Restart Program",
-#		command=restart_program)
-#cam_btn.pack()
-
 ### Barcode Scanner ###
 def detect_barcode(image):
 	## Code in Testing ##
@@ -421,7 +307,6 @@ def detect_barcode(image):
 
 	## Previous Working Code ##
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 	## Detect Barcode ##
 	barcodes = decode(gray)
@@ -448,62 +333,15 @@ def detect_barcode(image):
 		## Convert Image from BGR to RGB ##
 		image_rgb = cv2.cvtColor(image,
 					cv2.COLOR_BGR2RGB)
-
-#	def show_barcode(image):
-#		plt.imshow(image_rgb)
-	#	plt.imshow(img_code)
-#		plt.axis('off')
-#		plt.show()
-
 		show_barcode(image_rgb)
 
 ## Show Barcode ##
 def show_barcode(image):
-	## The Figure to Contain the Barcode ##
-#	fig = Figure(figsize = (5, 5), dpi = 100)
-
-	## Create Tkinter Canvas for Barcode ##
-#	canvas_code = FigureCanvasTkAgg(fig, master = window_code)
-#	canvas_code.draw()
-
-	## Place Canvas Inside Tkinter Window ##
-#	canvas_code.get_tk_widget().pack()
-
-	## Creating the Matplotlib Toolbar ##
-#	toolbar = NavigationToolbar2Tk(canvas_code, window_code)
-#	toolbar.update()
-
-	## Place Toolbar inside Tkinter Window ##
-#	canvas_code.get_tk_widget().pack()
-
-#	plt.imshow(image_rgb)
-#	plt.imshow(img_code)
 	plt.imshow(image)
 	plt.axis('off')
 	plt.title('Scanned Barcode:', fontweight ="bold")
 	plt.show()
-#	plt.show(root)
-#	root.plt.imshow(image)
-#	root.plt.axis('off')
-#	root.plt.title('Scanned Barcode:', fontweight ="bold")
-#	root.plt.show()
-
-### Open Barcode Window ###
-## Barcode Window ##
-#window_code = tk()
-#window_code = tk.Tk()
-#window_code.title('Scanned Barcode')
-#window_code.geometry("250x250")
-#window_code.mainloop()
-
-## Black and White Inlayed Window ##
-#window_root = Frame(root,
-#			background="black",
-#			width=500,
-#			height=500)
-#window_root.pack()
-#window_code = Frame(window_root,
-
+      
 ## Open with Button ##
 def open_window_scan():
 	window_scan = Toplevel(root)
@@ -512,37 +350,6 @@ def open_window_scan():
 
 	Label(window_scan,
 		image=img_scan2).pack(pady=20)
-
-## Inside Center Home ##
-#window_code = Frame(root,
-#			background="white",
-#			width=100,
-#			height=100)
-#window_code.pack(pady=20,padx=20)
-
-#label_code = Label(window_code, image=img_scan2)
-#label_code.pack()
-
-## Read Input Image ##
-#img_code = cv2.imread("pics/barcode.png")
-#image = opencv_image
-#_, frame = cpt.read()
-#image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-## Barcode Button ##
-#cam_btn = Button(app,
-#cam_btn = Button(root,
-#		text="Detect Barcode",
-#		command=detect_barcode(image))
-#cam_btn.pack()
-
-## Show Barcode Button ##
-#cam_btn = Button(root,
-#		text="Detect Barcode",
-#		command=show_barcode(image))
-#cam_btn.pack()
-
-#detect_barcode(image)
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
@@ -626,20 +433,6 @@ class ExpirationApp:
         add_btn = tk.Button(top_bar, text="Add Item", command=self.add_item_popup)
         add_btn.pack(side=tk.TOP, padx=10)
 
- #       add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
- #       add_btn.pack(side=tk.TOP, padx=10)
-
-        ## Add Calendar ##
- #       cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
- #       cal.pack(padx=10, pady=10)
-
-        ## Scrollable Canvas ##
-#        if switch_value == True:
-#                self.list_canvas = tk.Canvas(self.list_frame, bg="white")
-#                self.list_items_frame = tk.Frame(self.list_canvas, bg="white")
-#        else:
-#                self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
-#                self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
         self.list_canvas = tk.Canvas(self.list_frame, bg="#26242f")
         self.list_items_frame = tk.Frame(self.list_canvas, bg="#26242f")
         scrollbar = tk.Scrollbar(self.list_frame, orient=tk.VERTICAL, command=self.list_canvas.yview)
@@ -671,18 +464,8 @@ class ExpirationApp:
         add_btn = tk.Button(top_bar, text="Dark Mode", command=toggle)
         add_btn.pack(side=tk.RIGHT, padx=10)
 
-#        add_btn = tk.Button(top_bar, text="Open Scanner", command=open_camera)
-#        add_btn.pack(side=tk.TOP, padx=10)
-
-        ## Add Calendar ##
-#        cal = DateEntry(top_bar, date_pattern="yyyy-mm-dd")
-#        cal.pack(padx=10, pady=10)
-
-        # Card view scrollbar
-#        self.card_canvas = tk.Canvas(self.card_frame, bg="white")
         self.card_canvas = tk.Canvas(self.card_frame, bg="#26242f")
         card_scrollbar = tk.Scrollbar(self.card_frame, orient=tk.VERTICAL, command=self.card_canvas.yview)
-#        self.cards_container = tk.Frame(self.card_canvas, bg="white")
         self.cards_container = tk.Frame(self.card_canvas, bg="#26242f")
 
         self.cards_container.bind(
@@ -704,14 +487,66 @@ class ExpirationApp:
         back_btn = tk.Button(self.detail_frame, text="Back", font=("Arial", 15), command=self.back_to_previous_view)
         back_btn.pack(side='bottom', padx=10, pady=10)
 
+    def manual_barcode_entry(self, item):
+        # Ask user to type in barcode manually
+        barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
+        if not barcode:
+            return
+        self.fetch_open_food_facts(barcode, item)
+
+    def fetch_open_food_facts(self, barcode, item):
+        # Fetch product data from Open Food Facts API
+        import requests
+
+        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if data.get('status') == 1:
+                product = data.get('product', {})
+                nutriments = product.get('nutriments', {})
+                nutrition_info = {
+                    "Product Name": product.get('product_name', 'Unknown'),
+                    "Calories (kcal)": nutriments.get('energy-kcal_100g', 'N/A'),
+                    "Fat (g)": nutriments.get('fat_100g', 'N/A'),
+                    "Saturated Fat (g)": nutriments.get('saturated-fat_100g', 'N/A'),
+                    "Carbohydrates (g)": nutriments.get('carbohydrates_100g', 'N/A'),
+                    "Sugars (g)": nutriments.get('sugars_100g', 'N/A'),
+                    "Fiber (g)": nutriments.get('fiber_100g', 'N/A'),
+                    "Proteins (g)": nutriments.get('proteins_100g', 'N/A'),
+                    "Salt (g)": nutriments.get('salt_100g', 'N/A'),
+                    "Sodium (g)": nutriments.get('sodium_100g', 'N/A'),
+                    "Serving Size": product.get('serving_size', 'N/A'),
+                }
+
+                self.show_nutrition_info(nutrition_info)
+
+                if not item.name:
+                    item.name = nutrition_info["Product Name"]
+                    self.refresh_views()
+            else:
+                messagebox.showerror("Error", "Product not found in Open Food Facts.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to fetch data: {e}")
+
+    def show_nutrition_info(self, nutrition_info):
+        # Show nutrition information in a popup window
+        info_window = tk.Toplevel(self.root)
+        info_window.title("Nutrition Information")
+
+        for key, value in nutrition_info.items():
+            label = tk.Label(info_window, text=f"{key}: {value}", font=("Arial", 14), anchor="w")
+            label.pack(fill=tk.X, padx=10, pady=2)
+
+        close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
+        close_btn.pack(pady=10)
+
     # -------- Popups & Add --------
     def add_item_popup(self):
         name = simpledialog.askstring("Add Item", "Enter Item Name:")
         if not name:
             return
 
-#        expiration_date = simpledialog.askstring("Add Item", "Enter expiration date (YYYY-MM-DD):")
-#        expiration_date = selected_date
         expiration_date = cal.get()
         try:
             item = Item(name, expiration_date)
@@ -725,12 +560,6 @@ class ExpirationApp:
 
             ## Close Item File ##
             i.close()
-            ## Save Item Input to List or Discard ##
-#            try:
-#                   with open("items.txt", "w") as out:
-#                        out.write('\n'.join(self.items))
-#            except:
-#                   print ("Unable to Write Data. Discarding...")
             self.refresh_views()
         except ValueError:
             tk.messagebox.showerror("Error", "Please Enter Date in YYYY-MM-DD Format.")
@@ -801,6 +630,25 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
+    ## item sort button ##
+    def sort_items(self, sort_type):
+        if sort_type == "Expiration (Soonest)":
+            self.items.sort(key=lambda x: x.expiration_date)
+        elif sort_type == "Expiration (Latest)":
+            self.items.sort(key=lambda x: x.expiration_date, reverse=True)
+        elif sort_type == "Name (A-Z)":
+            self.items.sort(key=lambda x: x.name.lower())
+        elif sort_type == "Name (Z-A)":
+            self.items.sort(key=lambda x: x.name.lower(), reverse=True)
+        self.create_list_view()
+
+    ## item delete button ##
+    def delete_item(self, item):
+        if messagebox.askyesno("Delete", f"Delete {item.name}?"):
+            self.items.remove(item)
+            self.save_items()
+            self.create_list_view()
+            
     # -------- View Handlers --------
     def show_list_view(self):
         self.card_frame.pack_forget()
@@ -819,6 +667,18 @@ class ExpirationApp:
     def show_detail_view(self, item):
         self.list_frame.pack_forget()
         self.card_frame.pack_forget()
+
+        back_btn = tk.Button(self.root, text="Back", font=("Arial", 16), command=self.create_tracker_ui)
+        back_btn.pack(pady=10)
+
+        scan_btn = tk.Button(self.root, text="Scan Barcode", command=self.open_camera)
+        scan_btn.pack(pady=10)
+
+        manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry(item))
+        manual_btn.pack(pady=10)
+
+        edit_btn = tk.Button(self.root, text="Edit Item", command=lambda: self.edit_item(item))
+        edit_btn.pack(pady=10)
 
         days = item.days_until_expired()
         detail_text = (
@@ -889,68 +749,39 @@ btn_cam.pack(side='right', padx=10, pady=10)
 ## Create Scan Button ##
 btn_scan = Button(root,
                image=scanImg,
-#		text="Add Item",
-#                borderwidth=0,
                 background="white",
-#		foreground="#26242f",
 		foreground="black",
                 activebackground="#26242f",
 		activeforeground="white",
-#		side=tk.BOTTOM,
 		anchor="center",
 		cursor="hand2",
                 command=detect_barcode(img_code))
-#                command=show_barcode(detect_barcode))
-#                command=detect_barcode(image))
-#		comman=open_window_scan)
+
 btn_scan.pack(side='right', padx=10, pady=10)
 
 ## Create Light Dark Button ##
 btn_mode = Button(root,
                image=lightImg,
-#		text="Dark Mode",
-#                borderwidth=0,
                 background="white",
-#		foreground="#26242f",
 		foreground="black",
                 activebackground="#26242f",
 		activeforeground="white",
 		anchor="e",
 		cursor="hand2",
                 command=toggle)
-#btn_mode.pack(side='bottom', padx=10, pady=10)
 btn_mode.pack(side='left', padx=10, pady=10)
 
 ## Create View Button ##
-#switch = Button(window,
 btn_view = Button(root,
                image=viewImg,
-#		text="View",
-#                borderwidth=0,
                 background="white",
-#		foreground="#26242f",
 		foreground="black",
                 activebackground="#26242f",
 		activeforeground="white",
 		anchor="w",
-#		sticky="w",
 		cursor="hand2",
-#                command=show_card_view)
-#                command=show_barcode(img_code))
 		command=open_window_scan)
-#                command=toggle)
-#btn_view.pack(side='bottom', padx=150, pady=10)
 btn_view.pack(side='left', padx=10, pady=10)
-
-## Barcode Frame ##
-#window_code = Frame(root,
-#			background="white",
-#			width=100,
-#			height=100)
-#window_code.pack(pady=20,padx=20)
-
-#label_code = Label(window_code, image=img_scan2)
-#label_code.pack()
 
 # -------- Run --------
 #root = tk.Tk()
