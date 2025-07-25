@@ -9,8 +9,32 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import json
+import random
 
 SAVE_FILE = "items.json"
+
+def get_random_image(backgrounds):
+	try:
+		files = os.listdir(backgrounds)
+		## Choose Random Image ##
+		random_image = random.choice(backgrounds)
+		random_image_path = os.path.join(backgrounds, random_image)
+		print(f"Selected Background Image:")
+		return random_image_path
+	except Exception as e:
+		print(f"Failed to Select Random Background Image: {e}")
+		return None
+
+def display_background(backgrounds):
+	try:
+		if backgrounds and os.path.isfile(backgrounds):
+			with Image.open(backgrounds) as img:
+				img.show()
+				print(f"Displayed image: {backgrounds}")
+		else:
+			print(f"Invalid Image Path: {backgrounds}")
+	except Exception as e:
+		print(f"An Error Occurred while Displaying the Image: {e}")
 
 # ------- Item Model -------
 class Item:
@@ -152,6 +176,16 @@ class ExpirationApp:
 
         tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=10)
 
+    def refresh_views(self):
+        # List View
+        self.items.sort(key=lambda item: item.expiration_date)
+        for widget in self.list_items_frame.winfo_children():
+            widget.destroy()
+
+        for idx, item in enumerate(self.items):
+            color = item.get_color()
+            days = item.days_until_expired()
+
     def show_detail_view(self, item):
         self.clear_screen()
         days = item.days_until_expired()
@@ -172,9 +206,6 @@ class ExpirationApp:
 
         barcode_btn = tk.Button(self.root, text="Detect Barcode", command=lambda: self.detect_barcode("barcode.png"))
         barcode_btn.pack(pady=5)
-
-        manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry(item))
-        manual_btn.pack(pady=10)
 
         # Back to card view
         back_btn = tk.Button(self.root, text="Back", command=self.create_card_view)
@@ -330,6 +361,12 @@ class ExpirationApp:
         self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.camera_label = tk.Label(self.root)
+
+    def show_camera(self):
+        self.clear_screen()
+        self.camera_label.pack()
+        self.update_camera()
+        tk.Button(self.root, text="Back", command=self.create_home_screen).pack(pady=10)
     
     def open_camera(self):
         # Show live feed from camera
@@ -343,7 +380,7 @@ class ExpirationApp:
         self.label_widget.pack()
 
         self.root.after(10, self.open_camera)
-        
+
     def update_camera(self):
         ret, frame = self.cpt.read()
         if ret:
