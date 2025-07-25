@@ -27,9 +27,9 @@ root = tk.Tk()
 ## Import Splash Screen Image ##
 splash_wdt = 50
 splash_hgt = 50
-img_splash = Image.open("pics/frig_fog.jpg")
-img_splash = img_splash.resize((splash_wdt, splash_hgt), Image.LANCZOS)
-splashImg = ImageTk.PhotoImage(img_splash)
+#img_splash = Image.open("pics/frig_fog.jpg")
+#img_splash = img_splash.resize((splash_wdt, splash_hgt), Image.LANCZOS)
+#splashImg = ImageTk.PhotoImage(img_splash)
 ## Create Splash Screen Window ##
 splash_root = tk.Tk()
 #splash_root = root.Tk()
