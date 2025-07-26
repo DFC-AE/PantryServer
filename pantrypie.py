@@ -23,24 +23,6 @@ root.title("Pantry Server")
 ## Variables ##
 SAVE_FILE = "items.json"
 
-### Import and Resize Background Image ##
-## Background Size ##
-bck_wdt = 1080
-bck_hgt = 1920
-img_background = Image.open("pics/back.jpg")
-## Open Background Image ##
-img_background = img_background.resize((bck_wdt, bck_hgt), Image.LANCZOS)
-backgroundImg = ImageTk.PhotoImage(img_background)
-## Create Background ##
-background = Label(root,
-                image = backgroundImg)
-background.place(x=0, y=0)
-#background.pack()
-## Background Greeting ##
-welcome = Label(root,
-                text = " Welcome to your Pantry Companion ",
-                font=("Comic Sans", 33)).pack()
-
 ### Import and Resize Button Images ###
 ## Button Size ##
 img_wdt = 50
@@ -185,16 +167,24 @@ class ExpirationApp:
         self.create_tracker_screen()
     # home screen
 
-    def create_tracker_screen(self, item=None):
-        self.clear_screen()
-
-        # App Title
+    ## Create Background ##
+    def set_background(self):
         background = tk.Label(self.root,
 			image=self.backgroundImg)
 			#text="Welcome to Expiration Tracker",
 			#text="Welcome to your Pantry Companion!",
 			#font=("Arial", 20))
         background.place(x=0, y=0, relwidth=1, relheight=1)
+        background.lower()
+
+    ## Create Home Screen ##
+#    def create_home_screen(self):
+#        self.clear_screen()
+#	self.set_background()
+
+    def create_tracker_screen(self, item=None):
+        self.clear_screen()
+        self.set_background()
 
 	## Background Greeting ##
         welcome = tk.Label(self.root,
@@ -240,6 +230,7 @@ class ExpirationApp:
 
     def create_tracker_ui(self, item):
         self.clear_screen()
+        self.set_background()
 
 	## Background Greeting ##
         welcome = Label(root,
@@ -280,6 +271,7 @@ class ExpirationApp:
 
     def create_card_view(self):
         self.clear_screen()
+        self.set_background()
 
         # sets view for other functions as card
         self.current_view = "card"
@@ -320,6 +312,7 @@ class ExpirationApp:
 
     def create_list_view(self):
         self.clear_screen()
+        self.set_background()
 
         # sets view for other functions as list
         self.current_view = "list"
@@ -352,6 +345,7 @@ class ExpirationApp:
 
     def show_detail_view(self, item):
         self.clear_screen()
+        self.set_background()
         days = item.days_until_expired()
 
         # Show item details
@@ -507,6 +501,7 @@ class ExpirationApp:
 
     def add_item_popup(self):
         self.clear_screen()
+        self.set_background()
 
         tk.Label(self.root, text="Add New Item", font=("Arial", 20)).pack(pady=20)
 
