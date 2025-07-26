@@ -25,14 +25,15 @@ SAVE_FILE = "items.json"
 ## Background Size ##
 bck_wdt = 1080
 bck_hgt = 1920
-img_back = Image.open("pics/back.jpg")
+img_background = Image.open("pics/back.jpg")
 ## Open Background Image ##
-img_back = img_back.resize((bck_wdt, bck_hgt), Image.LANCZOS)
-backImg = ImageTk.PhotoImage(img_back)
+img_background = img_background.resize((bck_wdt, bck_hgt), Image.LANCZOS)
+backgroundImg = ImageTk.PhotoImage(img_background)
 ## Create Background ##
 background = Label(root,
-                image = backImg)
+                image = backgroundImg)
 background.place(x=0, y=0)
+#background.pack()
 ## Background Greeting ##
 welcome = Label(root,
                 text = " Welcome to your Pantry Companion ",
@@ -51,7 +52,7 @@ img_back = Image.open("pics/back.png")
 img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
 ## Card Image ##
-img_card = Image.open("pics/card.png")
+img_card = Image.open("pics/card4.png")
 img_card = img_card.resize((img_wdt, img_hgt), Image.LANCZOS)
 cardImg = ImageTk.PhotoImage(img_card)
 ## Light Image ##
@@ -66,6 +67,10 @@ homeImg = ImageTk.PhotoImage(img_home)
 img_item = Image.open("pics/item.png")
 img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
 itemImg = ImageTk.PhotoImage(img_item)
+## List Image ##
+img_list = Image.open("pics/list.png")
+img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
+listImg = ImageTk.PhotoImage(img_list)
 ## Camera Image ##
 img_cam = Image.open("pics/cam.jpg")
 img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -94,7 +99,7 @@ img_scan2 = ImageTk.PhotoImage(img_scan1)
 ### Keybindings ###
 ## Quit with Esc ##
 root.bind('<Escape>', lambda e: root.quit())
-## Restart with Tab ##
+## Restart with Home ##
 def restart_program():
         print("Restarting Program...")
         executable = sys.executable
@@ -105,7 +110,8 @@ def restart_program():
         else:
                 os.execv(executable, [executable] + sys.argv)
         sys.exit()
-root.bind('<Prior>', lambda e: restart_program())
+#root.bind('<Prior>', lambda e: restart_program())
+root.bind('<Home>', lambda e: restart_program())
 
 ######################## ------- Item Model -------################################
 class Item:
@@ -161,11 +167,17 @@ class ExpirationApp:
         self.clear_screen()
 
         # App Title
-        label = tk.Label(self.root,
+        #label = tk.Label(self.root,
+			#image=backgroundImg,
 			#text="Welcome to Expiration Tracker",
-			text="Welcome to your Pantry Companion!",
-			font=("Arial", 20))
-        label.pack(pady=20)
+			#text="Welcome to your Pantry Companion!",
+			#font=("Arial", 20))
+        #label.pack(pady=20)
+
+	## Background Greeting ##
+        welcome = Label(root,
+                        text = " Welcome to your Pantry Companion ",
+                        font=("Comic Sans", 33)).pack()
 
         # Calendar Picker
         self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
@@ -198,7 +210,7 @@ class ExpirationApp:
 
         list_view_btn = tk.Button(self.root,
 				#text="List View",
-				image=viewImg,
+				image=listImg,
 				#command=lambda: self.create_list_view)
 				command=self.create_list_view)
         list_view_btn.pack(pady=5)
