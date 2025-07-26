@@ -1,10 +1,6 @@
 ## Import Libraries ##
 import tkinter as tk
-<<<<<<< HEAD
 from tkinter import simpledialog, Button, Frame, Label, PhotoImage, Toplevel, messagebox
-=======
-from tkinter import messagebox, simpledialog, Button, Frame, Label, PhotoImage, Toplevel
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 ## For Calendar ##
 from datetime import datetime, timedelta
 #from tkcalendar import *
@@ -29,19 +25,10 @@ root = tk.Tk()
 
 ### Create Splash Screen ###
 ## Import Splash Screen Image ##
-<<<<<<< HEAD
 img_wdt = 50
 img_hgt = 50
 
 ## Create Splash Screen ##
-=======
-splash_wdt = 50
-splash_hgt = 50
-#img_splash = Image.open("pics/frig_fog.jpg")
-#img_splash = img_splash.resize((splash_wdt, splash_hgt), Image.LANCZOS)
-#splashImg = ImageTk.PhotoImage(img_splash)
-## Create Splash Screen Window ##
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 splash_root = tk.Tk()
 #splash_root = root.Tk()
 splash_root.geometry("500x500")
@@ -123,14 +110,6 @@ img_hgt = 50
 img_light = Image.open("pics/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
-<<<<<<< HEAD
-
-=======
-## Fridge Image ##
-#img_frig = Image.open("pics/frig.jpg")
-#img_frig = img_frig.resize((img_wdt, img_hgt), Image.LANCZOS)
-#frigImg = ImageTk.PhotoImage(img_frig)
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 ## Home Image ##
 img_home = Image.open("pics/home.png")
 img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -356,7 +335,7 @@ def detect_barcode(image):
 		image_rgb = cv2.cvtColor(image,
 					cv2.COLOR_BGR2RGB)
 		show_barcode(image_rgb)
-		open_window_scan(image_rgb)
+		#open_window_scan(image_rgb)
 
 ## Open with Button ##
 def open_window_scan(image):
@@ -380,7 +359,6 @@ def show_barcode(image):
 	plt.axis('off')
 	plt.title('Scanned Barcode:', fontweight ="bold")
 	plt.show()
-<<<<<<< HEAD
       
 ## Open with Button ##
 def open_window_scan():
@@ -390,60 +368,6 @@ def open_window_scan():
 
 	Label(window_scan,
 		image=img_scan2).pack(pady=20)
-=======
-#	plt.show(root)
-#	root.plt.imshow(image)
-#	root.plt.axis('off')
-#	root.plt.title('Scanned Barcode:', fontweight ="bold")
-#	root.plt.show()
-
-### Open Barcode Window ###
-## Barcode Window ##
-#window_code = tk()
-#window_code = tk.Tk()
-#window_code.title('Scanned Barcode')
-#window_code.geometry("250x250")
-#window_code.mainloop()
-
-## Black and White Inlayed Window ##
-#window_root = Frame(root,
-#			background="black",
-#			width=500,
-#			height=500)
-#window_root.pack()
-#window_code = Frame(window_root,
-
-## Inside Center Home ##
-#window_code = Frame(root,
-#			background="white",
-#			width=100,
-#			height=100)
-#window_code.pack(pady=20,padx=20)
-
-#label_code = Label(window_code, image=img_scan2)
-#label_code.pack()
-
-## Read Input Image ##
-#img_code = cv2.imread("pics/barcode.png")
-#image = opencv_image
-#_, frame = cpt.read()
-#image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-## Barcode Button ##
-#cam_btn = Button(app,
-#cam_btn = Button(root,
-#		text="Detect Barcode",
-#		command=detect_barcode(image))
-#cam_btn.pack()
-
-## Show Barcode Button ##
-#cam_btn = Button(root,
-#		text="Detect Barcode",
-#		command=show_barcode(image))
-#cam_btn.pack()
-
-#detect_barcode(image)
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 
 # Class to represent each item (food/drink) with name and expiration date
 class Item:
@@ -850,14 +774,6 @@ btn_scan = Button(root,
 		anchor="center",
 		cursor="hand2",
                 command=detect_barcode(img_code))
-<<<<<<< HEAD
-
-=======
-#                command=detect_barcode(img_scan1))
-#                command=show_barcode(detect_barcode))
-#                command=detect_barcode(image))
-#		comman=open_window_scan)
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 btn_scan.pack(side='right', padx=10, pady=10)
 
 ## Create Light Dark Button ##
@@ -881,7 +797,6 @@ btn_view = Button(root,
 		activeforeground="white",
 		anchor="w",
 		cursor="hand2",
-<<<<<<< HEAD
 		command=open_window_scan)
 btn_view.pack(side='left', padx=10, pady=10)
 
@@ -889,24 +804,6 @@ btn_view.pack(side='left', padx=10, pady=10)
 #root = tk.Tk()
 app = ExpirationApp(root)
 root.mainloop()
-=======
-#                command=show_card_view)
-                command=show_barcode(img_code))
-#		command=open_window_scan(img_code))
-#                command=toggle)
-#btn_view.pack(side='bottom', padx=150, pady=10)
-btn_view.pack(side='left', padx=10, pady=10)
-
-## Barcode Frame ##
-#window_code = Frame(root,
-#			background="white",
-#			width=100,
-#			height=100)
-#window_code.pack(pady=20,padx=20)
-
-#label_code = Label(window_code, image=img_scan2)
-#label_code.pack()
->>>>>>> 2f14b2e119d5697ac67cb5259a8f8d5e3b0c5903
 
 ## Save Item Input to List or Discard ##
 #try:

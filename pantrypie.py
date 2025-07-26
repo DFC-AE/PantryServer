@@ -9,12 +9,37 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import json
+import random
 
 SAVE_FILE = "items.json"
+
+def get_random_image(backgrounds):
+	try:
+		files = os.listdir(backgrounds)
+		## Choose Random Image ##
+		random_image = random.choice(backgrounds)
+		random_image_path = os.path.join(backgrounds, random_image)
+		print(f"Selected Background Image:")
+		return random_image_path
+	except Exception as e:
+		print(f"Failed to Select Random Background Image: {e}")
+		return None
+
+def display_background(backgrounds):
+	try:
+		if backgrounds and os.path.isfile(backgrounds):
+			with Image.open(backgrounds) as img:
+				img.show()
+				print(f"Displayed image: {backgrounds}")
+		else:
+			print(f"Invalid Image Path: {backgrounds}")
+	except Exception as e:
+		print(f"An Error Occurred while Displaying the Image: {e}")
 
 # ------- Item Model -------
 class Item:
     def __init__(self, name, expiration_date):
+        # Store name and parse expiration date
         self.name = name
         self.expiration_date = datetime.strptime(expiration_date, "%Y-%m-%d")
 
@@ -26,9 +51,11 @@ class Item:
         return Item(data['name'], data['expiration_date'])
 
     def days_until_expired(self):
+        # Return number of days remaining (or negative if expired)
         return (self.expiration_date - datetime.now()).days + 1
 
     def get_color(self):
+        # Return color from red to green based on expiration
         days = self.days_until_expired() - 1
         gradient_colors = [
             "#FF0000", "#FF1A00", "#FF3300", "#FF4D00", "#FF6600", "#FF8000",
@@ -49,9 +76,9 @@ def check_dates(days):
 class ExpirationApp:
     def __init__(self, root):
         self.root = root
-        self.items = []
+        self.items = []  # List to hold all items
         self.current_view = 'home'
-        self.dark_mode = False
+        self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
         self.load_items()
@@ -61,20 +88,16 @@ class ExpirationApp:
     def create_home_screen(self):
         self.clear_screen()
 
+        # App Title
         label = tk.Label(self.root, text="Welcome to Expiration Tracker", font=("Arial", 20))
         label.pack(pady=20)
 
+        # Calendar Picker
         self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.cal.pack(pady=10)
 
         track_btn = tk.Button(self.root, text="Go to Tracker", command=self.create_tracker_ui)
         track_btn.pack(pady=10)
-
-        cam_btn = tk.Button(self.root, text="Open Scanner", command=self.show_camera)
-        cam_btn.pack(pady=10)
-
-        barcode_btn = tk.Button(self.root, text="Detect Barcode", command=lambda: self.detect_barcode("barcode.png"))
-        barcode_btn.pack(pady=10)
 
         dark_mode_btn = tk.Button(self.root, text="Toggle Dark Mode", command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
@@ -94,6 +117,14 @@ class ExpirationApp:
     def create_card_view(self):
         self.clear_screen()
 
+        # sets view for other functions as card
+        self.current_view = "card"  # <-- Add this
+        self.clear_screen()
+
+        # Sort Menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
+        sort_menu.pack(pady=10)
+
         self.card_frame = tk.Frame(self.root)
         self.card_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -107,6 +138,7 @@ class ExpirationApp:
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired {check_dates(days)} days ago"
             c_btn = tk.Button(
                 self.cards_container, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
+                width=15, height=6,  
                 command=lambda i=item: self.show_detail_view(i)
             )
             c_btn.grid(row=row, column=col, padx=10, pady=10)
@@ -115,9 +147,20 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
+
+        back_btn = tk.Button(self.root, text="Back", command=self.create_tracker_ui)
+        back_btn.pack(pady=10)
+
+
+
     def create_list_view(self):
         self.clear_screen()
 
+        # sets view for other functions as list
+        self.current_view = "list" 
+        self.clear_screen()
+
+        # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
         sort_menu.pack(pady=5)
 
@@ -128,11 +171,99 @@ class ExpirationApp:
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired {check_dates(days)} days ago"
-
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
         tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=10)
+
+    def refresh_views(self):
+        # List View
+        self.items.sort(key=lambda item: item.expiration_date)
+        for widget in self.list_items_frame.winfo_children():
+            widget.destroy()
+
+        for idx, item in enumerate(self.items):
+            color = item.get_color()
+            days = item.days_until_expired()
+
+    def show_detail_view(self, item):
+        self.clear_screen()
+        days = item.days_until_expired()
+
+        # Show item details
+        detail_text = (
+            f"Item: {item.name}\n"
+            f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
+            f"Days Left: {check_dates(days) if days > 0 else 0}"
+        )
+
+        label = tk.Label(self.root, text=detail_text, font=("Arial", 20), justify="left")
+        label.pack(pady=30)
+
+        # Scanner and barcode buttons (only shown on item click)
+        scanner_btn = tk.Button(self.root, text="Open Scanner", command=self.show_camera)
+        scanner_btn.pack(pady=5)
+
+        barcode_btn = tk.Button(self.root, text="Detect Barcode", command=lambda: self.detect_barcode("barcode.png"))
+        barcode_btn.pack(pady=5)
+
+        # Back to card view
+        back_btn = tk.Button(self.root, text="Back", command=self.create_card_view)
+        back_btn.pack(pady=10)
+
+    def manual_barcode_entry(self, item):
+        # Ask user to type in barcode manually
+        barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
+        if not barcode:
+            return
+        self.fetch_open_food_facts(barcode, item)
+
+    def fetch_open_food_facts(self, barcode, item):
+        # Fetch product data from Open Food Facts API
+        import requests
+
+        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if data.get('status') == 1:
+                product = data.get('product', {})
+                nutriments = product.get('nutriments', {})
+                nutrition_info = {
+                    "Product Name": product.get('product_name', 'Unknown'),
+                    "Calories (kcal)": nutriments.get('energy-kcal_100g', 'N/A'),
+                    "Fat (g)": nutriments.get('fat_100g', 'N/A'),
+                    "Saturated Fat (g)": nutriments.get('saturated-fat_100g', 'N/A'),
+                    "Carbohydrates (g)": nutriments.get('carbohydrates_100g', 'N/A'),
+                    "Sugars (g)": nutriments.get('sugars_100g', 'N/A'),
+                    "Fiber (g)": nutriments.get('fiber_100g', 'N/A'),
+                    "Proteins (g)": nutriments.get('proteins_100g', 'N/A'),
+                    "Salt (g)": nutriments.get('salt_100g', 'N/A'),
+                    "Sodium (g)": nutriments.get('sodium_100g', 'N/A'),
+                    "Serving Size": product.get('serving_size', 'N/A'),
+                }
+
+                self.show_nutrition_info(nutrition_info)
+
+                if not item.name:
+                    item.name = nutrition_info["Product Name"]
+                    self.refresh_views()
+            else:
+                messagebox.showerror("Error", "Product not found in Open Food Facts.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to fetch data: {e}")
+
+    def show_nutrition_info(self, nutrition_info):
+        # Show nutrition information in a popup window
+        info_window = tk.Toplevel(self.root)
+        info_window.title("Nutrition Information")
+
+        for key, value in nutrition_info.items():
+            label = tk.Label(info_window, text=f"{key}: {value}", font=("Arial", 14), anchor="w")
+            label.pack(fill=tk.X, padx=10, pady=2)
+
+        close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
+        close_btn.pack(pady=10)
 
     def sort_items(self, sort_type):
         if sort_type == "Expiration (Soonest)":
@@ -143,24 +274,33 @@ class ExpirationApp:
             self.items.sort(key=lambda x: x.name.lower())
         elif sort_type == "Name (Z-A)":
             self.items.sort(key=lambda x: x.name.lower(), reverse=True)
-        self.create_list_view()
+
+        # Refresh the correct view
+        if self.current_view == "card":
+            self.create_card_view()
+        else:
+            self.create_list_view()
+
+    def edit_item(self, item):
+        # Prompt user to edit name and date
+        new_name = simpledialog.askstring("Edit Name", "Enter new name:", initialvalue=item.name)
+        new_date = simpledialog.askstring("Edit Date", "Enter new expiration date (YYYY-MM-DD):", initialvalue=item.expiration_date.strftime("%Y-%m-%d"))
+
+        if new_name:
+            item.name = new_name
+        try:
+            if new_date:
+                item.expiration_date = datetime.strptime(new_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid date format.")
+
+        self.refresh_views()
 
     def delete_item(self, item):
         if messagebox.askyesno("Delete", f"Delete {item.name}?"):
             self.items.remove(item)
             self.save_items()
             self.create_list_view()
-
-    def show_detail_view(self, item):
-        self.clear_screen()
-        days = item.days_until_expired()
-        detail_text = (
-            f"Item: {item.name}\n"
-            f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
-            f"Days Left: {check_dates(days) if days > 0 else 0}"
-        )
-        tk.Label(self.root, text=detail_text, font=("Arial", 20)).pack(pady=30)
-        tk.Button(self.root, text="Back", command=self.create_card_view).pack(pady=5)
 
     def toggle_dark_mode(self):
         self.dark_mode = not self.dark_mode
@@ -187,7 +327,7 @@ class ExpirationApp:
 
         tk.Button(self.root, text="Save", command=self.save_new_item).pack(pady=5)
         tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=5)
-
+        self.refresh_views()
     def save_new_item(self):
         name = self.name_entry.get()
         date = self.date_picker.get()
@@ -227,6 +367,19 @@ class ExpirationApp:
         self.camera_label.pack()
         self.update_camera()
         tk.Button(self.root, text="Back", command=self.create_home_screen).pack(pady=10)
+    
+    def open_camera(self):
+        # Show live feed from camera
+        _, frame = self.cpt.read()
+        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+        captured_image = Image.fromarray(opencv_image)
+        photo_image = ImageTk.PhotoImage(image=captured_image)
+
+        self.label_widget.photo_image = photo_image
+        self.label_widget.configure(image=photo_image)
+        self.label_widget.pack()
+
+        self.root.after(10, self.open_camera)
 
     def update_camera(self):
         ret, frame = self.cpt.read()
