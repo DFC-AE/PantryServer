@@ -153,7 +153,7 @@ class ExpirationApp:
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
         self.load_items()
-#        self.init_camera()
+        self.init_camera()
         self.create_tracker_screen()
     # home screen
 
@@ -493,40 +493,40 @@ class ExpirationApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-#    def init_camera(self):
-#        self.cpt = cv2.VideoCapture(0)
-#        self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-#        self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-#        self.camera_label = tk.Label(self.root)
+    def init_camera(self):
+        self.cpt = cv2.VideoCapture(0)
+        self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.camera_label = tk.Label(self.root)
 
-#    def show_camera(self):
-#        self.clear_screen()
-#        self.camera_label.pack()
-#        self.update_camera()
-#        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
+    def show_camera(self):
+        self.clear_screen()
+        self.camera_label.pack()
+        self.update_camera()
+        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
 
-#    def open_camera(self):
+    def open_camera(self):
         # Show live feed from camera
-#        _, frame = self.cpt.read()
-#        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#        captured_image = Image.fromarray(opencv_image)
-#        photo_image = ImageTk.PhotoImage(image=captured_image)
+        _, frame = self.cpt.read()
+        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+        captured_image = Image.fromarray(opencv_image)
+        photo_image = ImageTk.PhotoImage(image=captured_image)
 
-#        self.label_widget.photo_image = photo_image
-#        self.label_widget.configure(image=photo_image)
-#        self.label_widget.pack()
+        self.label_widget.photo_image = photo_image
+        self.label_widget.configure(image=photo_image)
+        self.label_widget.pack()
 
-#        self.root.after(10, self.open_camera)
+        self.root.after(10, self.open_camera)
 
-#    def update_camera(self):
-#        ret, frame = self.cpt.read()
-#        if ret:
-#            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#            img = Image.fromarray(frame)
-#            imgtk = ImageTk.PhotoImage(image=img)
-#            self.camera_label.imgtk = imgtk
-#            self.camera_label.config(image=imgtk)
-#        self.root.after(10, self.update_camera)
+    def update_camera(self):
+        ret, frame = self.cpt.read()
+        if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+            img = Image.fromarray(frame)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.camera_label.imgtk = imgtk
+            self.camera_label.config(image=imgtk)
+        self.root.after(10, self.update_camera)
 
     def detect_barcode(self, image_path):
         image = cv2.imread(image_path)
