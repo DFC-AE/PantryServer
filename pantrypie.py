@@ -237,7 +237,7 @@ class ExpirationApp:
 			#text="Add Item",
 			image=camImg,
 			#command=lambda: self.add_item_popup)
-			command=self.open_camera)
+			command=self.update_camera)
         add_btn.pack(pady=5)
 
 	## Show List View ##
@@ -566,6 +566,15 @@ class ExpirationApp:
                 self.items = [Item.from_dict(d) for d in data]
 
     def clear_screen(self):
+        try:
+          if hasattr(self, "camera_loop_id"):
+            self.root.after_cancel(self.camera_loop_id)
+            del self.camera_loop_id
+        except Exception as e:
+            print("Failed to Cancel Camera Loop:", e)
+#        except AttributeError:
+#            pass
+
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -577,7 +586,9 @@ class ExpirationApp:
 
     def show_camera(self):
         self.clear_screen()
-        self.camera_label.pack()
+        self.set_background()
+        self.camera_label = tk.Label(self.root)
+        self.camera_label.pack(pady=20)
         self.update_camera()
         tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
 
@@ -588,13 +599,23 @@ class ExpirationApp:
         captured_image = Image.fromarray(opencv_image)
         photo_image = ImageTk.PhotoImage(image=captured_image)
 
-        self.label_widget.photo_image = photo_image
-        self.label_widget.configure(image=photo_image)
-        self.label_widget.pack()
+#        self.label_widget.photo_image = photo_image
+#        self.label_widget.configure(image=photo_image)
+#        self.label_widget.pack()
+        self.camera_label.photo_image = photo_image
+        self.camera_label.configure(image=photo_image)
+        self.camera_label.pack()
 
         self.root.after(10, self.open_camera)
 
     def update_camera(self):
+      if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+        return
+
+      if not self.camera_label.winfo_exists():
+        return
+
+      if self.cpt.isOpened():
         ret, frame = self.cpt.read()
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -602,12 +623,23 @@ class ExpirationApp:
             imgtk = ImageTk.PhotoImage(image=img)
             self.camera_label.imgtk = imgtk
             self.camera_label.config(image=imgtk)
-        self.root.after(10, self.update_camera)
+      sefl.camera_loop_id = self.root.after(10, self.update_camera)
+
+    def stop_camera(self):
+        self.root.after_cancel(self.camera_loop_id)
 
     def detect_barcode(self, image_path):
+        if not os.path.exists(image_path):
+                print("Barcode Image Not Found.")
+                return
+
         image = cv2.imread(image_path)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         barcodes = decode(gray)
+
+        if not barcodes:
+            print("No Barcode Found.")
+            return
 
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
