@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu
 from datetime import datetime
-from tkcalendar import DateEntry
+from tkcalendar import Calendar, DateEntry
+import time
+from time import strftime
 import cv2
 from PIL import Image, ImageTk
 from pyzbar.pyzbar import decode
@@ -149,6 +151,25 @@ class Item:
 def check_dates(days):
     return abs(days)
 
+class ClockApp:
+	def __init__(self, root):
+		self.root = root
+		self.root.title("Full Date and Time Clock")
+
+		self.clk = Label(self.root,
+			font=('calibri', 40, 'bold'),
+			background='orange',
+			foreground='yellow')
+		self.clk.pack(padx=10, pady=10, anchor='center')
+
+		self.get_time()
+
+	def get_time(self):
+		string = strftime("%A, %B %D %R:%S")
+		self.clk.config(text=string)
+		self.clk.after(1000, self.get_time)
+
+
 # ------- Main Application Class -------
 class ExpirationApp:
     def __init__(self, root):
@@ -158,6 +179,7 @@ class ExpirationApp:
         self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
+        self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.load_items()
         self.init_camera()
         self.create_tracker_screen()
@@ -167,20 +189,33 @@ class ExpirationApp:
         self.clear_screen()
 
         # App Title
-        #label = tk.Label(self.root,
-			#image=backgroundImg,
+        background = tk.Label(self.root,
+			image=self.backgroundImg)
 			#text="Welcome to Expiration Tracker",
 			#text="Welcome to your Pantry Companion!",
 			#font=("Arial", 20))
-        #label.pack(pady=20)
+        background.place(x=0, y=0, relwidth=1, relheight=1)
 
 	## Background Greeting ##
-        welcome = Label(root,
+        welcome = tk.Label(self.root,
                         text = " Welcome to your Pantry Companion ",
-                        font=("Comic Sans", 33)).pack()
+                        font=("Comic Sans MS", 33),
+                        background="black",
+			foreground="white")
+        welcome.place(relx=0.5, rely=0.1, anchor='center')
+
+	## Clock ##
+#        self.clk = Label(self.root,
+#                        font=('calibri', 40, 'bold'),
+#                        background='orange',
+#                        foreground='yellow')
+#        self.clk.pack(anchor='center')
 
         # Calendar Picker
-        self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
+        #self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
+        self.cal = Calendar(self.root,
+			selectmod = 'day',
+			date_pattern="yyyy-mm-dd")
         self.cal.pack(pady=10)
 
 	## Tracker ##
@@ -197,6 +232,11 @@ class ExpirationApp:
 				#command=lambda: self.toggle_dark_mode)
 				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
+
+#    def get_time():
+#        string = strftime("%A, %D %B %Y %R")
+#        self.clk.config(text=string)
+#        self.clk.after(1000, get_time)
 
     def create_tracker_ui(self, item):
         self.clear_screen()
@@ -585,4 +625,5 @@ if __name__ == "__main__":
 #    root.geometry("1024x600")
 #    root.title("Expiration Tracker")
     app = ExpirationApp(root)
+    app = ClockApp(root)
     root.mainloop()
