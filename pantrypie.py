@@ -256,6 +256,14 @@ class ExpirationApp:
 				command=self.create_card_view)
         card_view_btn.pack(pady=5)
 
+	## Mode ##
+        dark_mode_btn = tk.Button(self.root,
+				#text="Toggle Dark Mode",
+				image=lightImg,
+				#command=lambda: self.toggle_dark_mode)
+				command=self.toggle_dark_mode)
+        dark_mode_btn.pack(pady=10)
+
 	## Show Back ##
         tk.Button(self.root,
 		image=backImg,
@@ -522,6 +530,11 @@ class ExpirationApp:
 		image=saveImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=self.save_new_item).pack(pady=5)
+        tk.Button(self.root,
+		#text="Save",
+		image=lightImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		command=self.toggle_dark_mode).pack(pady=5)
         tk.Button(self.root,
 		#text="Back",
 		image=backImg,
