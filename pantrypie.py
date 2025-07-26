@@ -12,31 +12,7 @@ import json
 import random
 
 SAVE_FILE = "items.json"
-
-def get_random_image(backgrounds):
-	try:
-		files = os.listdir(backgrounds)
-		## Choose Random Image ##
-		random_image = random.choice(backgrounds)
-		random_image_path = os.path.join(backgrounds, random_image)
-		print(f"Selected Background Image:")
-		return random_image_path
-	except Exception as e:
-		print(f"Failed to Select Random Background Image: {e}")
-		return None
-
-def display_background(backgrounds):
-	try:
-		if backgrounds and os.path.isfile(backgrounds):
-			with Image.open(backgrounds) as img:
-				img.show()
-				print(f"Displayed image: {backgrounds}")
-		else:
-			print(f"Invalid Image Path: {backgrounds}")
-	except Exception as e:
-		print(f"An Error Occurred while Displaying the Image: {e}")
-
-# ------- Item Model -------
+######################## ------- Item Model -------################################
 class Item:
     def __init__(self, name, expiration_date):
         # Store name and parse expiration date
@@ -83,9 +59,10 @@ class ExpirationApp:
         self.sort_option.set("Sort By")
         self.load_items()
         self.init_camera()
-        self.create_home_screen()
+        self.create_tracker_screen()
+    # home screen
 
-    def create_home_screen(self):
+    def create_tracker_screen(self, item=None):
         self.clear_screen()
 
         # App Title
@@ -96,13 +73,13 @@ class ExpirationApp:
         self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.cal.pack(pady=10)
 
-        track_btn = tk.Button(self.root, text="Go to Tracker", command=self.create_tracker_ui)
+        track_btn = tk.Button(self.root, text="Go to Tracker", command=lambda: self.create_tracker_ui(item))
         track_btn.pack(pady=10)
 
         dark_mode_btn = tk.Button(self.root, text="Toggle Dark Mode", command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
 
-    def create_tracker_ui(self):
+    def create_tracker_ui(self, item):
         self.clear_screen()
 
         add_btn = tk.Button(self.root, text="Add Item", command=self.add_item_popup)
@@ -116,10 +93,9 @@ class ExpirationApp:
 
     def create_card_view(self):
         self.clear_screen()
-
+        
         # sets view for other functions as card
-        self.current_view = "card"  # <-- Add this
-        self.clear_screen()
+        self.current_view = "card" 
 
         # Sort Menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
@@ -147,10 +123,8 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
-
-        back_btn = tk.Button(self.root, text="Back", command=self.create_tracker_ui)
+        back_btn = tk.Button(self.root, text="Back", command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
-
 
 
     def create_list_view(self):
@@ -158,7 +132,6 @@ class ExpirationApp:
 
         # sets view for other functions as list
         self.current_view = "list" 
-        self.clear_screen()
 
         # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
@@ -174,17 +147,13 @@ class ExpirationApp:
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
-        tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=10)
+        tk.Button(self.root, text="Back", command=lambda: self.create_tracker_ui(None)).pack(pady=10)
 
     def refresh_views(self):
-        # List View
-        self.items.sort(key=lambda item: item.expiration_date)
-        for widget in self.list_items_frame.winfo_children():
-            widget.destroy()
-
-        for idx, item in enumerate(self.items):
-            color = item.get_color()
-            days = item.days_until_expired()
+        if self.current_view == "card":
+            self.create_card_view()
+        elif self.current_view == "list":
+            self.create_list_view()
 
     def show_detail_view(self, item):
         self.clear_screen()
@@ -207,22 +176,26 @@ class ExpirationApp:
         barcode_btn = tk.Button(self.root, text="Detect Barcode", command=lambda: self.detect_barcode("barcode.png"))
         barcode_btn.pack(pady=5)
 
+        manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry)
+        manual_btn.pack(pady=10)
+
         # Back to card view
         back_btn = tk.Button(self.root, text="Back", command=self.create_card_view)
         back_btn.pack(pady=10)
 
-    def manual_barcode_entry(self, item):
+    def manual_barcode_entry(self, item=None):
         # Ask user to type in barcode manually
         barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
         if not barcode:
             return
-        self.fetch_open_food_facts(barcode, item)
+        self.fetch_open_food_facts(barcode)
 
-    def fetch_open_food_facts(self, barcode, item):
-        # Fetch product data from Open Food Facts API
+    def fetch_open_food_facts(self, barcode, item=None):
         import requests
 
         url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        print(f"Fetching barcode: {barcode}")  # Debug
+
         try:
             response = requests.get(url, timeout=5)
             data = response.json()
@@ -243,11 +216,23 @@ class ExpirationApp:
                     "Serving Size": product.get('serving_size', 'N/A'),
                 }
 
+                print("Product found:", nutrition_info["Product Name"])  # Debug
+
                 self.show_nutrition_info(nutrition_info)
 
-                if not item.name:
-                    item.name = nutrition_info["Product Name"]
-                    self.refresh_views()
+                product_name = nutrition_info["Product Name"]
+
+                if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
+                    if product_name and product_name != 'Unknown':
+                        self.name_entry.delete(0, tk.END)
+                        self.name_entry.insert(0, product_name)
+
+                elif item:
+                    if product_name and product_name != 'Unknown':
+                        item.name = product_name
+                        self.save_items()
+                        self.refresh_views()
+
             else:
                 messagebox.showerror("Error", "Product not found in Open Food Facts.")
         except Exception as e:
@@ -317,6 +302,7 @@ class ExpirationApp:
         self.clear_screen()
 
         tk.Label(self.root, text="Add New Item", font=("Arial", 20)).pack(pady=20)
+
         tk.Label(self.root, text="Item Name:").pack()
         self.name_entry = tk.Entry(self.root)
         self.name_entry.pack(pady=5)
@@ -325,9 +311,13 @@ class ExpirationApp:
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
+        # Allow barcode to pre-fill name
+        barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.manual_barcode_entry())
+        barcode_btn.pack(pady=10)
+
         tk.Button(self.root, text="Save", command=self.save_new_item).pack(pady=5)
         tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=5)
-        self.refresh_views()
+
     def save_new_item(self):
         name = self.name_entry.get()
         date = self.date_picker.get()
@@ -338,7 +328,7 @@ class ExpirationApp:
             item = Item(name, date)
             self.items.append(item)
             self.save_items()
-            self.create_tracker_ui()
+            self.create_tracker_ui(item)
         except:
             messagebox.showerror("Error", "Invalid date")
 
@@ -366,7 +356,7 @@ class ExpirationApp:
         self.clear_screen()
         self.camera_label.pack()
         self.update_camera()
-        tk.Button(self.root, text="Back", command=self.create_home_screen).pack(pady=10)
+        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
     
     def open_camera(self):
         # Show live feed from camera
