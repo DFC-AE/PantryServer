@@ -90,9 +90,9 @@ viewImg = ImageTk.PhotoImage(img_view)
 
 ### Import Barcode Image ###
 ## Scan ##
-img_code = cv2.imread("pics/barcode.png")
+img_code = cv2.imread("codes/barcode.png")
 ## Code ##
-img_scan1 = Image.open("pics/barcode.png")
+img_scan1 = Image.open("codes/barcode.png")
 img_scan1 = img_scan1.resize((300, 100), Image.Resampling.LANCZOS)
 img_scan2 = ImageTk.PhotoImage(img_scan1)
 
@@ -335,8 +335,8 @@ class ExpirationApp:
         barcode_btn = tk.Button(self.root,
 				#text="Detect Barcode",
 				image=scanImg,
-				#command=lambda: self.detect_barcode("barcode.png"))
-				command=self.detect_barcode("barcode.png"))
+				#command=lambda: self.detect_barcode("codes/barcode.png"))
+				command=self.detect_barcode("codes/barcode.png"))
         barcode_btn.pack(pady=5)
 
         manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry)
@@ -491,7 +491,7 @@ class ExpirationApp:
 		#text="Scan",
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.detect_barcode).pack(pady=5)
+		command=self.detect_barcode("codes/barcode.png")).pack(pady=5)
         tk.Button(self.root,
 		#text="Save",
 		image=saveImg,
