@@ -171,17 +171,10 @@ class ExpirationApp:
     def set_background(self):
         background = tk.Label(self.root,
 			image=self.backgroundImg)
-			#text="Welcome to Expiration Tracker",
-			#text="Welcome to your Pantry Companion!",
-			#font=("Arial", 20))
         background.place(x=0, y=0, relwidth=1, relheight=1)
         background.lower()
 
     ## Create Home Screen ##
-#    def create_home_screen(self):
-#        self.clear_screen()
-#	self.set_background()
-
     def create_tracker_screen(self, item=None):
         self.clear_screen()
         self.set_background()
@@ -193,13 +186,6 @@ class ExpirationApp:
                         background="black",
 			foreground="white")
         welcome.place(relx=0.5, rely=0.1, anchor='center')
-
-	## Clock ##
-#        self.clk = Label(self.root,
-#                        font=('calibri', 40, 'bold'),
-#                        background='orange',
-#                        foreground='yellow')
-#        self.clk.pack(anchor='center')
 
         # Calendar Picker
         #self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
@@ -228,6 +214,7 @@ class ExpirationApp:
 #        self.clk.config(text=string)
 #        self.clk.after(1000, get_time)
 
+    ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
         self.clear_screen()
         self.set_background()
@@ -235,7 +222,7 @@ class ExpirationApp:
 	## Background Greeting ##
         welcome = Label(root,
                         text = " Expiration Tracker:",
-                        font=("Comic Sans", 33)).pack()
+                        font=("Comic Sans MS", 33)).pack()
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
@@ -268,6 +255,11 @@ class ExpirationApp:
 				#command=lambda: self.create_card_view)
 				command=self.create_card_view)
         card_view_btn.pack(pady=5)
+
+	## Show Back ##
+        tk.Button(self.root,
+		image=backImg,
+		command=lambda: self.create_tracker_screen(None)).pack(pady=10)
 
     def create_card_view(self):
         self.clear_screen()
@@ -305,8 +297,7 @@ class ExpirationApp:
         back_btn = tk.Button(self.root,
 			#text="Back",
 			image=backImg,
-			#command=lambda: self.create_tracker_ui(None))
-			command=self.create_tracker_ui(None))
+			command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
 
 
@@ -334,8 +325,7 @@ class ExpirationApp:
         tk.Button(self.root,
 		#text="Back",
 		image=backImg,
-		#command=lambda: self.create_tracker_ui(None)).pack(pady=10)
-		command=self.create_tracker_ui(None)).pack(pady=10)
+		command=lambda: self.create_tracker_ui(None)).pack(pady=10)
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -535,8 +525,8 @@ class ExpirationApp:
         tk.Button(self.root,
 		#text="Back",
 		image=backImg,
-		#command=lambda: self.create_tracker_ui).pack(pady=5)
-		command=self.create_tracker_ui).pack(pady=5)
+		command=lambda: self.create_tracker_ui(None)).pack(pady=5)
+		#command=self.create_tracker_ui(None)).pack(pady=5)
 
     def save_new_item(self):
         name = self.name_entry.get()
