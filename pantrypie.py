@@ -51,6 +51,10 @@ addImg = ImageTk.PhotoImage(img_add)
 img_back = Image.open("pics/back.png")
 img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
+## Camera Image ##
+img_cam = Image.open("pics/cam.jpg")
+img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
+camImg = ImageTk.PhotoImage(img_cam)
 ## Card Image ##
 img_card = Image.open("pics/card4.png")
 img_card = img_card.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -71,10 +75,6 @@ itemImg = ImageTk.PhotoImage(img_item)
 img_list = Image.open("pics/list.png")
 img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
 listImg = ImageTk.PhotoImage(img_list)
-## Camera Image ##
-img_cam = Image.open("pics/cam.jpg")
-img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
-camImg = ImageTk.PhotoImage(img_cam)
 ## Save Image ##
 img_save = Image.open("pics/save.jpg")
 img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -201,6 +201,12 @@ class ExpirationApp:
     def create_tracker_ui(self, item):
         self.clear_screen()
 
+	## Background Greeting ##
+        welcome = Label(root,
+                        text = " Expiration Tracker:",
+                        font=("Comic Sans", 33)).pack()
+
+	## Add Item ##
         add_btn = tk.Button(self.root,
 			#text="Add Item",
 			image=addImg,
@@ -208,6 +214,15 @@ class ExpirationApp:
 			command=self.add_item_popup)
         add_btn.pack(pady=5)
 
+	## Open Camera ##
+        add_btn = tk.Button(self.root,
+			#text="Add Item",
+			image=camImg,
+			#command=lambda: self.add_item_popup)
+			command=self.open_camera)
+        add_btn.pack(pady=5)
+
+	## Show List View ##
         list_view_btn = tk.Button(self.root,
 				#text="List View",
 				image=listImg,
@@ -215,6 +230,7 @@ class ExpirationApp:
 				command=self.create_list_view)
         list_view_btn.pack(pady=5)
 
+	## Show Card View ##
         card_view_btn = tk.Button(self.root,
 				#text="Card View",
 				image=cardImg,
@@ -462,10 +478,20 @@ class ExpirationApp:
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
-        # Allow barcode to pre-fill name
-        barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.manual_barcode_entry())
-        barcode_btn.pack(pady=10)
+        tk.Label(self.root, text="Barcode Number (Auto Fills Name):").pack()
+        self.manual_barcode_entry = tk.Entry(self.root)
+        self.manual_barcode_entry.pack(pady=5)
 
+        # Allow barcode to pre-fill name
+        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.manual_barcode_entry())
+        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.manual_barcode_entry)
+        #barcode_btn.pack(pady=10)
+
+        tk.Button(self.root,
+		#text="Scan",
+		image=scanImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		command=self.detect_barcode).pack(pady=5)
         tk.Button(self.root,
 		#text="Save",
 		image=saveImg,
