@@ -11,7 +11,102 @@ import sys
 import json
 import random
 
+## Create Root ##
+root = tk.Tk()
+root.geometry("1024x600")
+#root.geometry("1920x1080")
+#root.title("Expiration Tracker")
+root.title("Pantry Server")
+
+## Variables ##
 SAVE_FILE = "items.json"
+
+### Import and Resize Background Image ##
+## Background Size ##
+bck_wdt = 1080
+bck_hgt = 1920
+img_back = Image.open("pics/back.jpg")
+## Open Background Image ##
+img_back = img_back.resize((bck_wdt, bck_hgt), Image.LANCZOS)
+backImg = ImageTk.PhotoImage(img_back)
+## Create Background ##
+background = Label(root,
+                image = backImg)
+background.place(x=0, y=0)
+## Background Greeting ##
+welcome = Label(root,
+                text = " Welcome to your Pantry Companion ",
+                font=("Comic Sans", 33)).pack()
+
+### Import and Resize Button Images ###
+## Button Size ##
+img_wdt = 50
+img_hgt = 50
+## Add Image ##
+img_add = Image.open("pics/add.png")
+img_add = img_add.resize((img_wdt, img_hgt), Image.LANCZOS)
+addImg = ImageTk.PhotoImage(img_add)
+## Back Image ##
+img_back = Image.open("pics/back.png")
+img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
+backImg = ImageTk.PhotoImage(img_back)
+## Card Image ##
+img_card = Image.open("pics/card.png")
+img_card = img_card.resize((img_wdt, img_hgt), Image.LANCZOS)
+cardImg = ImageTk.PhotoImage(img_card)
+## Light Image ##
+img_light = Image.open("pics/light.png")
+img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
+lightImg = ImageTk.PhotoImage(img_light)
+## Home Image ##
+img_home = Image.open("pics/home.png")
+img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
+homeImg = ImageTk.PhotoImage(img_home)
+## Item Image ##
+img_item = Image.open("pics/item.png")
+img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
+itemImg = ImageTk.PhotoImage(img_item)
+## Camera Image ##
+img_cam = Image.open("pics/cam.jpg")
+img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
+camImg = ImageTk.PhotoImage(img_cam)
+## Save Image ##
+img_save = Image.open("pics/save.jpg")
+img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
+saveImg = ImageTk.PhotoImage(img_save)
+## Scan Image ##
+img_scan = Image.open("pics/scan.jpg")
+img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
+scanImg = ImageTk.PhotoImage(img_scan)
+## View Image ##
+img_view = Image.open("pics/view.png")
+img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
+viewImg = ImageTk.PhotoImage(img_view)
+
+### Import Barcode Image ###
+## Scan ##
+img_code = cv2.imread("pics/barcode.png")
+## Code ##
+img_scan1 = Image.open("pics/barcode.png")
+img_scan1 = img_scan1.resize((300, 100), Image.Resampling.LANCZOS)
+img_scan2 = ImageTk.PhotoImage(img_scan1)
+
+### Keybindings ###
+## Quit with Esc ##
+root.bind('<Escape>', lambda e: root.quit())
+## Restart with Tab ##
+def restart_program():
+        print("Restarting Program...")
+        executable = sys.executable
+        ## Windows ##
+        if os.name == 'nt':
+                os.system(f'start {executable} {" ".join(sys.argv)}')
+        ## Linux Mac ##
+        else:
+                os.execv(executable, [executable] + sys.argv)
+        sys.exit()
+root.bind('<Prior>', lambda e: restart_program())
+
 ######################## ------- Item Model -------################################
 class Item:
     def __init__(self, name, expiration_date):
@@ -58,7 +153,7 @@ class ExpirationApp:
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
         self.load_items()
-        self.init_camera()
+#        self.init_camera()
         self.create_tracker_screen()
     # home screen
 
@@ -66,36 +161,60 @@ class ExpirationApp:
         self.clear_screen()
 
         # App Title
-        label = tk.Label(self.root, text="Welcome to Expiration Tracker", font=("Arial", 20))
+        label = tk.Label(self.root,
+			#text="Welcome to Expiration Tracker",
+			text="Welcome to your Pantry Companion!",
+			font=("Arial", 20))
         label.pack(pady=20)
 
         # Calendar Picker
         self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.cal.pack(pady=10)
 
-        track_btn = tk.Button(self.root, text="Go to Tracker", command=lambda: self.create_tracker_ui(item))
+	## Tracker ##
+        track_btn = tk.Button(self.root,
+				#text="Go to Tracker",
+				image=viewImg,
+				command=lambda: self.create_tracker_ui(item))
         track_btn.pack(pady=10)
 
-        dark_mode_btn = tk.Button(self.root, text="Toggle Dark Mode", command=self.toggle_dark_mode)
+	## Mode ##
+        dark_mode_btn = tk.Button(self.root,
+				#text="Toggle Dark Mode",
+				image=lightImg,
+				#command=lambda: self.toggle_dark_mode)
+				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
 
     def create_tracker_ui(self, item):
         self.clear_screen()
 
-        add_btn = tk.Button(self.root, text="Add Item", command=self.add_item_popup)
+        add_btn = tk.Button(self.root,
+			#text="Add Item",
+			image=addImg,
+			#command=lambda: self.add_item_popup)
+			command=self.add_item_popup)
         add_btn.pack(pady=5)
 
-        list_view_btn = tk.Button(self.root, text="List View", command=self.create_list_view)
+        list_view_btn = tk.Button(self.root,
+				#text="List View",
+				image=viewImg,
+				#command=lambda: self.create_list_view)
+				command=self.create_list_view)
         list_view_btn.pack(pady=5)
 
-        card_view_btn = tk.Button(self.root, text="Card View", command=self.create_card_view)
+        card_view_btn = tk.Button(self.root,
+				#text="Card View",
+				image=cardImg,
+				#command=lambda: self.create_card_view)
+				command=self.create_card_view)
         card_view_btn.pack(pady=5)
 
     def create_card_view(self):
         self.clear_screen()
-        
+
         # sets view for other functions as card
-        self.current_view = "card" 
+        self.current_view = "card"
 
         # Sort Menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
@@ -114,7 +233,7 @@ class ExpirationApp:
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired {check_dates(days)} days ago"
             c_btn = tk.Button(
                 self.cards_container, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
-                width=15, height=6,  
+                width=15, height=6,
                 command=lambda i=item: self.show_detail_view(i)
             )
             c_btn.grid(row=row, column=col, padx=10, pady=10)
@@ -123,7 +242,11 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
-        back_btn = tk.Button(self.root, text="Back", command=lambda: self.create_tracker_ui(None))
+        back_btn = tk.Button(self.root,
+			#text="Back",
+			image=backImg,
+			#command=lambda: self.create_tracker_ui(None))
+			command=self.create_tracker_ui(None))
         back_btn.pack(pady=10)
 
 
@@ -131,7 +254,7 @@ class ExpirationApp:
         self.clear_screen()
 
         # sets view for other functions as list
-        self.current_view = "list" 
+        self.current_view = "list"
 
         # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
@@ -147,7 +270,11 @@ class ExpirationApp:
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
-        tk.Button(self.root, text="Back", command=lambda: self.create_tracker_ui(None)).pack(pady=10)
+        tk.Button(self.root,
+		#text="Back",
+		image=backImg,
+		#command=lambda: self.create_tracker_ui(None)).pack(pady=10)
+		command=self.create_tracker_ui(None)).pack(pady=10)
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -170,17 +297,29 @@ class ExpirationApp:
         label.pack(pady=30)
 
         # Scanner and barcode buttons (only shown on item click)
-        scanner_btn = tk.Button(self.root, text="Open Scanner", command=self.show_camera)
+        scanner_btn = tk.Button(self.root,
+				#text="Open Scanner",
+				image=camImg,
+				#command=lambda: self.show_camera)
+				command=self.show_camera)
         scanner_btn.pack(pady=5)
 
-        barcode_btn = tk.Button(self.root, text="Detect Barcode", command=lambda: self.detect_barcode("barcode.png"))
+        barcode_btn = tk.Button(self.root,
+				#text="Detect Barcode",
+				image=scanImg,
+				#command=lambda: self.detect_barcode("barcode.png"))
+				command=self.detect_barcode("barcode.png"))
         barcode_btn.pack(pady=5)
 
         manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry)
         manual_btn.pack(pady=10)
 
         # Back to card view
-        back_btn = tk.Button(self.root, text="Back", command=self.create_card_view)
+        back_btn = tk.Button(self.root,
+			#text="Back",
+			image=cardImg,
+			#command=lambda: self.create_card_view)
+			command=self.create_card_view)
         back_btn.pack(pady=10)
 
     def manual_barcode_entry(self, item=None):
@@ -315,8 +454,16 @@ class ExpirationApp:
         barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.manual_barcode_entry())
         barcode_btn.pack(pady=10)
 
-        tk.Button(self.root, text="Save", command=self.save_new_item).pack(pady=5)
-        tk.Button(self.root, text="Back", command=self.create_tracker_ui).pack(pady=5)
+        tk.Button(self.root,
+		#text="Save",
+		image=saveImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		command=self.save_new_item).pack(pady=5)
+        tk.Button(self.root,
+		#text="Back",
+		image=backImg,
+		#command=lambda: self.create_tracker_ui).pack(pady=5)
+		command=self.create_tracker_ui).pack(pady=5)
 
     def save_new_item(self):
         name = self.name_entry.get()
@@ -346,40 +493,40 @@ class ExpirationApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-    def init_camera(self):
-        self.cpt = cv2.VideoCapture(0)
-        self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.camera_label = tk.Label(self.root)
+#    def init_camera(self):
+#        self.cpt = cv2.VideoCapture(0)
+#        self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+#        self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+#        self.camera_label = tk.Label(self.root)
 
-    def show_camera(self):
-        self.clear_screen()
-        self.camera_label.pack()
-        self.update_camera()
-        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
-    
-    def open_camera(self):
+#    def show_camera(self):
+#        self.clear_screen()
+#        self.camera_label.pack()
+#        self.update_camera()
+#        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
+
+#    def open_camera(self):
         # Show live feed from camera
-        _, frame = self.cpt.read()
-        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-        captured_image = Image.fromarray(opencv_image)
-        photo_image = ImageTk.PhotoImage(image=captured_image)
+#        _, frame = self.cpt.read()
+#        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+#        captured_image = Image.fromarray(opencv_image)
+#        photo_image = ImageTk.PhotoImage(image=captured_image)
 
-        self.label_widget.photo_image = photo_image
-        self.label_widget.configure(image=photo_image)
-        self.label_widget.pack()
+#        self.label_widget.photo_image = photo_image
+#        self.label_widget.configure(image=photo_image)
+#        self.label_widget.pack()
 
-        self.root.after(10, self.open_camera)
+#        self.root.after(10, self.open_camera)
 
-    def update_camera(self):
-        ret, frame = self.cpt.read()
-        if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-            img = Image.fromarray(frame)
-            imgtk = ImageTk.PhotoImage(image=img)
-            self.camera_label.imgtk = imgtk
-            self.camera_label.config(image=imgtk)
-        self.root.after(10, self.update_camera)
+#    def update_camera(self):
+#        ret, frame = self.cpt.read()
+#        if ret:
+#            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+#            img = Image.fromarray(frame)
+#            imgtk = ImageTk.PhotoImage(image=img)
+#            self.camera_label.imgtk = imgtk
+#            self.camera_label.config(image=imgtk)
+#        self.root.after(10, self.update_camera)
 
     def detect_barcode(self, image_path):
         image = cv2.imread(image_path)
@@ -396,8 +543,8 @@ class ExpirationApp:
         plt.show()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.geometry("1024x600")
-    root.title("Expiration Tracker")
+#    root = tk.Tk()
+#    root.geometry("1024x600")
+#    root.title("Expiration Tracker")
     app = ExpirationApp(root)
     root.mainloop()
