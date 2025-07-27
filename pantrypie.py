@@ -27,8 +27,8 @@ SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
 ## Button Size ##
-img_wdt = 50
-img_hgt = 50
+img_wdt = 75
+img_hgt = 75
 ## Add Image ##
 img_add = Image.open("pics/add.png")
 img_add = img_add.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -224,6 +224,7 @@ class ExpirationApp:
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
+			anchor="n",
 			cursor="hand2",
 			#text="Add Item",
 			image=addImg,
@@ -279,8 +280,9 @@ class ExpirationApp:
 
 	## Show Back ##
         back_btn = tk.Button(self.root,
-		image=backImg,
-		command=lambda: self.create_home_screen(None))
+			anchor="w",
+			image=backImg,
+			command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
 
         Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
@@ -300,9 +302,11 @@ class ExpirationApp:
         sort_menu.pack(pady=10)
 
         # Setup scrollable canvas
-        canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        scroll_frame = tk.Frame(canvas, bg="lightgray")
 
 
         scroll_frame.bind(
@@ -350,9 +354,11 @@ class ExpirationApp:
         sort_menu.pack(pady=5)
 
         # Scrollable canvas setup
-        canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        scroll_frame = tk.Frame(canvas, bg="lightgray")
 
 
         scroll_frame.bind(
