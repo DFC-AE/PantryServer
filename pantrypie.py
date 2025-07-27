@@ -103,6 +103,11 @@ class Item:
         # Store name and parse expiration date
         self.name = name
         self.expiration_date = datetime.strptime(expiration_date, "%Y-%m-%d")
+        self.last_barcode = None
+
+#    if barcode_data != self.last_barcode:
+#        print(f"New Barcode Scan: {barcode_data}")
+#        self.last_barcode = barcode_data
 
     def to_dict(self):
         return {"name": self.name, "expiration_date": self.expiration_date.strftime("%Y-%m-%d")}
@@ -592,41 +597,66 @@ class ExpirationApp:
         self.update_camera()
         tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
 
-    def open_camera(self):
+#    def open_camera(self):
         # Show live feed from camera
-        _, frame = self.cpt.read()
-        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-        captured_image = Image.fromarray(opencv_image)
-        photo_image = ImageTk.PhotoImage(image=captured_image)
+#        _, frame = self.cpt.read()
+#        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+#        captured_image = Image.fromarray(opencv_image)
+#        photo_image = ImageTk.PhotoImage(image=captured_image)
 
 #        self.label_widget.photo_image = photo_image
 #        self.label_widget.configure(image=photo_image)
 #        self.label_widget.pack()
-        self.camera_label.photo_image = photo_image
-        self.camera_label.configure(image=photo_image)
-        self.camera_label.pack()
 
-        self.root.after(10, self.open_camera)
+#        self.camera_label.photo_image = photo_image
+#        self.camera_label.configure(image=photo_image)
+#        self.camera_label.pack()
+
+#        self.root.after(10, self.open_camera)
 
     def update_camera(self):
       if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
         return
 
-      if not self.camera_label.winfo_exists():
-        return
+#      if not self.camera_label.winfo_exists():
+#        return
 
       if self.cpt.isOpened():
         ret, frame = self.cpt.read()
+        if ret:
+            decoded_barcodes = decode(frame)
+
+            for barcode in decoded_barcodes:
+                   (x, y, w, h) = barcode.rect
+                   cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                   barcode_data = barcode.data.decode("utf-8")
+                   barcode_type = barcode.type
+
+                   text = f'{barcode_type}: {barcode_data}'
+                   cv2.putText(frame, text, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                   if getattr(self, "last_barcode", None) != barcode_data:
+                        print(f"New Barcode Detected: {barcode_data}")
+                        self.last_barcode = barcode_data
+
+            print(f"Scanned: {barcode_data}")
+
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
             img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
             self.camera_label.imgtk = imgtk
             self.camera_label.config(image=imgtk)
-      sefl.camera_loop_id = self.root.after(10, self.update_camera)
+
+        self.camera_loop_id = self.root.after(10, self.update_camera)
 
     def stop_camera(self):
-        self.root.after_cancel(self.camera_loop_id)
+        if hasattr(self, "camera_loop_id"):
+               self.root.after_cancel(self.camera_loop_id)
+        if self.cpt.isOpened():
+               self.cpt.release()
 
     def detect_barcode(self, image_path):
         if not os.path.exists(image_path):
