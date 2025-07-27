@@ -158,7 +158,6 @@ class ClockApp:
 		self.clk.config(text=string)
 		self.clk.after(1000, self.get_time)
 
-
 # ------- Main Application Class -------
 class ExpirationApp:
     def __init__(self, root):
@@ -296,7 +295,8 @@ class ExpirationApp:
 	## Show Back ##
         back_btn = tk.Button(self.root,
 		image=backImg,
-		command=lambda: self.create_tracker_screen(None)).pack(pady=10)
+		command=lambda: self.create_tracker_screen(None))
+        back_btn.pack(pady=10)
 
         Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
 
@@ -340,6 +340,7 @@ class ExpirationApp:
 			command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
 
+        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
 
     def create_list_view(self):
         self.clear_screen()
@@ -634,7 +635,12 @@ class ExpirationApp:
         self.camera_label = tk.Label(self.root)
         self.camera_label.pack(pady=20)
         self.update_camera()
-        tk.Button(self.root, text="Back", command=self.create_tracker_screen).pack(pady=10)
+        back_btn = tk.Button(self.root,
+                             text="Back",
+                             command=self.create_tracker_screen)
+        back_btn.pack(pady=10)
+
+        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
 
 #    def open_camera(self):
         # Show live feed from camera
