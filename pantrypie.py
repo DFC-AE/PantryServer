@@ -164,7 +164,7 @@ class ExpirationApp:
         self.bg_color = "#f0f0f0"
         self.load_items()
         self.init_camera()
-        self.create_tracker_screen()
+        self.create_home_screen()
 
     ## Create Background ##
     def set_background(self):
@@ -173,7 +173,7 @@ class ExpirationApp:
         background.lower()
 
     ## Create Home Screen ##
-    def create_tracker_screen(self, item=None):
+    def create_home_screen(self, item=None):
         self.clear_screen()
         self.set_background()
 
@@ -184,8 +184,9 @@ class ExpirationApp:
 
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
-            self.clock_label.config(text=string)
-            self.root.after(1000, update_clock)
+            if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
+                self.clock_label.config(text=string)
+                self.root.after(1000, update_clock)
 
         update_clock()
 
@@ -198,10 +199,10 @@ class ExpirationApp:
         button_frame.pack(pady=20)
 
         track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
-        track_btn.pack(side=tk.LEFT, padx=20)
+        track_btn.pack(side=tk.RIGHT)
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
-        dark_mode_btn.pack(side=tk.LEFT, padx=20)
+        dark_mode_btn.pack(side=tk.LEFT)
 
 
         Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
@@ -279,7 +280,7 @@ class ExpirationApp:
 	## Show Back ##
         back_btn = tk.Button(self.root,
 		image=backImg,
-		command=lambda: self.create_tracker_screen(None))
+		command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
 
         Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
@@ -331,12 +332,13 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
-        tk.Button(self.root, image=backImg, command=self.create_tracker_screen).pack(pady=10)
-    
+        card_back_btn = tk.Button(self.root, image=backImg, command=self.create_home_screen)
+        card_back_btn.pack(pady=10)
+        Hovertip(card_back_btn, "Click to go back to home screen", hover_delay=500)
+
     ## Create list view ##
     def create_list_view(self):
         self.clear_screen()
-
         # Set specific background for list view
         bg_label = tk.Label(self.root, image=self.list_backgroundImg)
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -374,7 +376,7 @@ class ExpirationApp:
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
-        tk.Button(self.root, image=backImg, command=self.create_tracker_screen).pack(pady=10)
+        back_btn =tk.Button(self.root, image=backImg, command=self.create_home_screen).pack(pady=10)
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -417,7 +419,7 @@ class ExpirationApp:
 				image=camImg,
 				#command=lambda: self.show_camera)
 				#command=self.show_camera)
-				command=lambda: detect_barcode)
+				command=lambda: self.detect_barcode("codes/barcode.png"))
         scanner_btn.pack(pady=5)
 
         Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
@@ -687,7 +689,7 @@ class ExpirationApp:
         self.update_camera()
         back_btn = tk.Button(self.root,
                              text="Back",
-                             command=self.create_tracker_screen)
+                             command=self.create_home_screen)
         back_btn.pack(pady=10)
 
         Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
