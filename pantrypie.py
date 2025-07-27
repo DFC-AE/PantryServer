@@ -12,6 +12,8 @@ import os
 import sys
 import json
 import random
+import idlelib
+from idlelib.tooltip import Hovertip
 
 ## Create Root ##
 root = tk.Tk()
@@ -195,24 +197,31 @@ class ExpirationApp:
         # Calendar Picker
         #self.cal = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.cal = Calendar(self.root,
+			cursor="hand2",
 			selectmod = 'day',
 			date_pattern="yyyy-mm-dd")
         self.cal.pack(pady=10)
 
 	## Tracker ##
         track_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Go to Tracker",
 				image=viewImg,
 				command=lambda: self.create_tracker_ui(item))
         track_btn.pack(pady=10)
 
+        Hovertip(track_btn, "Click to Open Expiration Tracker", hover_delay=500)
+
 	## Mode ##
         dark_mode_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Toggle Dark Mode",
 				image=lightImg,
 				#command=lambda: self.toggle_dark_mode)
 				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
+
+        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
 
 #    def get_time():
 #        string = strftime("%A, %D %B %Y %R")
@@ -231,48 +240,65 @@ class ExpirationApp:
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
+			cursor="hand2",
 			#text="Add Item",
 			image=addImg,
 			#command=lambda: self.add_item_popup)
 			command=self.add_item_popup)
         add_btn.pack(pady=5)
 
+        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
+
 	## Open Camera ##
-        add_btn = tk.Button(self.root,
+        cam_btn = tk.Button(self.root,
+			cursor="hand2",
 			#text="Add Item",
 			image=camImg,
 			#command=lambda: self.add_item_popup)
 			command=self.update_camera)
-        add_btn.pack(pady=5)
+        cam_btn.pack(pady=5)
+
+        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
 
 	## Show List View ##
         list_view_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="List View",
 				image=listImg,
 				#command=lambda: self.create_list_view)
 				command=self.create_list_view)
         list_view_btn.pack(pady=5)
 
+        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+
 	## Show Card View ##
         card_view_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Card View",
 				image=cardImg,
 				#command=lambda: self.create_card_view)
 				command=self.create_card_view)
         card_view_btn.pack(pady=5)
 
+        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+
 	## Mode ##
         dark_mode_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Toggle Dark Mode",
 				image=lightImg,
 				#command=lambda: self.toggle_dark_mode)
 				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
 
+        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+
 	## Show Back ##
-        tk.Button(self.root,
+        back_btn = tk.Button(self.root,
 		image=backImg,
 		command=lambda: self.create_tracker_screen(None)).pack(pady=10)
+
+        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
 
     def create_card_view(self):
         self.clear_screen()
@@ -308,6 +334,7 @@ class ExpirationApp:
                 row += 1
 
         back_btn = tk.Button(self.root,
+			cursor="hand2",
 			#text="Back",
 			image=backImg,
 			command=lambda: self.create_tracker_ui(None))
@@ -363,29 +390,41 @@ class ExpirationApp:
 
         # Scanner and barcode buttons (only shown on item click)
         scanner_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Open Scanner",
 				image=camImg,
 				#command=lambda: self.show_camera)
-				command=self.show_camera)
+				#command=self.show_camera)
+				command=lambda: detect_barcode)
         scanner_btn.pack(pady=5)
 
+        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+
         barcode_btn = tk.Button(self.root,
+				cursor="hand2",
 				#text="Detect Barcode",
 				image=scanImg,
 				#command=lambda: self.detect_barcode("codes/barcode.png"))
 				command=self.detect_barcode("codes/barcode.png"))
         barcode_btn.pack(pady=5)
 
-        manual_btn = tk.Button(self.root, text="Enter Barcode", command=lambda: self.manual_barcode_entry)
+        Hovertip(barcode_btn, "Click to Open Barcode Scanner", hover_delay=500)
+
+        manual_btn = tk.Button(self.root, cursor="hand2", text="Enter Barcode", command=lambda: self.manual_barcode_entry)
         manual_btn.pack(pady=10)
+
+        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
 
         # Back to card view
         back_btn = tk.Button(self.root,
+			cursor="hand2",
 			#text="Back",
 			image=cardImg,
 			#command=lambda: self.create_card_view)
 			command=self.create_card_view)
         back_btn.pack(pady=10)
+
+        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
 
     def manual_barcode_entry(self, item=None):
         # Ask user to type in barcode manually
@@ -660,20 +699,29 @@ class ExpirationApp:
 
     def detect_barcode(self, image_path):
         if not os.path.exists(image_path):
-                print("Barcode Image Not Found.")
+                print("Barcode Image Not Found at:", image_path)
                 return
 
         image = cv2.imread(image_path)
+        if image is None:
+                print("Failed to Load Image.")
+                return
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         barcodes = decode(gray)
 
         if not barcodes:
-            print("No Barcode Found.")
+            print("No Barcode Found in Image.")
             return
 
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
-            print("Detected Barcode:", data)
+            barcode_type = barcode.type
+            print("Detected Barcode {barcode_type}): {data}")
+
+        (x, y, w, h) = barcode.rect
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.putText(image, data, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         plt.imshow(rgb)
