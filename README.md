@@ -10,7 +10,7 @@ A simple Python Program to keep track of grocery items and their expiration date
 First run the zfsetup.sh script in order to automatically set up the databases.
 
 # Dependencies
-Install matplotlib, pillow, pyzbar, tkcalendar as Python dependencies before running Main Program.
+Install matplotlib, pillow, pynput, pyzbar, tkcalendar as Python dependencies before running Main Program.
 
 # Execution
 Once the databases are established run the Main Python Program and you're on your way to monetary savings and waste reduction.
