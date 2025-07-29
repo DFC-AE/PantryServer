@@ -341,7 +341,7 @@ class ExpirationApp:
                                   cursor="hand2",
                                   image=backImg,
                                   #command=self.create_home_screen)
-                                  command=self.create_tracker_ui)
+                                  command=lambda: self.create_tracker_ui(None))
         card_back_btn.pack(pady=10)
         Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
@@ -391,7 +391,7 @@ class ExpirationApp:
                              cursor="hand2",
                              image=backImg,
                              #command=self.create_home_screen)
-                             command=self.create_tracker_ui)
+                             command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
         Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
