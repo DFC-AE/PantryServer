@@ -240,7 +240,8 @@ class ExpirationApp:
 			#text="Add Item",
 			image=camImg,
 			#command=lambda: self.add_item_popup)
-			command=self.update_camera)
+			#command=self.update_camera)
+			command=self.show_camera)
         cam_btn.pack(pady=5)
 
         Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
@@ -285,7 +286,7 @@ class ExpirationApp:
 			command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
 
-        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
+        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
     ## Create Card view ##
     def create_card_view(self):
@@ -336,9 +337,13 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
-        card_back_btn = tk.Button(self.root, image=backImg, command=self.create_home_screen)
+        card_back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=backImg,
+                                  #command=self.create_home_screen)
+                                  command=self.create_tracker_ui)
         card_back_btn.pack(pady=10)
-        Hovertip(card_back_btn, "Click to go back to home screen", hover_delay=500)
+        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
     ## Create list view ##
     def create_list_view(self):
@@ -382,7 +387,13 @@ class ExpirationApp:
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
-        back_btn =tk.Button(self.root, image=backImg, command=self.create_home_screen).pack(pady=10)
+        back_btn = tk.Button(self.root,
+                             cursor="hand2",
+                             image=backImg,
+                             #command=self.create_home_screen)
+                             command=self.create_tracker_ui)
+        back_btn.pack(pady=10)
+        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -391,7 +402,7 @@ class ExpirationApp:
             self.create_list_view()
 
     def show_detail_view(self, item):
-        self.current_item = item  
+        self.current_item = item
         self.clear_screen()
         self.set_background()
         days = item.days_until_expired()
@@ -517,7 +528,7 @@ class ExpirationApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to fetch data: {e}")
         return nutrition_info
-    
+
     def show_nutrition_info(self, nutrition_info):
         # Show nutrition information in a popup window
         info_window = tk.Toplevel(self.root)
@@ -560,7 +571,7 @@ class ExpirationApp:
             messagebox.showerror("Error", "Invalid date format.")
 
         self.refresh_views()
-    
+
     ## Loads items from file
     def load_items(self):
         if os.path.exists(SAVE_FILE):
@@ -613,26 +624,41 @@ class ExpirationApp:
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
         #barcode_btn.pack(pady=10)
 
-        tk.Button(self.root,
+        scan_btn = tk.Button(self.root,
 		#text="Scan",
+		cursor="hand2",
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.detect_barcode("codes/barcode.png")).pack(pady=5)
-        tk.Button(self.root,
+		command=self.detect_barcode("codes/barcode.png"))
+        scan_btn.pack(pady=5)
+        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
+
+        save_btn = tk.Button(self.root,
 		#text="Save",
+		cursor="hand2",
 		image=saveImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.save_new_item).pack(pady=5)
-        tk.Button(self.root,
+		command=self.save_new_item)
+        save_btn.pack(pady=5)
+        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
+
+        mode_btn = tk.Button(self.root,
 		#text="Save",
+		cursor="hand2",
 		image=lightImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.toggle_dark_mode).pack(pady=5)
-        tk.Button(self.root,
+		command=self.toggle_dark_mode)
+        mode_btn.pack(pady=5)
+        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
+
+        back_btn = tk.Button(self.root,
 		#text="Back",
+		cursor="hand2",
 		image=backImg,
-		command=lambda: self.create_tracker_ui(None)).pack(pady=5)
 		#command=self.create_tracker_ui(None)).pack(pady=5)
+		command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=5)
+        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
     ## Saves item to list ##
     def save_new_item(self):
@@ -690,15 +716,21 @@ class ExpirationApp:
     def show_camera(self):
         self.clear_screen()
         self.set_background()
-        self.camera_label = tk.Label(self.root)
+
+        ## Create of Reuse Camera Label ##
+        if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+               self.camera_label = tk.Label(self.root)
+#        self.camera_label = tk.Label(self.root)
         self.camera_label.pack(pady=20)
         self.update_camera()
         back_btn = tk.Button(self.root,
-                             text="Back",
-                             command=self.create_home_screen)
+                             image=backImg,
+                             #text="Back",
+                             #command=self.create_home_screen)
+                             command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
 
-        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
+        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
 
 #    def open_camera(self):
         # Show live feed from camera
@@ -718,8 +750,9 @@ class ExpirationApp:
 #        self.root.after(10, self.open_camera)
 
     def update_camera(self):
-      if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
-        return
+      if self.cpt.isOpened():
+         if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+            return
 
 #      if not self.camera_label.winfo_exists():
 #        return
@@ -729,7 +762,8 @@ class ExpirationApp:
         if ret:
             decoded_barcodes = decode(frame)
 
-            for barcode in decoded_barcodes:
+            if decoded_barcodes:
+               for barcode in decoded_barcodes:
                    (x, y, w, h) = barcode.rect
                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
@@ -744,7 +778,7 @@ class ExpirationApp:
                         print(f"New Barcode Detected: {barcode_data}")
                         self.last_barcode = barcode_data
 
-            print(f"Scanned: {barcode_data}")
+                   print(f"Scanned: {barcode_data}")
 
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -780,7 +814,7 @@ class ExpirationApp:
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
             barcode_type = barcode.type
-            print("Detected Barcode {barcode_type}): {data}")
+            print(f"Detected Barcode: {barcode_type} - {data}")
 
         (x, y, w, h) = barcode.rect
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
