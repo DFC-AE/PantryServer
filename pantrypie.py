@@ -22,7 +22,7 @@ from pynput import keyboard as pk
 # Splashscreen Setup
 class SplashScreen(tk.Toplevel):
     def __init__(self, parent, gif_path, delay=3500):
-      
+
         super().__init__(parent)
         self.parent = parent
 
@@ -796,7 +796,7 @@ class ExpirationApp:
 		cursor="hand2",
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.detect_barcode("codes/barcode.png"))
+		command=lambda: self.detect_barcode("codes/barcode.png"))
         scan_btn.pack(pady=5)
         Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
 
