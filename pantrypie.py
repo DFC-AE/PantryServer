@@ -592,8 +592,8 @@ class ExpirationApp:
 				#text="Open Scanner",
 				image=camImg,
 				#command=lambda: self.show_camera)
-				#command=self.show_camera)
-				command=lambda: self.detect_barcode("codes/barcode.png"))
+				command=self.show_camera)
+				#command=lambda: self.detect_barcode("codes/barcode.png"))
         scanner_btn.pack(pady=5)
 
         Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
@@ -603,13 +603,25 @@ class ExpirationApp:
 				#text="Detect Barcode",
 				image=scanImg,
 				#command=lambda: self.detect_barcode("codes/barcode.png"))
-				command=self.detect_barcode("codes/barcode.png"))
+				command=lambda: self.detect_barcode("codes/barcode.png"))
         barcode_btn.pack(pady=5)
 
-        manual_btn = tk.Button(self.root, text="Enter Barcode", command=self.barcode_entry)
-        manual_btn.pack(pady=10)
+        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
 
-        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
+              # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code.pack(pady=5)
+
+        self.barcode_entry = tk.Entry(self.root)
+        self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
+
+#        manual_btn = tk.Button(self.root, text="Enter Barcode", command=self.barcode_entry)
+#        manual_btn.pack(pady=10)
+#        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
 
         # Back to card view
         back_btn = tk.Button(self.root,
@@ -762,9 +774,11 @@ class ExpirationApp:
         self.clear_screen()
         self.set_background()
 
-        tk.Label(self.root, text="Add New Item", font=("Arial", 20)).pack(pady=20)
+        tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
 
-               # Item Name Entry (auto‑pop OSK on focus)
+        tk.Label(self.root, text="Enter Item Name:", font=("Arial", 15)).pack(pady=5)
+
+        # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
         self.name_entry.pack(pady=5)
         # bind focus‑in to launch OSK
@@ -774,11 +788,14 @@ class ExpirationApp:
         )
 
         # — Expiration date picker (unchanged) —
-        tk.Label(self.root, text="Expiration Date:").pack()
+        tk.Label(self.root, text="Select Expiration Date:", font=("Arial", 15), justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
-              # Barcode Entry (auto‑pop OSK on focus)
+        # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code.pack(pady=5)
+
         self.barcode_entry = tk.Entry(self.root)
         self.barcode_entry.pack(pady=5)
         self.barcode_entry.bind(
