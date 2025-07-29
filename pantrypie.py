@@ -1,11 +1,13 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu
+from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label 
+from tkinter.font import Font as font
 from datetime import datetime
 from tkcalendar import Calendar, DateEntry
 import time
 from time import strftime
 import cv2
 from PIL import Image, ImageTk
+import itertools
 from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 import os
@@ -14,11 +16,166 @@ import json
 import random
 import idlelib
 from idlelib.tooltip import Hovertip
+##setup Virtual Keyboard
+Hovertip
+from pynput import keyboard as pk
+# Splashscreen Setup
+class SplashScreen(tk.Toplevel):
+    def __init__(self, parent, gif_path, delay=3500):
+      
+        super().__init__(parent)
+        self.parent = parent
 
+        # Remove window decorations
+        self.overrideredirect(True)
+
+        # Load frames from an animated GIF
+        self.frames = []
+        try:
+            img = Image.open(gif_path)
+            for frame in itertools.count():
+                try:
+                    img.seek(frame)
+                    frame_img = ImageTk.PhotoImage(img.copy())
+                    self.frames.append(frame_img)
+                except EOFError:
+                    break
+        except Exception:
+            # fallback: single image
+            self.frames = [ImageTk.PhotoImage(Image.open(gif_path))]
+
+        # Display first frame
+        self.label = tk.Label(self, image=self.frames[0], bg='black')
+        self.label.pack()
+
+        # Center the splash on screen
+        self.update_idletasks()
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        x = (sw - w) // 2
+        y = (sh - h) // 2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Start animating
+        self._frame_index = 0
+        self._animate()
+
+        # Schedule splash to close after `delay` ms
+        self.after(delay, self.destroy)
+
+    def _animate(self):
+        if not self.winfo_exists(): 
+            return
+        self._frame_index = (self._frame_index + 1) % len(self.frames)
+        self.label.configure(image=self.frames[self._frame_index])
+        # call again after 100ms (adjust for smoother / faster playback)
+        self.after(100, self._animate)
+# ================= On-Screen Keyboard Integration =================
+OSK_WIDTH = 800
+OSK_HEIGHT = 300
+ACCENT_COL = "#C62145"
+
+class OnScreenKeyboard:
+    
+    _current = None
+
+    def __init__(self, parent, target_entry):
+        # Close an existing keyboard if it’s still open
+        if OnScreenKeyboard._current and OnScreenKeyboard._current.window.winfo_exists():
+            OnScreenKeyboard._current._on_close()
+        OnScreenKeyboard._current = self
+
+        self.parent = parent
+        self.target = target_entry
+        self.CAPS = False
+
+        # Make sure the parent’s geometry is up to date
+        parent.update_idletasks()
+        pw = parent.winfo_width()      # e.g. 1024
+        ph = parent.winfo_height()     # e.g. 600
+        px = parent.winfo_rootx()
+        py = parent.winfo_rooty()
+
+        # Bottom half geometry
+        ok_w = pw
+        ok_h = ph // 2
+        ok_x = px
+        ok_y = py + ph - ok_h
+
+        self.window = tk.Toplevel(parent)
+        self.window.title("On‑Screen Keyboard")
+        # size & position
+        self.window.geometry(f"{ok_w}x{ok_h}+{ok_x}+{ok_y}")
+        self.window.configure(bg="#1a1a1a")
+        self.window.resizable(False, False)
+        self.window.transient(parent)
+        self.window.lift()
+
+        # A container for all buttons
+        self.frame = tk.Frame(self.window, bg="#1a1a1a")
+        self.frame.pack(expand=True, fill="both")
+
+        self._build_keys()
+        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_keys(self):
+        # rows of keys: digits, QWERTY, ASDF, ZXCV, specials
+        rows = [
+            ['1','2','3','4','5','6','7','8','9','0'],
+            list('qwertyuiop'),
+            list('asdfghjkl'),
+            ['Caps'] + list('zxcvbnm') + ['Backspace'],
+            ['Space','Enter']
+        ]
+
+        btn_font = font(size=14)
+        max_cols = max(len(r) for r in rows)
+
+        for r, row in enumerate(rows):
+            for c, key in enumerate(row):
+                btn = tk.Button(
+                    self.frame,
+                    text=key,
+                    font=btn_font,
+                    bg="#333", fg="#fff",
+                    relief='flat',
+                    command=lambda k=key: self._on_key_press(k)
+                )
+                btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+
+        # Make columns expand evenly
+        for c in range(max_cols):
+            self.frame.grid_columnconfigure(c, weight=1)
+
+    def _on_key_press(self, key):
+        if key == 'Backspace':
+            self.target.delete("insert-1c")
+            return
+        if key == 'Caps':
+            self.CAPS = not self.CAPS
+            return
+        if key == 'Space':
+            self.target.insert(tk.INSERT, ' ')
+            return
+        if key == 'Enter':
+            self.target.insert(tk.INSERT, '\n')
+            self._on_close()
+            return
+
+        # letter or digit
+        char = key.upper() if (self.CAPS and key.isalpha()) else key
+        self.target.insert(tk.INSERT, char)
+
+    def _on_close(self):
+        OnScreenKeyboard._current = None
+        self.window.destroy()
 ## Create Root ##
 root = tk.Tk()
 root.geometry("1024x600")
 #root.geometry("1920x1080")
+#root.geometry("3180x2160")
 #root.title("Expiration Tracker")
 root.title("Pantry Server")
 
@@ -596,44 +753,37 @@ class ExpirationApp:
 
         tk.Label(self.root, text="Add New Item", font=("Arial", 20)).pack(pady=20)
 
-        tk.Label(self.root, text="Item Name:").pack()
+               # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
         self.name_entry.pack(pady=5)
+        # bind focus‑in to launch OSK
+        self.name_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.name_entry)
+        )
 
+        # — Expiration date picker (unchanged) —
         tk.Label(self.root, text="Expiration Date:").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
-        tk.Label(self.root, text="Barcode Number (Auto Fills Name):").pack()
+              # Barcode Entry (auto‑pop OSK on focus)
         self.barcode_entry = tk.Entry(self.root)
         self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
 
-        # Allow barcode to pre-fill name
-        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry())
-        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
-        #barcode_btn.pack(pady=10)
-
-        tk.Button(self.root,
-		#text="Scan",
-		image=scanImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.detect_barcode("codes/barcode.png")).pack(pady=5)
-        tk.Button(self.root,
-		#text="Save",
-		image=saveImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.save_new_item).pack(pady=5)
-        tk.Button(self.root,
-		#text="Save",
-		image=lightImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.toggle_dark_mode).pack(pady=5)
-        tk.Button(self.root,
-		#text="Back",
-		image=backImg,
-		command=lambda: self.create_tracker_ui(None)).pack(pady=5)
-		#command=self.create_tracker_ui(None)).pack(pady=5)
-
+        # — Your existing Scan/Save/Back buttons —
+        tk.Button(self.root, image=scanImg, 
+                  command=lambda: self.detect_barcode("codes/barcode.png"))\
+           .pack(pady=5)
+        tk.Button(self.root, image=saveImg, command=self.save_new_item)\
+           .pack(pady=5)
+        tk.Button(self.root, image=backImg, 
+                  command=lambda: self.create_tracker_ui(None))\
+           .pack(pady=5)
     ## Saves item to list ##
     def save_new_item(self):
         name = self.name_entry.get()
@@ -791,9 +941,23 @@ class ExpirationApp:
         plt.axis('off')
         plt.show()
 
+
 if __name__ == "__main__":
-#    root = tk.Tk()
-#    root.geometry("1024x600")
-#    root.title("Expiration Tracker")
-    app = ExpirationApp(root)
+#  root = tk.Tk()
+ #   root.geometry("1024x600")
+ #   root.title("Pantry Server")
+
+    # hide the main window until the splash is done
+    root.withdraw()
+
+    # show splash for 3.5s
+    splash = SplashScreen(root, "pics/IntroGIF.gif", delay=3500)
+
+    # after 3500ms, destroy the splash, show the main window, and launch the app exactly once
+    def start_app():
+        splash.destroy()
+        root.deiconify()
+        ExpirationApp(root)
+
+    root.after(3500, start_app)
     root.mainloop()
