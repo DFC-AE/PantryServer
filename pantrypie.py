@@ -81,7 +81,7 @@ OSK_HEIGHT = 300
 ACCENT_COL = "#C62145"
 
 class OnScreenKeyboard:
-    
+
     _current = None
 
     def __init__(self, parent, target_entry):
@@ -174,6 +174,7 @@ class OnScreenKeyboard:
     def _on_close(self):
         OnScreenKeyboard._current = None
         self.window.destroy()
+
 ## Create Root ##
 root = tk.Tk()
 root.geometry("1024x600")
@@ -373,7 +374,7 @@ class ExpirationApp:
         update_weather()
 
         # Enlarged calendar
-        self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd")
+        self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
         self.cal.pack(pady=20, ipady=10, ipadx=10)
 
         # Buttons side by side
