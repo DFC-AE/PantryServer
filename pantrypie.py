@@ -343,6 +343,9 @@ class ExpirationApp:
 
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
+    #def create_home_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
         self.clear_screen()
         self.set_background()
 
@@ -463,7 +466,7 @@ class ExpirationApp:
     def open_weather_ui(self):
         self.clear_screen()
         #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
-        WeatherApp(self.root, self.backgroundImg, self.create_home_screen)
+        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1269,6 +1272,7 @@ class WeatherApp:
     #def __init__(self, root, backImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
+        self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
 
@@ -1364,7 +1368,21 @@ class WeatherApp:
         #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
         #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
         #back_btn.pack(pady=10)
-        self.back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        if callable(self.back_callback):
+            self.back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=self.backImg,
+                                  #command=self.back_callback)
+                                  #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
+                                  command=self.back_callback)
+                                  #command=lambda: self.create_home_screen(None))
+        else:
+            self.back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=self.backImg,
+                                  #command=self.back_callback)
+                                  command=self.root.destroy)
+                                  #command=lambda: self.create_home_screen(None))
         #self.back_btn.pack(pady=10)
         self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
         self.back_btn.image = self.backImg
