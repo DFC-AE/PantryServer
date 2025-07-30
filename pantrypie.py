@@ -16,12 +16,10 @@ import sys
 import json
 import random
 import requests
-#import idlelib
-#from idlelib.tooltip import Hovertip
-#Hovertip
+from pynput import keyboard as pk
+from io import BytesIO
 
 ##setup Virtual Keyboard
-from pynput import keyboard as pk
 # Splashscreen Setup
 class SplashScreen(tk.Toplevel):
     def __init__(self, parent, gif_path, delay=3500):
@@ -234,6 +232,10 @@ scanImg = ImageTk.PhotoImage(img_scan)
 img_view = Image.open("pics/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
 viewImg = ImageTk.PhotoImage(img_view)
+## Weather Image ##
+img_weather = Image.open("pics/weather.png")
+img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+weatherImg = ImageTk.PhotoImage(img_weather)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -326,6 +328,7 @@ class ExpirationApp:
         self.load_items()
         self.init_camera()
         self.create_home_screen()
+#        self.weather_ui()
 
     ## Create Background ##
     def set_background(self):
@@ -346,6 +349,9 @@ class ExpirationApp:
         self.weather_label = tk.Label(self.root, font=('calibri', 25), bg='orange', fg='yellow')
         self.weather_label.pack(pady=5)
 
+        frame = tk.Frame(self.root)
+        frame.pack(pady=10)
+
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
             if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
@@ -358,20 +364,72 @@ class ExpirationApp:
             try:
                 city = "Shreveport"  # Change to your preferred city
                 api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Use your OpenWeatherMap API key
-                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+#                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+                url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&units=imperial&appid={api_key}" 
                 response = requests.get(url)
                 data = response.json()
 
-                temp = data["main"]["temp"]
-                condition = data["weather"][0]["description"].capitalize()
+                ## Show Current Weather ##
+                current = data['list'][0]
+                temp = current['main']['temp']
+                condition = current['weather'][0]['description'].capitalize()
+                icon_code = current['weather'][0]['icon']
+                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+                icon_response = requests.get(icon_url)
+                icon_img = Image.open(BytesIO(icon_response.content))
+                icon_photo = ImageTk.PhotoImage(icon_img)
+
+                self.weather_icon_label.config(image=icon_photo)
+                self.weather_icon_label.image = icon_photo  # prevent GC
 
                 self.weather_label.config(
                     text=f"{city}: {temp:.1f}\u00b0F, {condition}"
                 )
+
+                # Weekly forecast (every 8 entries = 24 hrs)
+#                for i in range(1, 6):
+#                    forecast = data['list'][i * 8]  # approx same time each day
+#                    day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
+#                    temp = forecast['main']['temp']
+#                    condition = forecast['weather'][0]['main']
+#                    icon_code = forecast['weather'][0]['icon']
+#                    icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+#                    icon_img = Image.open(BytesIO(requests.get(icon_url).content))
+#                    icon_photo = ImageTk.PhotoImage(icon_img)
+
+#                    self.forecast_labels[i-1]['icon'].config(image=icon_photo)
+#                    self.forecast_labels[i-1]['icon'].image = icon_photo
+#                    self.forecast_labels[i-1]['text'].config(text=f"{day}\n{temp:.0f}\u00b0F\n{condition}")
+
             except Exception as e:
                 self.weather_label.config(text="Weather: Unable to load")
 
+ #       def build_weather_ui(self):
+ #           self.weather_label = tk.Label(self.root, font=("Arial", 14))
+ #           self.weather_label.pack()
+
+#            self.weather_icon_label = tk.Label(self.root)
+#            self.weather_icon_label.pack()
+
+#            self.forecast_labels = []
+#            frame = tk.Frame(self.root)
+#            frame.pack()
+#        for _ in range(5):
+#            day_frame = tk.Frame(frame)
+#            day_frame.pack(side="left", padx=5)
+
+#            icon_label = tk.Label(day_frame)
+#            icon_label.pack()
+#            text_label = tk.Label(day_frame, font=("Arial", 10))
+#            text_label.pack()
+
+#            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
         update_weather()
+
+        def open_weather_ui(self):
+            self.clear_screen()
+            WeatherApp(self.root)
 
         # Enlarged calendar
         self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
@@ -384,6 +442,10 @@ class ExpirationApp:
         track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
+
+        weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
+        weather_btn.pack(side=tk.RIGHT)
+        ToolTip(weather_btn, "Click to Open Weather Forcast")
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
@@ -1167,7 +1229,7 @@ class ToolTip:
             self.tip_window.destroy()
             self.tip_window = None
 
-def get_weather(city="New York"):
+def get_weather(city="Shreveport"):
     api_key = "f63847d7129eb9be9c7a464e1e5ef67b" # Replace with your real API key
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid={api_key}"
 
@@ -1192,6 +1254,105 @@ def update_weather():
     root.after(600000, update_weather)  # Update every 10 minutes
 
 update_weather()
+
+class WeatherApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Weather Forecast")
+        self.root.geometry("500x400")
+
+        self.city = "Shreveport"
+        self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+
+        self.weather_ui()
+        self.update_weather()
+
+    def weather_ui(self):
+        self.clear_screen()
+        self.set_background()
+
+        # Current weather
+        self.weather_label = tk.Label(self.root, font=("Arial", 16))
+        self.weather_label.pack(pady=10)
+
+        self.weather_icon_label = tk.Label(self.root)
+        self.weather_icon_label.pack()
+
+        # Forecast frame
+        forecast_frame = tk.Frame(self.root)
+        forecast_frame.pack(pady=10)
+
+        self.forecast_labels = []
+        for _ in range(5):
+            day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame.pack(side="left", padx=5)
+
+            icon_label = tk.Label(day_frame)
+            icon_label.pack()
+
+            text_label = tk.Label(day_frame, font=("Arial", 10))
+            text_label.pack()
+
+            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        back_btn = tk.Button(self.root, text="Back", command=self.create_home_screen)
+        back_btn.pack(pady=10)
+
+        self.update_weather()
+
+    def update_weather(self):
+        try:
+            if not hasattr(self, 'city'):
+                  self.city = "Shreveport"
+            if not hasattr(self, 'api-key'):
+                  self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+
+            url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            # Current weather
+            current = data['list'][0]
+            temp = current['main']['temp']
+            condition = current['weather'][0]['description'].capitalize()
+            icon_code = current['weather'][0]['icon']
+            icon_img = self.get_icon(icon_code)
+
+            self.weather_icon_label.config(image=icon_img)
+            self.weather_icon_label.image = icon_img
+            self.weather_label.config(text=f"{self.city}: {temp:.1f}\u00b0F, {condition}")
+
+            # 5-day forecast
+            for i in range(1, 6):
+                forecast = data['list'][i * 8]  # 24 hours apart
+                day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
+                temp = forecast['main']['temp']
+                condition = forecast['weather'][0]['main']
+                icon_code = forecast['weather'][0]['icon']
+                icon_img = self.get_icon(icon_code)
+
+                self.forecast_labels[i - 1]['icon'].config(image=icon_img)
+                self.forecast_labels[i - 1]['icon'].image = icon_img
+                self.forecast_labels[i - 1]['text'].config(
+                    text=f"{day}\n{temp:.0f}\u00b0F\n{condition}"
+                )
+
+        except Exception as e:
+            import traceback
+            print("Error fetching weather:", e)
+            if hasattr(self, "weather_label"):
+                 self.weather_label.config(text="Weather: Unable to load")
+
+    def get_icon(self, code):
+        try:
+            url = f"http://openweathermap.org/img/wn/{code}@2x.png"
+            response = requests.get(url)
+            img_data = Image.open(BytesIO(response.content))
+            return ImageTk.PhotoImage(img_data)
+        except Exception as e:
+            print("Icon load failed:", e)
+            return None
 
 if __name__ == "__main__":
 #  root = tk.Tk()
