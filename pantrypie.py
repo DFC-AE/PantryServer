@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label 
 from tkinter.font import Font as font
@@ -14,10 +15,12 @@ import os
 import sys
 import json
 import random
+import requests
 #import idlelib
 #from idlelib.tooltip import Hovertip
-##setup Virtual Keyboard
 #Hovertip
+
+##setup Virtual Keyboard
 from pynput import keyboard as pk
 # Splashscreen Setup
 class SplashScreen(tk.Toplevel):
@@ -339,6 +342,9 @@ class ExpirationApp:
         self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'), background='orange', foreground='yellow')
         self.clock_label.pack(pady=10)
 
+        self.weather_label = tk.Label(self.root, font=('calibri', 25), bg='orange', fg='yellow')
+        self.weather_label.pack(pady=5)
+
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
             if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
@@ -346,6 +352,25 @@ class ExpirationApp:
                 self.root.after(1000, update_clock)
 
         update_clock()
+
+        def update_weather():
+            try:
+                city = "Shreveport"  # Change to your preferred city
+                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Use your OpenWeatherMap API key
+                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+                response = requests.get(url)
+                data = response.json()
+
+                temp = data["main"]["temp"]
+                condition = data["weather"][0]["description"].capitalize()
+
+                self.weather_label.config(
+                    text=f"{city}: {temp:.1f}\u00b0F, {condition}"
+                )
+            except Exception as e:
+                self.weather_label.config(text="Weather: Unable to load")
+
+        update_weather()
 
         # Enlarged calendar
         self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd")
@@ -360,7 +385,6 @@ class ExpirationApp:
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
-
 
 #        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
@@ -857,7 +881,7 @@ class ExpirationApp:
 		command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=5)
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
-        ToolTip(dark_mode_btn, "Click to Return to the Previous Screen")
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     ## Saves item to list ##
     def save_new_item(self):
@@ -1067,6 +1091,32 @@ class ToolTip:
         if self.tip_window:
             self.tip_window.destroy()
             self.tip_window = None
+
+def get_weather(city="New York"):
+    api_key = "f63847d7129eb9be9c7a464e1e5ef67b" # Replace with your real API key
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid={api_key}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+        if data["cod"] == 200:
+            temp = data["main"]["temp"]
+            condition = data["weather"][0]["description"].capitalize()
+            return f"{city}: {temp}\u00b0F, {condition}"
+        else:
+            return "Weather not found"
+    except Exception as e:
+        return f"Error: {e}"
+
+weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
+weather_label.pack(pady=20)
+
+def update_weather():
+    weather = get_weather("Shreveport")  # Change city as needed
+    weather_label.config(text=weather)
+    root.after(600000, update_weather)  # Update every 10 minutes
+
+update_weather()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
