@@ -1,19 +1,15 @@
-<<<<<<< HEAD
-- Update date imputs, negative dates
-=======
-- Update date imputs, negative dates - Completed for List View
->>>>>>> b9703029b3a5c7ec356e5bd83402351fcc2e6b42
-- Dark mode / Light mode
-- More design
+- Dark mode / Light mode PARTIALLY WORKING DOES NOT DISPLAY BUT HOLDS CORRECT SETTING ON SCREEN CHANGE DOUBLE CLICK TO RESET
 - Edit buttons
 - 4 categories
     : Camera mode
     : Inventory
     : Grocery list
     : Expired
-- Splash screen hello
-- Sort buttons
-    : Name
-    : Date
 - Fix item boxes they don't display the expiration date
-- open food facts
+- Light Mode for Keyboard
+- Transition Animations in between Page Changes
+- Updated Weather System on Home Screen with more Attractive Setup
+- Detailed Weather View with Weekly Forcast
+- Fix Camera Display on Video Page
+- Improved Splash Screen to match timing of program launch and image background
+- Rearrange Icons and Pages into a grid for more personalized control and to fit more info on screen to much wasted space
