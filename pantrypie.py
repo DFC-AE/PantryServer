@@ -427,10 +427,6 @@ class ExpirationApp:
 
         update_weather()
 
-        def open_weather_ui(self):
-            self.clear_screen()
-            WeatherApp(self.root)
-
         # Enlarged calendar
         self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
         self.cal.pack(pady=20, ipady=10, ipadx=10)
@@ -444,6 +440,7 @@ class ExpirationApp:
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
         weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
+        #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
@@ -457,6 +454,10 @@ class ExpirationApp:
 #        string = strftime("%A, %D %B %Y %R")
 #        self.clk.config(text=string)
 #        self.clk.after(1000, get_time)
+
+    def open_weather_ui(self):
+        self.clear_screen()
+        WeatherApp(self.root, self.backgroundImg, self.create_home_screen)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1256,10 +1257,14 @@ def update_weather():
 update_weather()
 
 class WeatherApp:
-    def __init__(self, root):
+    def __init__(self, root, backgroundImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
-        self.root.geometry("500x400")
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+#        self.clear_screen()
+#        self.root.geometry("500x400")
 
         self.city = "Shreveport"
         self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
@@ -1295,10 +1300,22 @@ class WeatherApp:
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
-        back_btn = tk.Button(self.root, text="Back", command=self.create_home_screen)
+        #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
+        back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
         back_btn.pack(pady=10)
 
         self.update_weather()
+
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destory()
+
+    def set_background(self):
+        try:
+            self.background_label = tk.Label(self.root, image=backgroundImg)
+            self.background_label.place(relwidth=1, relheight=1)
+        except Exception as e:
+            print("Error setting background:", e)
 
     def update_weather(self):
         try:
