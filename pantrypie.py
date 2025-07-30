@@ -421,10 +421,10 @@ class ExpirationApp:
 	## Open Camera ##
         cam_btn = tk.Button(self.root,
 			cursor="hand2",
-			#text="Add Item",
 			image=camImg,
-			#command=lambda: self.add_item_popup)
 			#command=self.update_camera)
+			### Lambda Breaks Button Here IDKY ###
+			#command=lambda: self.show_camera)
 			command=self.show_camera)
         cam_btn.pack(pady=5)
 
@@ -470,6 +470,7 @@ class ExpirationApp:
 	## Show Back ##
         back_btn = tk.Button(self.root,
 			anchor="w",
+			cursor="hand2",
 			image=backImg,
 			command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
@@ -626,8 +627,8 @@ class ExpirationApp:
 				#text="Open Scanner",
 				image=camImg,
 				#command=lambda: self.show_camera)
-				command=self.show_camera)
-				#command=lambda: self.detect_barcode("codes/barcode.png"))
+				#command=self.show_camera)
+				command=lambda: self.detect_barcode_from_camera())
         scanner_btn.pack(pady=5)
 
 #        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
@@ -639,6 +640,7 @@ class ExpirationApp:
 				image=scanImg,
 				#command=lambda: self.detect_barcode("codes/barcode.png"))
 				command=lambda: self.detect_barcode("codes/barcode.png"))
+				#command=lambda: self.detect_barcode_from_camera())
         barcode_btn.pack(pady=5)
 
 #        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
@@ -683,6 +685,52 @@ class ExpirationApp:
                 self.save_items()
                 self.show_detail_view(self.current_item)
 
+    def detect_barcode_from_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+        self.cpt = cv2.VideoCapture(0)
+
+        if not self.cpt.isOpened():
+            print("Cannot open camera")
+            return
+
+        self.update_frame()
+
+    def update_frame(self):
+        if not hasattr(self, 'cpt') or not self.cpt.isOpened():
+           return
+
+        ret, frame = self.cpt.read()
+        if not ret:
+            print("Failed to Grab Frame")
+            self.cpt.release()
+            return
+
+        barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+
+        for barcode in barcodes:
+            data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            print(f"Detected Barcode: {barcode_type} - {data}")
+
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, data, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Convert to ImageTk
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_rgb)
+        imgtk = ImageTk.PhotoImage(image=img_pil)
+
+	## Only Update if Camera Label Still Exists ##
+        if hasattr(self, 'camera_label') and self.camera_label.winfo_exists():
+            self.camera_label.imgtk = imgtk  # prevent garbage collection
+            self.camera_label.config(image=imgtk)
+
+        # Schedule the next frame
+        self.root.after(10, self.update_frame)
 
     def fetch_open_food_facts(self, barcode, item=None):
         import requests
@@ -849,7 +897,8 @@ class ExpirationApp:
 		cursor="hand2",
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=lambda: self.detect_barcode("codes/barcode.png"))
+		#command=lambda: self.detect_barcode("codes/barcode.png"))
+		command=lambda: self.detect_barcode_from_camera())
         scan_btn.pack(pady=5)
 #        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
         ToolTip(scan_btn, "Click to Show Scanned Barcode")
@@ -879,10 +928,14 @@ class ExpirationApp:
 		cursor="hand2",
 		image=backImg,
 		#command=self.create_tracker_ui(None)).pack(pady=5)
-		command=lambda: self.create_tracker_ui(None))
+		#command=lambda: self.create_tracker_ui(None))
+		command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
         back_btn.pack(pady=5)
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+        self.camera_label = tk.Label(self.root)
+        self.camera_label.pack(pady=10, side="right")
 
     ## Saves item to list ##
     def save_new_item(self):
@@ -932,47 +985,52 @@ class ExpirationApp:
             widget.destroy()
 
     def init_camera(self):
+	## Ensure Camera Is Not Currently Open ##
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+	## Open Camera and Store in self.cap ##
         self.cpt = cv2.VideoCapture(0)
         self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.camera_label = tk.Label(self.root)
+
+        if not self.cpt.isOpened():
+           print("Cannot Open Camera")
+           return
+
+	## Show Camera Feed ##
+        #self.camera_label = tk.Label(self.root)
 
     def show_camera(self):
         self.clear_screen()
         self.set_background()
+        self.init_camera()
+
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+               self.cpt.release()
 
         ## Create of Reuse Camera Label ##
-        if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
-               self.camera_label = tk.Label(self.root)
-#        self.camera_label = tk.Label(self.root)
-        self.camera_label.pack(pady=20)
+#        if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+#               self.camera_label = tk.Label(self.root)
+        self.camera_label = tk.Label(self.root)
+        self.camera_label.pack(pady=20, side="top")
         self.update_camera()
+
         back_btn = tk.Button(self.root,
                              image=backImg,
-                             #text="Back",
-                             #command=self.create_home_screen)
-                             command=lambda: self.create_tracker_ui(None))
-        back_btn.pack(pady=10)
-
+        		     command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+                             #command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=10, side="left")
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
-#    def open_camera(self):
-        # Show live feed from camera
-#        _, frame = self.cpt.read()
-#        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#        captured_image = Image.fromarray(opencv_image)
-#        photo_image = ImageTk.PhotoImage(image=captured_image)
+        scan_btn = tk.Button(self.root,
+                             image=scanImg,
+                             command=lambda: self.detect_barcode_from_camera())
+        scan_btn.pack(pady=10, side="right")
+        ToolTip(scan_btn, "Click to Scan Barcode")
 
-#        self.label_widget.photo_image = photo_image
-#        self.label_widget.configure(image=photo_image)
-#        self.label_widget.pack()
-
-#        self.camera_label.photo_image = photo_image
-#        self.camera_label.configure(image=photo_image)
-#        self.camera_label.pack()
-
-#        self.root.after(10, self.open_camera)
+        #self.detect_barcode_from_camera()
 
     def update_camera(self):
       if self.cpt.isOpened():
@@ -982,7 +1040,7 @@ class ExpirationApp:
 #      if not self.camera_label.winfo_exists():
 #        return
 
-      if self.cpt.isOpened():
+      if hasattr(self, 'cpt') and self.cpt.isOpened():
         ret, frame = self.cpt.read()
         if ret:
             decoded_barcodes = decode(frame)
@@ -1014,6 +1072,14 @@ class ExpirationApp:
       self.camera_loop_id = self.root.after(10, self.update_camera)
 
     def stop_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+        if hasattr(self, 'camera_loop_id'):
+            self.root.after_cancel(self.camera_loop_id)
+        if hasattr(self, 'camera_label'):
+            self.camera_label.destroy()
+
+    def stop_camera_loop(self):
         if hasattr(self, "camera_loop_id"):
                self.root.after_cancel(self.camera_loop_id)
         if self.cpt.isOpened():
@@ -1049,6 +1115,8 @@ class ExpirationApp:
         plt.imshow(rgb)
         plt.axis('off')
         plt.show()
+
+#        self.detect_barcode_from_camera
 
 class ToolTip:
     def __init__(self, widget, text, delay=500):
