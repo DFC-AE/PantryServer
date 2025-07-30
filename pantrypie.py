@@ -1,24 +1,183 @@
+# -*- coding: utf-8 -*-
 import tkinter as tk
-from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu
+from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label 
+from tkinter.font import Font as font
 from datetime import datetime
 from tkcalendar import Calendar, DateEntry
 import time
 from time import strftime
 import cv2
 from PIL import Image, ImageTk
+import itertools
 from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 import os
 import sys
 import json
 import random
-import idlelib
-from idlelib.tooltip import Hovertip
+import requests
+from pynput import keyboard as pk
+from io import BytesIO
+
+##setup Virtual Keyboard
+# Splashscreen Setup
+class SplashScreen(tk.Toplevel):
+    def __init__(self, parent, gif_path, delay=3500):
+
+        super().__init__(parent)
+        self.parent = parent
+
+        # Remove window decorations
+        self.overrideredirect(True)
+
+        # Load frames from an animated GIF
+        self.frames = []
+        try:
+            img = Image.open(gif_path)
+            for frame in itertools.count():
+                try:
+                    img.seek(frame)
+                    frame_img = ImageTk.PhotoImage(img.copy())
+                    self.frames.append(frame_img)
+                except EOFError:
+                    break
+        except Exception:
+            # fallback: single image
+            self.frames = [ImageTk.PhotoImage(Image.open(gif_path))]
+
+        # Display first frame
+        self.label = tk.Label(self, image=self.frames[0], bg='black')
+        self.label.pack()
+
+        # Center the splash on screen
+        self.update_idletasks()
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        x = (sw - w) // 2
+        y = (sh - h) // 2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Start animating
+        self._frame_index = 0
+        self._animate()
+
+        # Schedule splash to close after `delay` ms
+        self.after(delay, self.destroy)
+
+    def _animate(self):
+        if not self.winfo_exists(): 
+            return
+        self._frame_index = (self._frame_index + 1) % len(self.frames)
+        self.label.configure(image=self.frames[self._frame_index])
+        # call again after 100ms (adjust for smoother / faster playback)
+        self.after(100, self._animate)
+# ================= On-Screen Keyboard Integration =================
+OSK_WIDTH = 800
+OSK_HEIGHT = 300
+ACCENT_COL = "#C62145"
+
+class OnScreenKeyboard:
+
+    _current = None
+
+    def __init__(self, parent, target_entry):
+        # Close an existing keyboard if it’s still open
+        if OnScreenKeyboard._current and OnScreenKeyboard._current.window.winfo_exists():
+            OnScreenKeyboard._current._on_close()
+        OnScreenKeyboard._current = self
+
+        self.parent = parent
+        self.target = target_entry
+        self.CAPS = False
+
+        # Make sure the parent’s geometry is up to date
+        parent.update_idletasks()
+        pw = parent.winfo_width()      # e.g. 1024
+        ph = parent.winfo_height()     # e.g. 600
+        px = parent.winfo_rootx()
+        py = parent.winfo_rooty()
+
+        # Bottom half geometry
+        ok_w = pw
+        ok_h = ph // 2
+        ok_x = px
+        ok_y = py + ph - ok_h
+
+        self.window = tk.Toplevel(parent)
+        self.window.title("On‑Screen Keyboard")
+        # size & position
+        self.window.geometry(f"{ok_w}x{ok_h}+{ok_x}+{ok_y}")
+        self.window.configure(bg="#1a1a1a")
+        self.window.resizable(False, False)
+        self.window.transient(parent)
+        self.window.lift()
+
+        # A container for all buttons
+        self.frame = tk.Frame(self.window, bg="#1a1a1a")
+        self.frame.pack(expand=True, fill="both")
+
+        self._build_keys()
+        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_keys(self):
+        # rows of keys: digits, QWERTY, ASDF, ZXCV, specials
+        rows = [
+            ['1','2','3','4','5','6','7','8','9','0'],
+            list('qwertyuiop'),
+            list('asdfghjkl'),
+            ['Caps'] + list('zxcvbnm') + ['Backspace'],
+            ['Space','Enter']
+        ]
+
+        btn_font = font(size=14)
+        max_cols = max(len(r) for r in rows)
+
+        for r, row in enumerate(rows):
+            for c, key in enumerate(row):
+                btn = tk.Button(
+                    self.frame,
+                    text=key,
+                    font=btn_font,
+                    bg="#333", fg="#fff",
+                    relief='flat',
+                    command=lambda k=key: self._on_key_press(k)
+                )
+                btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+
+        # Make columns expand evenly
+        for c in range(max_cols):
+            self.frame.grid_columnconfigure(c, weight=1)
+
+    def _on_key_press(self, key):
+        if key == 'Backspace':
+            self.target.delete("insert-1c")
+            return
+        if key == 'Caps':
+            self.CAPS = not self.CAPS
+            return
+        if key == 'Space':
+            self.target.insert(tk.INSERT, ' ')
+            return
+        if key == 'Enter':
+            self.target.insert(tk.INSERT, '\n')
+            self._on_close()
+            return
+
+        # letter or digit
+        char = key.upper() if (self.CAPS and key.isalpha()) else key
+        self.target.insert(tk.INSERT, char)
+
+    def _on_close(self):
+        OnScreenKeyboard._current = None
+        self.window.destroy()
 
 ## Create Root ##
 root = tk.Tk()
 root.geometry("1024x600")
 #root.geometry("1920x1080")
+#root.geometry("3180x2160")
 #root.title("Expiration Tracker")
 root.title("Pantry Server")
 
@@ -27,8 +186,8 @@ SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
 ## Button Size ##
-img_wdt = 50
-img_hgt = 50
+img_wdt = 75
+img_hgt = 75
 ## Add Image ##
 img_add = Image.open("pics/add.png")
 img_add = img_add.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -73,6 +232,14 @@ scanImg = ImageTk.PhotoImage(img_scan)
 img_view = Image.open("pics/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
 viewImg = ImageTk.PhotoImage(img_view)
+## Weather Image ##
+img_weather = Image.open("pics/weather.png")
+img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+weatherImg = ImageTk.PhotoImage(img_weather)
+## Weather Background Image ##
+img_back_weather = Image.open("pics/weather.jpg")
+img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -158,6 +325,7 @@ class ExpirationApp:
         self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
+#        self.backImg = tk.PhotoImage(file="pics/back.png")
         self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
@@ -165,6 +333,7 @@ class ExpirationApp:
         self.load_items()
         self.init_camera()
         self.create_home_screen()
+#        self.weather_ui()
 
     ## Create Background ##
     def set_background(self):
@@ -182,6 +351,12 @@ class ExpirationApp:
         self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'), background='orange', foreground='yellow')
         self.clock_label.pack(pady=10)
 
+        self.weather_label = tk.Label(self.root, font=('calibri', 25), bg='orange', fg='yellow')
+        self.weather_label.pack(pady=5)
+
+        frame = tk.Frame(self.root)
+        frame.pack(pady=10)
+
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
             if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
@@ -190,8 +365,75 @@ class ExpirationApp:
 
         update_clock()
 
+        def update_weather():
+            try:
+                city = "Shreveport"  # Change to your preferred city
+                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Use your OpenWeatherMap API key
+#                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+                url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&units=imperial&appid={api_key}" 
+                response = requests.get(url)
+                data = response.json()
+
+                ## Show Current Weather ##
+                current = data['list'][0]
+                temp = current['main']['temp']
+                condition = current['weather'][0]['description'].capitalize()
+                icon_code = current['weather'][0]['icon']
+                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+                icon_response = requests.get(icon_url)
+                icon_img = Image.open(BytesIO(icon_response.content))
+                icon_photo = ImageTk.PhotoImage(icon_img)
+
+                self.weather_icon_label.config(image=icon_photo)
+                self.weather_icon_label.image = icon_photo  # prevent GC
+
+                self.weather_label.config(
+                    text=f"{city}: {temp:.1f}\u00b0F, {condition}"
+                )
+
+                # Weekly forecast (every 8 entries = 24 hrs)
+#                for i in range(1, 6):
+#                    forecast = data['list'][i * 8]  # approx same time each day
+#                    day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
+#                    temp = forecast['main']['temp']
+#                    condition = forecast['weather'][0]['main']
+#                    icon_code = forecast['weather'][0]['icon']
+#                    icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+#                    icon_img = Image.open(BytesIO(requests.get(icon_url).content))
+#                    icon_photo = ImageTk.PhotoImage(icon_img)
+
+#                    self.forecast_labels[i-1]['icon'].config(image=icon_photo)
+#                    self.forecast_labels[i-1]['icon'].image = icon_photo
+#                    self.forecast_labels[i-1]['text'].config(text=f"{day}\n{temp:.0f}\u00b0F\n{condition}")
+
+            except Exception as e:
+                self.weather_label.config(text="Weather: Unable to load")
+
+ #       def build_weather_ui(self):
+ #           self.weather_label = tk.Label(self.root, font=("Arial", 14))
+ #           self.weather_label.pack()
+
+#            self.weather_icon_label = tk.Label(self.root)
+#            self.weather_icon_label.pack()
+
+#            self.forecast_labels = []
+#            frame = tk.Frame(self.root)
+#            frame.pack()
+#        for _ in range(5):
+#            day_frame = tk.Frame(frame)
+#            day_frame.pack(side="left", padx=5)
+
+#            icon_label = tk.Label(day_frame)
+#            icon_label.pack()
+#            text_label = tk.Label(day_frame, font=("Arial", 10))
+#            text_label.pack()
+
+#            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        update_weather()
+
         # Enlarged calendar
-        self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd")
+        self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
         self.cal.pack(pady=20, ipady=10, ipadx=10)
 
         # Buttons side by side
@@ -200,17 +442,28 @@ class ExpirationApp:
 
         track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         track_btn.pack(side=tk.RIGHT)
+        ToolTip(track_btn, "Click to Enter the Expiration Tracker")
+
+        weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
+        #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
+        weather_btn.pack(side=tk.RIGHT)
+        ToolTip(weather_btn, "Click to Open Weather Forcast")
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
 
-
-        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
 #    def get_time():
 #        string = strftime("%A, %D %B %Y %R")
 #        self.clk.config(text=string)
 #        self.clk.after(1000, get_time)
+
+    def open_weather_ui(self):
+        self.clear_screen()
+        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+        WeatherApp(self.root, self.backgroundImg, self.create_home_screen)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -224,6 +477,7 @@ class ExpirationApp:
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
+			anchor="n",
 			cursor="hand2",
 			#text="Add Item",
 			image=addImg,
@@ -231,18 +485,21 @@ class ExpirationApp:
 			command=self.add_item_popup)
         add_btn.pack(pady=5)
 
-        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
+#        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
+        ToolTip(add_btn, "Click to Add Item")
 
 	## Open Camera ##
         cam_btn = tk.Button(self.root,
 			cursor="hand2",
-			#text="Add Item",
 			image=camImg,
-			#command=lambda: self.add_item_popup)
-			command=self.update_camera)
+			#command=self.update_camera)
+			### Lambda Breaks Button Here IDKY ###
+			#command=lambda: self.show_camera)
+			command=self.show_camera)
         cam_btn.pack(pady=5)
 
-        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
+#        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
+        ToolTip(cam_btn, "Click to Open Camera")
 
 	## Show List View ##
         list_view_btn = tk.Button(self.root,
@@ -253,7 +510,8 @@ class ExpirationApp:
 				command=self.create_list_view)
         list_view_btn.pack(pady=5)
 
-        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+#        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+        ToolTip(list_view_btn, "Click to Open Inventory in List View")
 
 	## Show Card View ##
         card_view_btn = tk.Button(self.root,
@@ -264,7 +522,8 @@ class ExpirationApp:
 				command=self.create_card_view)
         card_view_btn.pack(pady=5)
 
-        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+#        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+        ToolTip(card_view_btn, "Click to Open Inventory in Card View")
 
 	## Mode ##
         dark_mode_btn = tk.Button(self.root,
@@ -275,15 +534,19 @@ class ExpirationApp:
 				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
 
-        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode")
 
 	## Show Back ##
         back_btn = tk.Button(self.root,
-		image=backImg,
-		command=lambda: self.create_home_screen(None))
+			anchor="w",
+			cursor="hand2",
+			image=backImg,
+			command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
 
-        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     ## Create Card view ##
     def create_card_view(self):
@@ -300,9 +563,11 @@ class ExpirationApp:
         sort_menu.pack(pady=10)
 
         # Setup scrollable canvas
-        canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        scroll_frame = tk.Frame(canvas, bg="lightgray")
 
 
         scroll_frame.bind(
@@ -332,9 +597,14 @@ class ExpirationApp:
                 col = 0
                 row += 1
 
-        card_back_btn = tk.Button(self.root, image=backImg, command=self.create_home_screen)
+        card_back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=backImg,
+                                  #command=self.create_home_screen)
+                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
         card_back_btn.pack(pady=10)
-        Hovertip(card_back_btn, "Click to go back to home screen", hover_delay=500)
+#        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
 
     ## Create list view ##
     def create_list_view(self):
@@ -350,9 +620,11 @@ class ExpirationApp:
         sort_menu.pack(pady=5)
 
         # Scrollable canvas setup
-        canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        scroll_frame = tk.Frame(canvas, bg="lightgray")
 
 
         scroll_frame.bind(
@@ -376,7 +648,14 @@ class ExpirationApp:
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
 
-        back_btn =tk.Button(self.root, image=backImg, command=self.create_home_screen).pack(pady=10)
+        back_btn = tk.Button(self.root,
+                             cursor="hand2",
+                             image=backImg,
+                             #command=self.create_home_screen)
+                             command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=10)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -385,7 +664,7 @@ class ExpirationApp:
             self.create_list_view()
 
     def show_detail_view(self, item):
-        self.current_item = item  
+        self.current_item = item
         self.clear_screen()
         self.set_background()
         days = item.days_until_expired()
@@ -418,24 +697,39 @@ class ExpirationApp:
 				#text="Open Scanner",
 				image=camImg,
 				#command=lambda: self.show_camera)
-				#command=self.show_camera)
-				command=lambda: self.detect_barcode("codes/barcode.png"))
+				command=self.show_camera)
+				#command=lambda: self.detect_barcode_from_camera())
         scanner_btn.pack(pady=5)
 
-        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+#        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+        ToolTip(scanner_btn, "Click to Open Barcode Scanner")
 
         barcode_btn = tk.Button(self.root,
 				cursor="hand2",
 				#text="Detect Barcode",
 				image=scanImg,
 				#command=lambda: self.detect_barcode("codes/barcode.png"))
-				command=self.detect_barcode("codes/barcode.png"))
+				command=lambda: self.detect_barcode("codes/barcode.png"))
+				#command=lambda: self.detect_barcode_from_camera())
         barcode_btn.pack(pady=5)
 
-        manual_btn = tk.Button(self.root, text="Enter Barcode", command=self.barcode_entry)
-        manual_btn.pack(pady=10)
+#        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
+        ToolTip(barcode_btn, "Click to Display Scanned Barcode")
 
-        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
+              # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code.pack(pady=5)
+
+        self.barcode_entry = tk.Entry(self.root)
+        self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
+
+#        manual_btn = tk.Button(self.root, text="Enter Barcode", command=self.barcode_entry)
+#        manual_btn.pack(pady=10)
+#        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
 
         # Back to card view
         back_btn = tk.Button(self.root,
@@ -443,9 +737,9 @@ class ExpirationApp:
 			#text="Back",
 			image=cardImg,
 			#command=lambda: self.create_card_view)
-			command=self.create_card_view)
+			command=lambda: [self.stop_camera(), self.create_card_view])
         back_btn.pack(pady=10)
-
+        ToolTip(back_btn, "Click to Return to Card View")
 
     def barcode_entry(self):
         barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
@@ -461,6 +755,52 @@ class ExpirationApp:
                 self.save_items()
                 self.show_detail_view(self.current_item)
 
+    def detect_barcode_from_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+        self.cpt = cv2.VideoCapture(0)
+
+        if not self.cpt.isOpened():
+            print("Cannot open camera")
+            return
+
+        self.update_frame()
+
+    def update_frame(self):
+        if not hasattr(self, 'cpt') or not self.cpt.isOpened():
+           return
+
+        ret, frame = self.cpt.read()
+        if not ret:
+            print("Failed to Grab Frame")
+            self.cpt.release()
+            return
+
+        barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+
+        for barcode in barcodes:
+            data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            print(f"Detected Barcode: {barcode_type} - {data}")
+
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, data, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Convert to ImageTk
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_rgb)
+        imgtk = ImageTk.PhotoImage(image=img_pil)
+
+	## Only Update if Camera Label Still Exists ##
+        if hasattr(self, 'camera_label') and self.camera_label.winfo_exists():
+            self.camera_label.imgtk = imgtk  # prevent garbage collection
+            self.camera_label.config(image=imgtk)
+
+        # Schedule the next frame
+        self.root.after(10, self.update_frame)
 
     def fetch_open_food_facts(self, barcode, item=None):
         import requests
@@ -511,7 +851,7 @@ class ExpirationApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to fetch data: {e}")
         return nutrition_info
-    
+
     def show_nutrition_info(self, nutrition_info):
         # Show nutrition information in a popup window
         info_window = tk.Toplevel(self.root)
@@ -554,7 +894,7 @@ class ExpirationApp:
             messagebox.showerror("Error", "Invalid date format.")
 
         self.refresh_views()
-    
+
     ## Loads items from file
     def load_items(self):
         if os.path.exists(SAVE_FILE):
@@ -588,45 +928,89 @@ class ExpirationApp:
         self.clear_screen()
         self.set_background()
 
-        tk.Label(self.root, text="Add New Item", font=("Arial", 20)).pack(pady=20)
+        tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
 
-        tk.Label(self.root, text="Item Name:").pack()
+        tk.Label(self.root, text="Enter Item Name:", font=("Arial", 15)).pack(pady=5)
+
+        # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
         self.name_entry.pack(pady=5)
+        # bind focus‑in to launch OSK
+        self.name_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.name_entry)
+        )
 
-        tk.Label(self.root, text="Expiration Date:").pack()
+        # — Expiration date picker (unchanged) —
+        tk.Label(self.root, text="Select Expiration Date:", font=("Arial", 15), justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
-        tk.Label(self.root, text="Barcode Number (Auto Fills Name):").pack()
+        # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code.pack(pady=5)
+
         self.barcode_entry = tk.Entry(self.root)
         self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
 
         # Allow barcode to pre-fill name
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry())
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
         #barcode_btn.pack(pady=10)
 
-        tk.Button(self.root,
+        scan_btn = tk.Button(self.root,
 		#text="Scan",
+		cursor="hand2",
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.detect_barcode("codes/barcode.png")).pack(pady=5)
-        tk.Button(self.root,
+		#command=lambda: self.detect_barcode("codes/barcode.png"))
+		#command=lambda: self.detect_barcode_from_camera())
+		command=lambda: self.show_camera())
+
+        scan_btn.pack(pady=5)
+#        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
+        ToolTip(scan_btn, "Click to Show Scanned Barcode")
+
+        save_btn = tk.Button(self.root,
 		#text="Save",
+		cursor="hand2",
 		image=saveImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.save_new_item).pack(pady=5)
-        tk.Button(self.root,
+		command=self.save_new_item)
+        save_btn.pack(pady=5)
+#        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
+        ToolTip(save_btn, "Click to Save Data")
+
+        mode_btn = tk.Button(self.root,
 		#text="Save",
+		cursor="hand2",
 		image=lightImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.toggle_dark_mode).pack(pady=5)
-        tk.Button(self.root,
+		command=self.toggle_dark_mode)
+        mode_btn.pack(pady=5)
+#        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
+        ToolTip(mode_btn, "Click to Toggle Light/Dark Mode")
+
+        back_btn = tk.Button(self.root,
 		#text="Back",
+		cursor="hand2",
 		image=backImg,
-		command=lambda: self.create_tracker_ui(None)).pack(pady=5)
 		#command=self.create_tracker_ui(None)).pack(pady=5)
+		#command=lambda: self.create_tracker_ui(None))
+		command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+        back_btn.pack(pady=5)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+	## Create Side View of Camera ##
+#        self.camera_label = tk.Label(self.root)
+#        self.camera_label.pack(pady=10)
+#        self.camera_label.pack(pady=10, side="right")
+#        self.camera_label.grid(row=0, column=0, columnspan=2, pady=10)
 
     ## Saves item to list ##
     def save_new_item(self):
@@ -676,54 +1060,68 @@ class ExpirationApp:
             widget.destroy()
 
     def init_camera(self):
+	## Ensure Camera Is Not Currently Open ##
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+	## Open Camera and Store in self.cap ##
         self.cpt = cv2.VideoCapture(0)
         self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.camera_label = tk.Label(self.root)
+
+        if not self.cpt.isOpened():
+           print("Cannot Open Camera")
+           return
+
+	## Show Camera Feed ##
+        #self.camera_label = tk.Label(self.root)
 
     def show_camera(self):
         self.clear_screen()
         self.set_background()
+        self.init_camera()
+
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+               self.cpt.release()
+
+        ## Create of Reuse Camera Label ##
+#        if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+#               self.camera_label = tk.Label(self.root)
         self.camera_label = tk.Label(self.root)
-        self.camera_label.pack(pady=20)
+        self.camera_label.pack(pady=20, side="top")
         self.update_camera()
+
         back_btn = tk.Button(self.root,
-                             text="Back",
-                             command=self.create_home_screen)
-        back_btn.pack(pady=10)
+                             image=backImg,
+        		     command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+                             #command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=10, side="left")
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
-        Hovertip(back_btn, "Click to Return to Previous Screen", hover_delay=500)
+        scan_btn = tk.Button(self.root,
+                             image=scanImg,
+                             command=lambda: self.detect_barcode_from_camera())
+        scan_btn.pack(pady=10, side="right")
+        ToolTip(scan_btn, "Click to Scan Barcode")
 
-#    def open_camera(self):
-        # Show live feed from camera
-#        _, frame = self.cpt.read()
-#        opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#        captured_image = Image.fromarray(opencv_image)
-#        photo_image = ImageTk.PhotoImage(image=captured_image)
-
-#        self.label_widget.photo_image = photo_image
-#        self.label_widget.configure(image=photo_image)
-#        self.label_widget.pack()
-
-#        self.camera_label.photo_image = photo_image
-#        self.camera_label.configure(image=photo_image)
-#        self.camera_label.pack()
-
-#        self.root.after(10, self.open_camera)
+        #self.detect_barcode_from_camera()
 
     def update_camera(self):
-      if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
-        return
+      if self.cpt.isOpened():
+         if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+            return
 
 #      if not self.camera_label.winfo_exists():
 #        return
 
-      if self.cpt.isOpened():
+      if hasattr(self, 'cpt') and self.cpt.isOpened():
         ret, frame = self.cpt.read()
         if ret:
             decoded_barcodes = decode(frame)
 
-            for barcode in decoded_barcodes:
+            if decoded_barcodes:
+               for barcode in decoded_barcodes:
                    (x, y, w, h) = barcode.rect
                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
@@ -738,7 +1136,7 @@ class ExpirationApp:
                         print(f"New Barcode Detected: {barcode_data}")
                         self.last_barcode = barcode_data
 
-            print(f"Scanned: {barcode_data}")
+                   print(f"Scanned: {barcode_data}")
 
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -749,6 +1147,14 @@ class ExpirationApp:
       self.camera_loop_id = self.root.after(10, self.update_camera)
 
     def stop_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+        if hasattr(self, 'camera_loop_id'):
+            self.root.after_cancel(self.camera_loop_id)
+        if hasattr(self, 'camera_label'):
+            self.camera_label.destroy()
+
+    def stop_camera_loop(self):
         if hasattr(self, "camera_loop_id"):
                self.root.after_cancel(self.camera_loop_id)
         if self.cpt.isOpened():
@@ -774,7 +1180,7 @@ class ExpirationApp:
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
             barcode_type = barcode.type
-            print("Detected Barcode {barcode_type}): {data}")
+            print(f"Detected Barcode: {barcode_type} - {data}")
 
         (x, y, w, h) = barcode.rect
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -785,9 +1191,258 @@ class ExpirationApp:
         plt.axis('off')
         plt.show()
 
+#        self.detect_barcode_from_camera
+
+class ToolTip:
+    def __init__(self, widget, text, delay=500):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self.tip_window = None
+        self.id = None
+
+        self.widget.bind("<Enter>", self.schedule)
+        self.widget.bind("<Leave>", self.unschedule)
+        self.widget.bind("<Motion>", self.move)
+
+    def schedule(self, event=None):
+        self.unschedule()
+        self.id = self.widget.after(self.delay, self.show_tip)
+
+    def unschedule(self, event=None):
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+        self.hide_tip()
+
+    def move(self, event):
+        if self.tip_window:
+            x, y = event.x_root + 20, event.y_root + 10
+            self.tip_window.geometry(f"+{x}+{y}")
+
+    def show_tip(self):
+        if self.tip_window or not self.text:
+            return
+        x, y = self.widget.winfo_pointerxy()
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x+20}+{y+10}")
+        label = tk.Label(tw, text=self.text, background="#ffffe0", relief='solid', borderwidth=1,
+                         font=("tahoma", 10, "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
+
+def get_weather(city="Shreveport"):
+    api_key = "f63847d7129eb9be9c7a464e1e5ef67b" # Replace with your real API key
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid={api_key}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+        if data["cod"] == 200:
+            temp = data["main"]["temp"]
+            condition = data["weather"][0]["description"].capitalize()
+            return f"{city}: {temp}\u00b0F, {condition}"
+        else:
+            return "Weather not found"
+    except Exception as e:
+        return f"Error: {e}"
+
+weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
+weather_label.pack(pady=20)
+
+def update_weather_old():
+    weather = get_weather("Shreveport")  # Change city as needed
+#    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+#       return
+    weather_label.config(text=weather)
+    root.after(600000, update_weather_old)  # Update every 10 minutes
+
+update_weather_old()
+
+class WeatherApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    #def __init__(self, root, backImg, back_callback=None):
+        self.root = root
+        self.root.title("Weather Forecast")
+        self.backImg = backImg
+        self.back_callback = back_callback
+
+	## Background Image ##
+        #self.backgroundImg = backgroundImg
+        #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
+        pil_weather = Image.open("pics/weather.jpg").resize(
+            (self.root.winfo_screenwidth(), self.root.winfo_screenheight())
+        )
+        self.backgroundImg = ImageTk.PhotoImage(pil_weather)
+#        self.backgroundImg = back_weatherImg
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.image = self.backgroundImg
+
+	## Back Button Image ##
+#        self.backImg = backImg
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
+        self.back_callback = back_callback
+#        self.clear_screen()
+#        self.root.geometry("500x400")
+
+        self.city = "Shreveport"
+        self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+
+        self.weather_ui()
+        self.update_weather()
+
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def set_background(self):
+      try:
+        if hasattr(self, "bg_label"):
+           self.bg_label.destroy()
+#        if self.backgroundImg:
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        self.bg_label = bg_label
+#        try:
+#            self.background_label = tk.Label(self.root, image=backgroundImg)
+#            self.background_label.place(relwidth=1, relheight=1)
+#        except Exception as e:
+#        else:
+#           print("No Background Image Set.")
+      except Exception as e:
+        print("Error setting background:", e)
+
+    def weather_ui(self):
+        self.clear_screen()
+#        self.set_background()
+
+        ## Set Background Image and Place in the Background ##
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        self.bg_label.image = self.backgroundImg
+
+        ## Main Transparent Content Frame for Layout ##
+        content_frame = tk.Frame(self.root, bg="", padx=10, pady=10)
+        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+#        content_frame.pack(fill="both", expand=True)
+
+        ## Current Weather Label ##
+        self.weather_label = tk.Label(self.root, font=("Arial", 16))
+        self.weather_label.pack(pady=10)
+
+        ## Weather Icon ##
+        self.weather_icon_label = tk.Label(self.root)
+        self.weather_icon_label.pack()
+
+        ## Forecast Frame ##
+        #forecast_frame = tk.Frame(self.root)
+        forecast_frame = tk.Frame(content_frame, bg="white")
+        forecast_frame.pack(pady=10)
+
+        self.forecast_labels = []
+        for _ in range(5):
+            day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame.pack(side="left", padx=5)
+
+            icon_label = tk.Label(day_frame, bg="white")
+            icon_label.pack()
+
+            text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
+            text_label.pack()
+
+            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        ## Back Button ##
+        #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
+        #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        #back_btn.pack(pady=10)
+        self.back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        self.back_btn.pack(pady=10)
+        self.back_btn.image = self.backImg
+
+        self.update_weather()
+
+    def update_weather(self):
+        try:
+            if not hasattr(self, 'city'):
+                  self.city = "Shreveport"
+            if not hasattr(self, 'api-key'):
+                  self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+
+            url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            # Current weather
+            current = data['list'][0]
+            temp = current['main']['temp']
+            condition = current['weather'][0]['description'].capitalize()
+            icon_code = current['weather'][0]['icon']
+            icon_img = self.get_icon(icon_code)
+
+            if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+               return
+
+            self.weather_icon_label.config(image=icon_img)
+            self.weather_icon_label.image = icon_img
+            self.weather_label.config(text=f"{self.city}: {temp:.1f}\u00b0F, {condition}")
+
+            # 5-day forecast
+            for i in range(1, 6):
+                forecast = data['list'][i * 8]  # 24 hours apart
+                day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
+                temp = forecast['main']['temp']
+                condition = forecast['weather'][0]['main']
+                icon_code = forecast['weather'][0]['icon']
+                icon_img = self.get_icon(icon_code)
+
+                self.forecast_labels[i - 1]['icon'].config(image=icon_img)
+                self.forecast_labels[i - 1]['icon'].image = icon_img
+                self.forecast_labels[i - 1]['text'].config(
+                    text=f"{day}\n{temp:.0f}\u00b0F\n{condition}"
+                )
+
+        except Exception as e:
+            import traceback
+            print("Error fetching weather:", e)
+            if hasattr(self, "weather_label"):
+                 self.weather_label.config(text="Weather: Unable to load")
+
+    def get_icon(self, code):
+        try:
+            url = f"http://openweathermap.org/img/wn/{code}@2x.png"
+            response = requests.get(url)
+            img_data = Image.open(BytesIO(response.content))
+            return ImageTk.PhotoImage(img_data)
+        except Exception as e:
+            print("Icon load failed:", e)
+            return None
+
 if __name__ == "__main__":
-#    root = tk.Tk()
-#    root.geometry("1024x600")
-#    root.title("Expiration Tracker")
-    app = ExpirationApp(root)
+#  root = tk.Tk()
+ #   root.geometry("1024x600")
+ #   root.title("Pantry Server")
+
+    # hide the main window until the splash is done
+    root.withdraw()
+
+    # show splash for 3.5s
+    splash = SplashScreen(root, "pics/IntroGIF.gif", delay=3500)
+
+    # after 3500ms, destroy the splash, show the main window, and launch the app exactly once
+    def start_app():
+        splash.destroy()
+        root.deiconify()
+        ExpirationApp(root)
+
+    root.after(3500, start_app)
     root.mainloop()
