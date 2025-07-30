@@ -383,6 +383,7 @@ class ExpirationApp:
 
         track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         track_btn.pack(side=tk.RIGHT)
+        ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
@@ -531,7 +532,7 @@ class ExpirationApp:
                                   cursor="hand2",
                                   image=backImg,
                                   #command=self.create_home_screen)
-                                  command=lambda: self.create_tracker_ui(None))
+                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
         card_back_btn.pack(pady=10)
 #        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(card_back_btn, "Click to Return to the Previous Screen")
@@ -627,8 +628,8 @@ class ExpirationApp:
 				#text="Open Scanner",
 				image=camImg,
 				#command=lambda: self.show_camera)
-				#command=self.show_camera)
-				command=lambda: self.detect_barcode_from_camera())
+				command=self.show_camera)
+				#command=lambda: self.detect_barcode_from_camera())
         scanner_btn.pack(pady=5)
 
 #        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
@@ -667,9 +668,9 @@ class ExpirationApp:
 			#text="Back",
 			image=cardImg,
 			#command=lambda: self.create_card_view)
-			command=self.create_card_view)
+			command=lambda: [self.stop_camera(), self.create_card_view])
         back_btn.pack(pady=10)
-
+        ToolTip(back_btn, "Click to Return to Card View")
 
     def barcode_entry(self):
         barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
@@ -898,7 +899,9 @@ class ExpirationApp:
 		image=scanImg,
 		#command=lambda: self.save_new_item).pack(pady=5)
 		#command=lambda: self.detect_barcode("codes/barcode.png"))
-		command=lambda: self.detect_barcode_from_camera())
+		#command=lambda: self.detect_barcode_from_camera())
+		command=lambda: self.show_camera())
+
         scan_btn.pack(pady=5)
 #        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
         ToolTip(scan_btn, "Click to Show Scanned Barcode")
@@ -934,8 +937,11 @@ class ExpirationApp:
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
-        self.camera_label = tk.Label(self.root)
-        self.camera_label.pack(pady=10, side="right")
+	## Create Side View of Camera ##
+#        self.camera_label = tk.Label(self.root)
+#        self.camera_label.pack(pady=10)
+#        self.camera_label.pack(pady=10, side="right")
+#        self.camera_label.grid(row=0, column=0, columnspan=2, pady=10)
 
     ## Saves item to list ##
     def save_new_item(self):
