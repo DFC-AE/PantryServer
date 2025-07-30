@@ -343,6 +343,9 @@ class ExpirationApp:
 
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
+    #def create_home_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
         self.clear_screen()
         self.set_background()
 
@@ -463,7 +466,7 @@ class ExpirationApp:
     def open_weather_ui(self):
         self.clear_screen()
         #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
-        WeatherApp(self.root, self.backgroundImg, self.create_home_screen)
+        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1269,6 +1272,7 @@ class WeatherApp:
     #def __init__(self, root, backImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
+        self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
 
@@ -1364,8 +1368,23 @@ class WeatherApp:
         #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
         #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
         #back_btn.pack(pady=10)
-        self.back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
-        self.back_btn.pack(pady=10)
+        if callable(self.back_callback):
+            self.back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=self.backImg,
+                                  #command=self.back_callback)
+                                  #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
+                                  command=self.back_callback)
+                                  #command=lambda: self.create_home_screen(None))
+        else:
+            self.back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=self.backImg,
+                                  #command=self.back_callback)
+                                  command=self.root.destroy)
+                                  #command=lambda: self.create_home_screen(None))
+        #self.back_btn.pack(pady=10)
+        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
         self.back_btn.image = self.backImg
 
         self.update_weather()
@@ -1374,13 +1393,16 @@ class WeatherApp:
         try:
             if not hasattr(self, 'city'):
                   self.city = "Shreveport"
-            if not hasattr(self, 'api-key'):
+            if not hasattr(self, 'api_key'):
                   self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
 
             url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
+
+            if "list" not in data or len(data["list"]) < 6:
+               raise ValueError("Incomplete Forecast Data")
 
             # Current weather
             current = data['list'][0]
@@ -1398,7 +1420,13 @@ class WeatherApp:
 
             # 5-day forecast
             for i in range(1, 6):
-                forecast = data['list'][i * 8]  # 24 hours apart
+                index = i * 8
+                if index >= len(data['list']):
+                   print(f"Skipping Forecast Index {index} (out of range)")
+                   continue
+
+                #forecast = data['list'][i * 8]  # 24 hours apart
+                forecast = data['list'][index]  # 24 hours apart
                 day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
                 temp = forecast['main']['temp']
                 condition = forecast['weather'][0]['main']
