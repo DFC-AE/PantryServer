@@ -1338,12 +1338,18 @@ class WeatherApp:
         content_frame.place(relx=0.5, rely=0.5, anchor="center")
 #        content_frame.pack(fill="both", expand=True)
 
+	## Current Weather Content Frame ##
+#        content_frame = tk.Frame(self.root, bg="white", padx=10, pady=10)
+#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+
         ## Current Weather Label ##
-        self.weather_label = tk.Label(self.root, font=("Arial", 16))
+        #self.weather_label = tk.Label(self.root, font=("Arial", 16))
+        self.weather_label = tk.Label(content_frame, font=("Arial", 16))
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
-        self.weather_icon_label = tk.Label(self.root)
+        #self.weather_icon_label = tk.Label(self.root)
+        self.weather_icon_label = tk.Label(content_frame)
         self.weather_icon_label.pack()
 
         ## Forecast Frame ##
@@ -1384,7 +1390,8 @@ class WeatherApp:
                                   command=self.root.destroy)
                                   #command=lambda: self.create_home_screen(None))
         #self.back_btn.pack(pady=10)
-        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        #self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        self.back_btn.place(x=10, y=10, anchor="s")
         self.back_btn.image = self.backImg
 
         self.update_weather()
