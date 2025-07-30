@@ -14,10 +14,10 @@ import os
 import sys
 import json
 import random
-import idlelib
-from idlelib.tooltip import Hovertip
+#import idlelib
+#from idlelib.tooltip import Hovertip
 ##setup Virtual Keyboard
-Hovertip
+#Hovertip
 from pynput import keyboard as pk
 # Splashscreen Setup
 class SplashScreen(tk.Toplevel):
@@ -362,7 +362,8 @@ class ExpirationApp:
         dark_mode_btn.pack(side=tk.LEFT)
 
 
-        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
 #    def get_time():
 #        string = strftime("%A, %D %B %Y %R")
@@ -389,7 +390,8 @@ class ExpirationApp:
 			command=self.add_item_popup)
         add_btn.pack(pady=5)
 
-        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
+#        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
+        ToolTip(add_btn, "Click to Add Item")
 
 	## Open Camera ##
         cam_btn = tk.Button(self.root,
@@ -401,7 +403,8 @@ class ExpirationApp:
 			command=self.show_camera)
         cam_btn.pack(pady=5)
 
-        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
+#        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
+        ToolTip(cam_btn, "Click to Open Camera")
 
 	## Show List View ##
         list_view_btn = tk.Button(self.root,
@@ -412,7 +415,8 @@ class ExpirationApp:
 				command=self.create_list_view)
         list_view_btn.pack(pady=5)
 
-        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+#        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+        ToolTip(list_view_btn, "Click to Open Inventory in List View")
 
 	## Show Card View ##
         card_view_btn = tk.Button(self.root,
@@ -423,7 +427,8 @@ class ExpirationApp:
 				command=self.create_card_view)
         card_view_btn.pack(pady=5)
 
-        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+#        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+        ToolTip(card_view_btn, "Click to Open Inventory in Card View")
 
 	## Mode ##
         dark_mode_btn = tk.Button(self.root,
@@ -434,7 +439,8 @@ class ExpirationApp:
 				command=self.toggle_dark_mode)
         dark_mode_btn.pack(pady=10)
 
-        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode")
 
 	## Show Back ##
         back_btn = tk.Button(self.root,
@@ -443,7 +449,8 @@ class ExpirationApp:
 			command=lambda: self.create_home_screen(None))
         back_btn.pack(pady=10)
 
-        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     ## Create Card view ##
     def create_card_view(self):
@@ -500,7 +507,8 @@ class ExpirationApp:
                                   #command=self.create_home_screen)
                                   command=lambda: self.create_tracker_ui(None))
         card_back_btn.pack(pady=10)
-        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+#        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
 
     ## Create list view ##
     def create_list_view(self):
@@ -550,7 +558,8 @@ class ExpirationApp:
                              #command=self.create_home_screen)
                              command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
-        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     def refresh_views(self):
         if self.current_view == "card":
@@ -596,7 +605,8 @@ class ExpirationApp:
 				#command=lambda: self.detect_barcode("codes/barcode.png"))
         scanner_btn.pack(pady=5)
 
-        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+#        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+        ToolTip(scanner_btn, "Click to Open Barcode Scanner")
 
         barcode_btn = tk.Button(self.root,
 				cursor="hand2",
@@ -606,7 +616,8 @@ class ExpirationApp:
 				command=lambda: self.detect_barcode("codes/barcode.png"))
         barcode_btn.pack(pady=5)
 
-        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
+#        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
+        ToolTip(barcode_btn, "Click to Display Scanned Barcode")
 
               # Barcode Entry (auto‑pop OSK on focus)
         label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
@@ -815,7 +826,8 @@ class ExpirationApp:
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=lambda: self.detect_barcode("codes/barcode.png"))
         scan_btn.pack(pady=5)
-        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
+#        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
+        ToolTip(scan_btn, "Click to Show Scanned Barcode")
 
         save_btn = tk.Button(self.root,
 		#text="Save",
@@ -824,7 +836,8 @@ class ExpirationApp:
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=self.save_new_item)
         save_btn.pack(pady=5)
-        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
+#        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
+        ToolTip(save_btn, "Click to Save Data")
 
         mode_btn = tk.Button(self.root,
 		#text="Save",
@@ -833,7 +846,8 @@ class ExpirationApp:
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=self.toggle_dark_mode)
         mode_btn.pack(pady=5)
-        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
+#        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
+        ToolTip(mode_btn, "Click to Toggle Light/Dark Mode")
 
         back_btn = tk.Button(self.root,
 		#text="Back",
@@ -842,7 +856,8 @@ class ExpirationApp:
 		#command=self.create_tracker_ui(None)).pack(pady=5)
 		command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=5)
-        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Return to the Previous Screen")
 
     ## Saves item to list ##
     def save_new_item(self):
@@ -914,7 +929,8 @@ class ExpirationApp:
                              command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
 
-        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
 #    def open_camera(self):
         # Show live feed from camera
@@ -1009,6 +1025,48 @@ class ExpirationApp:
         plt.axis('off')
         plt.show()
 
+class ToolTip:
+    def __init__(self, widget, text, delay=500):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self.tip_window = None
+        self.id = None
+
+        self.widget.bind("<Enter>", self.schedule)
+        self.widget.bind("<Leave>", self.unschedule)
+        self.widget.bind("<Motion>", self.move)
+
+    def schedule(self, event=None):
+        self.unschedule()
+        self.id = self.widget.after(self.delay, self.show_tip)
+
+    def unschedule(self, event=None):
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+        self.hide_tip()
+
+    def move(self, event):
+        if self.tip_window:
+            x, y = event.x_root + 20, event.y_root + 10
+            self.tip_window.geometry(f"+{x}+{y}")
+
+    def show_tip(self):
+        if self.tip_window or not self.text:
+            return
+        x, y = self.widget.winfo_pointerxy()
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x+20}+{y+10}")
+        label = tk.Label(tw, text=self.text, background="#ffffe0", relief='solid', borderwidth=1,
+                         font=("tahoma", 10, "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
 
 if __name__ == "__main__":
 #  root = tk.Tk()
