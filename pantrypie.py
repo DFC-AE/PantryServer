@@ -236,6 +236,10 @@ viewImg = ImageTk.PhotoImage(img_view)
 img_weather = Image.open("pics/weather.png")
 img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 weatherImg = ImageTk.PhotoImage(img_weather)
+## Weather Background Image ##
+img_back_weather = Image.open("pics/weather.jpg")
+img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -321,6 +325,7 @@ class ExpirationApp:
         self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
+#        self.backImg = tk.PhotoImage(file="pics/back.png")
         self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
@@ -457,6 +462,7 @@ class ExpirationApp:
 
     def open_weather_ui(self):
         self.clear_screen()
+        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
         WeatherApp(self.root, self.backgroundImg, self.create_home_screen)
 
     ## Create Tracker Screen ##
@@ -1249,19 +1255,38 @@ def get_weather(city="Shreveport"):
 weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
 weather_label.pack(pady=20)
 
-def update_weather():
+def update_weather_old():
     weather = get_weather("Shreveport")  # Change city as needed
+#    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+#       return
     weather_label.config(text=weather)
-    root.after(600000, update_weather)  # Update every 10 minutes
+    root.after(600000, update_weather_old)  # Update every 10 minutes
 
-update_weather()
+update_weather_old()
 
 class WeatherApp:
-    def __init__(self, root, backgroundImg, back_callback=None):
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    #def __init__(self, root, backImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
-        self.backgroundImg = backgroundImg
         self.backImg = backImg
+        self.back_callback = back_callback
+
+	## Background Image ##
+        #self.backgroundImg = backgroundImg
+        #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
+        pil_weather = Image.open("pics/weather.jpg").resize(
+            (self.root.winfo_screenwidth(), self.root.winfo_screenheight())
+        )
+        self.backgroundImg = ImageTk.PhotoImage(pil_weather)
+#        self.backgroundImg = back_weatherImg
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.image = self.backgroundImg
+
+	## Back Button Image ##
+#        self.backImg = backImg
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 #        self.clear_screen()
 #        self.root.geometry("500x400")
@@ -1272,19 +1297,54 @@ class WeatherApp:
         self.weather_ui()
         self.update_weather()
 
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def set_background(self):
+      try:
+        if hasattr(self, "bg_label"):
+           self.bg_label.destroy()
+#        if self.backgroundImg:
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        self.bg_label = bg_label
+#        try:
+#            self.background_label = tk.Label(self.root, image=backgroundImg)
+#            self.background_label.place(relwidth=1, relheight=1)
+#        except Exception as e:
+#        else:
+#           print("No Background Image Set.")
+      except Exception as e:
+        print("Error setting background:", e)
+
     def weather_ui(self):
         self.clear_screen()
-        self.set_background()
+#        self.set_background()
 
-        # Current weather
+        ## Set Background Image and Place in the Background ##
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        self.bg_label.image = self.backgroundImg
+
+        ## Main Transparent Content Frame for Layout ##
+        content_frame = tk.Frame(self.root, bg="", padx=10, pady=10)
+        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+#        content_frame.pack(fill="both", expand=True)
+
+        ## Current Weather Label ##
         self.weather_label = tk.Label(self.root, font=("Arial", 16))
         self.weather_label.pack(pady=10)
 
+        ## Weather Icon ##
         self.weather_icon_label = tk.Label(self.root)
         self.weather_icon_label.pack()
 
-        # Forecast frame
-        forecast_frame = tk.Frame(self.root)
+        ## Forecast Frame ##
+        #forecast_frame = tk.Frame(self.root)
+        forecast_frame = tk.Frame(content_frame, bg="white")
         forecast_frame.pack(pady=10)
 
         self.forecast_labels = []
@@ -1292,30 +1352,23 @@ class WeatherApp:
             day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
             day_frame.pack(side="left", padx=5)
 
-            icon_label = tk.Label(day_frame)
+            icon_label = tk.Label(day_frame, bg="white")
             icon_label.pack()
 
-            text_label = tk.Label(day_frame, font=("Arial", 10))
+            text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
+        ## Back Button ##
         #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
-        back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
-        back_btn.pack(pady=10)
+        #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        #back_btn.pack(pady=10)
+        self.back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        self.back_btn.pack(pady=10)
+        self.back_btn.image = self.backImg
 
         self.update_weather()
-
-    def clear_screen(self):
-        for widget in self.root.winfo_children():
-            widget.destory()
-
-    def set_background(self):
-        try:
-            self.background_label = tk.Label(self.root, image=backgroundImg)
-            self.background_label.place(relwidth=1, relheight=1)
-        except Exception as e:
-            print("Error setting background:", e)
 
     def update_weather(self):
         try:
@@ -1335,6 +1388,9 @@ class WeatherApp:
             condition = current['weather'][0]['description'].capitalize()
             icon_code = current['weather'][0]['icon']
             icon_img = self.get_icon(icon_code)
+
+            if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+               return
 
             self.weather_icon_label.config(image=icon_img)
             self.weather_icon_label.image = icon_img
