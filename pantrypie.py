@@ -240,6 +240,9 @@ weatherImg = ImageTk.PhotoImage(img_weather)
 img_back_weather = Image.open("pics/weather.jpg")
 img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_weatherImg = ImageTk.PhotoImage(img_back_weather)
+## Weather Back Button Image ##
+img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
+backsmallImg = ImageTk.PhotoImage(img_back_small)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -1273,7 +1276,8 @@ class WeatherApp:
         self.root = root
         self.root.title("Weather Forecast")
         self.backgroundImg = backgroundImg
-        self.backImg = backImg
+        self.backImg = backsmallImg
+        #self.backImg = ImageTK.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 
 	## Background Image ##
@@ -1374,24 +1378,25 @@ class WeatherApp:
         #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
         #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
         #back_btn.pack(pady=10)
-        if callable(self.back_callback):
-            self.back_btn = tk.Button(self.root,
-                                  cursor="hand2",
-                                  image=self.backImg,
+#        if callable(self.back_callback):
+        self.back_btn = tk.Button(self.root,
+                              cursor="hand2",
+                              #image=self.backImg,
+                              image=backsmallImg,
                                   #command=self.back_callback)
                                   #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
-                                  command=self.back_callback)
+                              command=self.back_callback)
                                   #command=lambda: self.create_home_screen(None))
-        else:
-            self.back_btn = tk.Button(self.root,
-                                  cursor="hand2",
-                                  image=self.backImg,
+#        else:
+#            self.back_btn = tk.Button(self.root,
+#                                  cursor="hand2",
+#                                  image=self.backImg,
                                   #command=self.back_callback)
-                                  command=self.root.destroy)
+#                                  command=self.root.destroy)
                                   #command=lambda: self.create_home_screen(None))
         #self.back_btn.pack(pady=10)
-        #self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
-        self.back_btn.place(x=10, y=10, anchor="s")
+        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        #self.back_btn.place(x=10, y=10, anchor="s")
         self.back_btn.image = self.backImg
 
         self.update_weather()
