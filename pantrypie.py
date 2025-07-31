@@ -25,6 +25,7 @@ from io import BytesIO
 #import spotipy
 #from spotipy.oauth2 import SpotifyOAuth
 import base64
+import pygame
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -227,6 +228,10 @@ itemImg = ImageTk.PhotoImage(img_item)
 img_list = Image.open("pics/list.png")
 img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
 listImg = ImageTk.PhotoImage(img_list)
+## NPR Image ##
+img_npr = Image.open("pics/npr.png")
+img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
+nprImg = ImageTk.PhotoImage(img_npr)
 ## Save Image ##
 img_save = Image.open("pics/save.jpg")
 img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -506,6 +511,10 @@ class ExpirationApp:
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
+        npr_btn = tk.Button(button_frame, cursor="hand2", image=nprImg, width=100, height=100, command=lambda: self.play_npr)
+        npr_btn.pack(side=tk.RIGHT)
+        ToolTip(npr_btn, "Click to Open Nation Public Radio")
+
         spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui)
         spot_btn.pack(side=tk.RIGHT)
         ToolTip(spot_btn, "Click to Open Spotify")
@@ -532,6 +541,19 @@ class ExpirationApp:
     def open_spotify_ui(self):
         self.clear_screen()
         SpotifyApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+
+    def play_npr(self):
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+            pygame.mixer.music.play()
+            print("NPR stream started.")
+        except Exception as e:
+            print("Error playing NPR:", e)
+
+    def stop_npr(self):
+        pygame.mixer.music.stop()
+        print("NPR stream stopped.")
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1681,6 +1703,15 @@ class SpotifyApp:
 
         response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
         return response.json().get("access_token")
+
+## NPR ##
+def play_npr_stream():
+    pygame.mixer.init()
+    pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+    pygame.mixer.music.play()
+
+def stop_npr_stream():
+    pygame.mixer.music.stop()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
