@@ -1,10 +1,5 @@
-- Dark mode / Light mode PARTIALLY WORKING DOES NOT DISPLAY BUT HOLDS CORRECT SETTING ON SCREEN CHANGE DOUBLE CLICK TO RESET
+- Dark mode / Light mode PARTIALLY WORKING DOES NOT DISPLAY FOR BUTTONS BUT HOLDS CORRECT SETTING ON SCREEN CHANGE DOUBLE CLICK TO RESET
 - Edit buttons
-- 4 categories
-    : Camera mode
-    : Inventory
-    : Grocery list
-    : Expired
 - Fix item boxes they don't display the expiration date
 - Light Mode for Keyboard
 - Transition Animations in between Page Changes
@@ -14,3 +9,5 @@
 - Add Soon to be expiring items to home page
 -Click on Home Screen Calendar Date to Show Items Expiring that day
 -Add way for expired items to auto delete after set time period
+- Clear all Items Button
+- Create a Settings Page where portions of the ui or other elements can be changed on the fly
