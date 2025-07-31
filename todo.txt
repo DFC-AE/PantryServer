@@ -10,3 +10,4 @@
 -Click on Home Screen Calendar Date to Show Items Expiring that day
 -Add way for expired items to auto delete after set time period
 - Clear all Items Button
+- Create a Settings Page where portions of the ui or other elements can be changed on the fly
