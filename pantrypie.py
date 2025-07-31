@@ -228,6 +228,10 @@ saveImg = ImageTk.PhotoImage(img_save)
 img_scan = Image.open("pics/scan.jpg")
 img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
 scanImg = ImageTk.PhotoImage(img_scan)
+## Settings Image ##
+img_set = Image.open("pics/settings.png")
+img_set = img_set.resize((img_wdt, img_hgt), Image.LANCZOS)
+setImg = ImageTk.PhotoImage(img_set)
 ## View Image ##
 img_view = Image.open("pics/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -470,9 +474,12 @@ class ExpirationApp:
 
         dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
-
 #        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
+
+        set_btn = tk.Button(button_frame, image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        set_btn.pack(side=tk.LEFT)
+        ToolTip(set_btn, "Click to Enter Configuration")
 
 #    def get_time():
 #        string = strftime("%A, %D %B %Y %R")
