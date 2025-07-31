@@ -26,6 +26,7 @@ from io import BytesIO
 #from spotipy.oauth2 import SpotifyOAuth
 import base64
 import pygame
+import vlc
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -1749,6 +1750,8 @@ class MusicApp:
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
+        self.npr_player = None
+
         self.create_ui()
 
     def create_ui(self):
@@ -1821,15 +1824,26 @@ class MusicApp:
         self.update_now_playing()
 
     def play_npr(self):
-        try:
-            pygame.mixer.init()
-            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
-            pygame.mixer.music.play()
-        except Exception as e:
-            print("NPR Error:", e)
+        if self.npr_player is None:
+           self.npr_player = vlc.MediaPlayer("https://npr-ice.streamguys1.com/live.mp3")
+        self.npr_player.play()
+        print("NPR Stream Started.")
 
     def stop_npr(self):
-        pygame.mixer.music.stop()
+        if self.npr_player:
+           self.npr_player.stop()
+           print("NPR Stream Stopped.")
+
+## Old NPR ##
+#        try:
+#            pygame.mixer.init()
+#            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+#            pygame.mixer.music.play()
+#        except Exception as e:
+#            print("NPR Error:", e)
+
+#    def stop_npr(self):
+#        pygame.mixer.music.stop()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
