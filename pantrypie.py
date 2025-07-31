@@ -1280,15 +1280,21 @@ class WeatherApp:
         #self.backImg = ImageTK.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 
+	## Frame For Weather App Content ##
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        self.weather_ui()
+
 	## Background Image ##
         #self.backgroundImg = backgroundImg
         #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
         pil_weather = Image.open("pics/weather.jpg").resize(
-            (self.root.winfo_screenwidth(), self.root.winfo_screenheight())
+            #(self.root.winfo_screenwidth(), self.root.winfo_screenheight())
+            (self.frame.winfo_screenwidth(), self.frame.winfo_screenheight())
         )
         self.backgroundImg = ImageTk.PhotoImage(pil_weather)
 #        self.backgroundImg = back_weatherImg
-        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.image = self.backgroundImg
 
@@ -1303,10 +1309,11 @@ class WeatherApp:
         self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 
         self.weather_ui()
-        self.update_weather()
+        #self.update_weather()
 
     def clear_screen(self):
-        for widget in self.root.winfo_children():
+        #for widget in self.root.winfo_children():
+        for widget in self.frame.winfo_children():
             widget.destroy()
 
     def set_background(self):
@@ -1314,7 +1321,8 @@ class WeatherApp:
         if hasattr(self, "bg_label"):
            self.bg_label.destroy()
 #        if self.backgroundImg:
-        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
         self.bg_label = bg_label
@@ -1332,15 +1340,16 @@ class WeatherApp:
 #        self.set_background()
 
         ## Set Background Image and Place in the Background ##
-        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
         self.bg_label.image = self.backgroundImg
 
         ## Main Transparent Content Frame for Layout ##
-        content_frame = tk.Frame(self.root, bg="", padx=10, pady=10)
-        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+        content_frame = tk.Frame(self.frame, bg="", padx=10, pady=10)
+#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
 #        content_frame.pack(fill="both", expand=True)
+        content_frame.pack(expand=True)
 
 	## Current Weather Content Frame ##
 #        content_frame = tk.Frame(self.root, bg="white", padx=10, pady=10)
@@ -1348,17 +1357,20 @@ class WeatherApp:
 
         ## Current Weather Label ##
         #self.weather_label = tk.Label(self.root, font=("Arial", 16))
+        #self.weather_label = tk.Label(content_frame, font=("Arial", 16), bg="white")
         self.weather_label = tk.Label(content_frame, font=("Arial", 16))
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
         #self.weather_icon_label = tk.Label(self.root)
+        #self.weather_icon_label = tk.Label(content_frame, bg="white")
         self.weather_icon_label = tk.Label(content_frame)
         self.weather_icon_label.pack()
 
         ## Forecast Frame ##
         #forecast_frame = tk.Frame(self.root)
-        forecast_frame = tk.Frame(content_frame, bg="white")
+        #forecast_frame = tk.Frame(content_frame, bg="white")
+        forecast_frame = tk.Frame(content_frame)
         forecast_frame.pack(pady=10)
 
         self.forecast_labels = []
@@ -1366,10 +1378,12 @@ class WeatherApp:
             day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
             day_frame.pack(side="left", padx=5)
 
-            icon_label = tk.Label(day_frame, bg="white")
+            #icon_label = tk.Label(day_frame, bg="white")
+            icon_label = tk.Label(day_frame)
             icon_label.pack()
 
-            text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
+            #text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
+            text_label = tk.Label(day_frame, font=("Arial", 10))
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
@@ -1379,7 +1393,7 @@ class WeatherApp:
         #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
         #back_btn.pack(pady=10)
 #        if callable(self.back_callback):
-        self.back_btn = tk.Button(self.root,
+        self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
                               #image=self.backImg,
                               image=backsmallImg,
@@ -1398,6 +1412,7 @@ class WeatherApp:
         self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
         #self.back_btn.place(x=10, y=10, anchor="s")
         self.back_btn.image = self.backImg
+        ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
         self.update_weather()
 
