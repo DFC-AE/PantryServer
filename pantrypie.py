@@ -450,6 +450,10 @@ class ExpirationApp:
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
+        item_btn = tk.Button(button_frame, image=itemImg, width=100, height=100, command=self.create_list_view)
+        item_btn.pack(side=tk.RIGHT)
+        ToolTip(item_btn, "Click to Open Food Catalog")
+
         weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
         #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
         weather_btn.pack(side=tk.RIGHT)
