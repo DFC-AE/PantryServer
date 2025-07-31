@@ -1655,7 +1655,7 @@ class SpotifyApp:
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_label = tk.Label(self.frame, image=self.backImg)
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
