@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
-from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label 
+from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label
 from tkinter.font import Font as font
 from datetime import datetime
 from tkcalendar import Calendar, DateEntry
@@ -328,11 +328,12 @@ class ExpirationApp:
         self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
-#        self.backImg = tk.PhotoImage(file="pics/back.png")
         self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
+        #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png").resize((50,50), Image.LANCZOS))
         self.load_items()
         self.init_camera()
         self.create_home_screen()
@@ -345,8 +346,8 @@ class ExpirationApp:
         background.lower()
 
     def open_camera_ui(self):
-        self.clear_screan()
-        CameraApp(self.root, self.backgroundImg, self.backImg, self.tracker_ui)
+        self.clear_screen()
+        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
 
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
@@ -454,7 +455,7 @@ class ExpirationApp:
         item_btn.pack(side=tk.RIGHT)
         ToolTip(item_btn, "Click to Open Food Catalog")
 
-        scan_btn = tk.Button(button_frame, image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui)
+        scan_btn = tk.Button(button_frame, image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui())
         scan_btn.pack(side=tk.RIGHT)
         ToolTip(scan_btn, "Click to Scan New Barcodes")
 
