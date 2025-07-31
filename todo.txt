@@ -14,3 +14,4 @@
 - Display Recepies based on expiring ingredients
 - Show Sales on Expiring Items from local stores
 - Add detail view from list view
+- Currently out of key items indicator
