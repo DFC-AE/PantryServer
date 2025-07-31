@@ -396,6 +396,37 @@ class ExpirationApp:
         self.clear_screen()
         CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
 
+    def open_weather_ui(self):
+        self.clear_screen()
+        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+    def open_music_ui(self):
+        print("open_music_ui triggered")
+        self.clear_screen()
+        try:
+            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+            print("MusicApp successfully created")
+        except Exception as e:
+            print("Error Launching MusicApp:", e)
+
+    def open_spotify_ui(self):
+        self.clear_screen()
+        SpotifyApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+
+    def play_npr(self):
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+            pygame.mixer.music.play()
+            print("NPR stream started.")
+        except Exception as e:
+            print("Error playing NPR:", e)
+
+    def stop_npr(self):
+        pygame.mixer.music.stop()
+        print("NPR stream stopped.")
+
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
     #def create_home_screen(self):
@@ -414,6 +445,9 @@ class ExpirationApp:
 
         frame = tk.Frame(self.root)
         frame.pack(pady=10)
+
+#        button_frame = tk.Frame(self.root)
+#        button_grame.pack(pady=20)
 
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
@@ -515,15 +549,15 @@ class ExpirationApp:
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
-        music_btn = tk.Button(button_frame, cursor="hand2", image=musicImg, width=100, height=100, command=lambda: self.open_music_ui)
+        music_btn = tk.Button(button_frame, cursor="hand2", image=musicImg, width=100, height=100, command=lambda: self.open_music_ui())
         music_btn.pack(side=tk.RIGHT)
         ToolTip(music_btn, "Click to Open Radio")
 
-        npr_btn = tk.Button(button_frame, cursor="hand2", image=nprImg, width=100, height=100, command=lambda: self.play_npr)
+        npr_btn = tk.Button(button_frame, cursor="hand2", image=nprImg, width=100, height=100, command=lambda: self.play_npr())
         npr_btn.pack(side=tk.RIGHT)
         ToolTip(npr_btn, "Click to Open Nation Public Radio")
 
-        spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui)
+        spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui())
         spot_btn.pack(side=tk.RIGHT)
         ToolTip(spot_btn, "Click to Open Spotify")
 
@@ -540,32 +574,6 @@ class ExpirationApp:
 #        string = strftime("%A, %D %B %Y %R")
 #        self.clk.config(text=string)
 #        self.clk.after(1000, get_time)
-
-    def open_weather_ui(self):
-        self.clear_screen()
-        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
-        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
-
-    def open_music_ui(self):
-        self.clear_screen()
-        MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
-
-    def open_spotify_ui(self):
-        self.clear_screen()
-        SpotifyApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
-
-    def play_npr(self):
-        try:
-            pygame.mixer.init()
-            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
-            pygame.mixer.music.play()
-            print("NPR stream started.")
-        except Exception as e:
-            print("Error playing NPR:", e)
-
-    def stop_npr(self):
-        pygame.mixer.music.stop()
-        print("NPR stream stopped.")
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1636,18 +1644,18 @@ class CameraApp:
 #next_btn = tk.Button(self.frame, text="Next", command=lambda: sp.next_track())
 
 class SpotifyApp:
-    def __init__(self, root, bg_img, back_img, back_callback, token):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token):
     #def __init__(self, root, bg_img, back_img, back_callback, spotify_token):
         self.root = root
-        self.bg_img = bg_img
-        self.back_img = back_img
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
 
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_label = tk.Label(self.frame, image=self.bg_img)
+        self.bg_label = tk.Label(self.frame, image=self.backImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
@@ -1655,7 +1663,7 @@ class SpotifyApp:
 
     def create_ui(self):
         # Back button
-        tk.Button(self.frame, image=self.back_img, command=self.back_callback).place(relx=0.05, rely=0.9)
+        tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # Spotify info
         self.track_label = tk.Label(self.frame, text="Loading...", font=("Arial", 16), bg="white")
@@ -1727,17 +1735,17 @@ def stop_npr_stream():
 
 ## Music Page ##
 class MusicApp:
-    def __init__(self, root, bg_img, back_img, back_callback, token):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token):
         self.root = root
-        self.bg_img = bg_img
-        self.back_img = back_img
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
 
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_label = tk.Label(self.frame, image=self.bg_img)
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
@@ -1745,7 +1753,7 @@ class MusicApp:
 
     def create_ui(self):
         # Back button
-        tk.Button(self.frame, image=self.back_img, command=self.back_callback).place(relx=0.05, rely=0.9)
+        tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # --- Spotify Section ---
         self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=("Arial", 16), bg="white")
