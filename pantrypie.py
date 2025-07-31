@@ -28,6 +28,8 @@ import base64
 import pygame
 import vlc
 import webbrowser
+## MultiThreading ##
+import threading
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -1681,6 +1683,7 @@ class SpotifyApp:
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
 
         #self.update_now_playing()
+        #threading.Thread(target=self.load_music_data, daemon=True).start()
 
 	## Requires Auth Token not Client ##
         #tracks = self.fetch_playlist_tracks()
@@ -1702,6 +1705,11 @@ class SpotifyApp:
             except Exception as e:
                 print(f"Failed to Load Image: {e}")
                 tk.Label(self.frame, text="Image Failed to Load", bg="white").pack()
+
+    def load_music_data(self):
+        self.update_now_playing()
+        tracks = self.fetch_playlist_tracks()
+        self.display_tracks(tracks)
 
     def update_now_playing(self):
         headers = {"Authorization": f"Bearer {self.token}"}
@@ -1732,7 +1740,8 @@ class SpotifyApp:
 
     def next_track(self):
         requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
-        self.update_now_playing()
+        #self.update_now_playing()
+        threading.Thread(target=self.load_music_data, daemon=True).start()
 
     def get_spotify_token(client_id, client_secret):
         auth_str = f"{client_id}:{client_secret}"
@@ -1793,6 +1802,27 @@ class SpotifyApp:
             tracks.append((name, artist, image_url, external_url))
         return tracks
 
+    def display_tracks(self, tracks):
+        for name, artist, image_url, link in tracks[:5]:
+            def render():
+                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+                label.pack()
+
+                try:
+                    img_data = requests.get(image_url, timeout=5).content
+                    img = Image.open(BytesIO(img_data)).resize((100, 100))
+                    photo = ImageTk.PhotoImage(img)
+                    img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                    img_label.image = photo
+                    img_label.pack()
+                    img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+                except Exception as e:
+                    print("Image load failed:", e)
+                    fallback = tk.Label(self.frame, text="[Image not loaded]", bg="white")
+                    fallback.pack()
+
+            self.frame.after(0, render)
+
 ## NPR ##
 def play_npr_stream():
     pygame.mixer.init()
@@ -1849,7 +1879,34 @@ class MusicApp:
         tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
         tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
 
-        self.update_now_playing()
+        #self.update_now_playing()
+        threading.Thread(target=self.load_music_data, daemon=True).start()
+
+    def load_music_data(self):
+        self.update_now_playing()  # fetch and update current song
+        tracks = self.fetch_playlist_tracks()  # fetch playlist
+        self.display_tracks(tracks)  # safely update UI
+
+    def display_tracks(self, tracks):
+        for name, artist, image_url, link in tracks[:5]:
+            def render():
+                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+                label.pack()
+
+                try:
+                    img_data = requests.get(image_url, timeout=5).content
+                    img = Image.open(BytesIO(img_data)).resize((100, 100))
+                    photo = ImageTk.PhotoImage(img)
+                    img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                    img_label.image = photo  # prevent garbage collection
+                    img_label.pack()
+                    img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+                except Exception as e:
+                    print("Image load failed:", e)
+                    fallback = tk.Label(self.frame, text="[Image not loaded]", bg="white")
+                    fallback.pack()
+
+            self.frame.after(0, render)
 
     def update_now_playing(self):
         headers = {"Authorization": f"Bearer {self.token}"}
@@ -1889,7 +1946,8 @@ class MusicApp:
 
     def next_track(self):
         requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
-        self.update_now_playing()
+        #self.update_now_playing()
+        threading.Thread(target=self.load_music_data, daemon=True).start()
 
     def play_npr(self):
         if self.npr_player is None:
@@ -1903,7 +1961,7 @@ class MusicApp:
            print("NPR Stream Stopped.")
 
     def fetch_playlist_tracks(self):
-        playlist_id = "7n9hHKZz1T1rRnGg3d7gHv"  # replace with your playlist
+        playlist_id = "37i9dQZF1DXcBWIGoYBM5M"  # replace with your playlist
         url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
         headers = {
             "Authorization": f"Bearer {self.token}"
