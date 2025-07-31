@@ -11,3 +11,6 @@
 -Add way for expired items to auto delete after set time period
 - Clear all Items Button
 - Create a Settings Page where portions of the ui or other elements can be changed on the fly
+- Display Recepies based on expiring ingredients
+- Show Sales on Expiring Items from local stores
+- Add detail view from list view
