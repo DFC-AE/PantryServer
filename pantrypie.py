@@ -344,6 +344,10 @@ class ExpirationApp:
         background.place(x=0, y=0, relwidth=1, relheight=1)
         background.lower()
 
+    def open_camera_ui(self):
+        self.clear_screan()
+        CameraApp(self.root, self.backgroundImg, self.backImg, self.tracker_ui)
+
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
     #def create_home_screen(self):
@@ -446,13 +450,17 @@ class ExpirationApp:
         button_frame = tk.Frame(self.root)
         button_frame.pack(pady=20)
 
-        track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
-        track_btn.pack(side=tk.RIGHT)
-        ToolTip(track_btn, "Click to Enter the Expiration Tracker")
-
         item_btn = tk.Button(button_frame, image=itemImg, width=100, height=100, command=self.create_list_view)
         item_btn.pack(side=tk.RIGHT)
         ToolTip(item_btn, "Click to Open Food Catalog")
+
+        scan_btn = tk.Button(button_frame, image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui)
+        scan_btn.pack(side=tk.RIGHT)
+        ToolTip(scan_btn, "Click to Scan New Barcodes")
+
+        track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        track_btn.pack(side=tk.RIGHT)
+        ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
         weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
         #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
@@ -1485,6 +1493,45 @@ class WeatherApp:
         except Exception as e:
             print("Icon load failed:", e)
             return None
+
+class CameraApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+           print("Failed to Open Camera")
+        else:
+           print("Camera Opened Successfully")
+
+        self.camera_ui()
+        self.update_frame()
+
+    def camera_ui(self):
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.video_label = tk.Label(self.frame, bg="black")
+        self.video_label.place(relx=0.5, rely=0.4, anchor="center")
+
+        self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
+        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+
+    def update_frame(self):
+        if self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(cv2image)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.video_label.configure(image=imgtk)
+                self.video_label.image = imgtk
+        self.frame.after(10, self.update_frame)
 
 if __name__ == "__main__":
 #  root = tk.Tk()
