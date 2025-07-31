@@ -27,6 +27,7 @@ from io import BytesIO
 import base64
 import pygame
 import vlc
+import webbrowser
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -403,11 +404,9 @@ class ExpirationApp:
         WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
 
     def open_music_ui(self):
-        print("open_music_ui triggered")
         self.clear_screen()
         try:
             MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
-            print("MusicApp successfully created")
         except Exception as e:
             print("Error Launching MusicApp:", e)
 
@@ -1646,7 +1645,6 @@ class CameraApp:
 
 class SpotifyApp:
     def __init__(self, root, backgroundImg, backImg, back_callback, token):
-    #def __init__(self, root, bg_img, back_img, back_callback, spotify_token):
         self.root = root
         self.backgroundImg = backgroundImg
         self.backImg = backImg
@@ -1682,7 +1680,28 @@ class SpotifyApp:
         tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
 
-        self.update_now_playing()
+        #self.update_now_playing()
+
+	## Requires Auth Token not Client ##
+        #tracks = self.fetch_playlist_tracks()
+        tracks = self.fetch_top_tracks()
+
+        for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
+            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+            label.pack()
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                img_label.image = photo  # prevent garbage collection
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+            except Exception as e:
+                print(f"Failed to Load Image: {e}")
+                tk.Label(self.frame, text="Image Failed to Load", bg="white").pack()
 
     def update_now_playing(self):
         headers = {"Authorization": f"Bearer {self.token}"}
@@ -1700,7 +1719,7 @@ class SpotifyApp:
 
         self.track_label.config(text=f"{name} - {artist}")
 
-        img_data = requests.get(album_url).content
+        img_data = requests.get(album_url, timeout=5).content
         img = Image.open(BytesIO(img_data)).resize((200, 200))
         self.album_img = ImageTk.PhotoImage(img)
         self.album_art_label.config(image=self.album_img)
@@ -1724,6 +1743,55 @@ class SpotifyApp:
 
         response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
         return response.json().get("access_token")
+
+    def fetch_playlist_tracks(self):
+            playlist_id = "37i9dQZF1DXcBWIGoYBM5M"  # Replace with your playlist ID
+            url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+            headers = {
+                "Authorization": f"Bearer {self.token}"
+            }
+
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                print("Failed to fetch playlist:", resp.text)
+                return []
+
+            data = resp.json()
+            tracks = []
+            for item in data["items"]:
+                track = item["track"]
+                name = track["name"]
+                artist = track["artists"][0]["name"]
+                image_url = track["album"]["images"][0]["url"]
+                external_url = track["external_urls"]["spotify"]
+                tracks.append((name, artist, image_url, external_url))
+            return tracks
+
+    def fetch_top_tracks(self):
+        url = "https://api.spotify.com/v1/search"
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+        params = {
+            "q": "Today's Top Hits",
+            "type": "track",
+            "limit": 5
+       }
+
+        resp = requests.get(url, headers=headers, params=params)
+        if resp.status_code != 200:
+            print("Failed to fetch tracks:", resp.text)
+            return []
+
+        data = resp.json()
+        tracks = []
+        for item in data["tracks"]["items"]:
+            name = item["name"]
+            artist = item["artists"][0]["name"]
+            image_url = item["album"]["images"][0]["url"]
+            external_url = item["external_urls"]["spotify"]
+            tracks.append((name, artist, image_url, external_url))
+        return tracks
 
 ## NPR ##
 def play_npr_stream():
@@ -1805,7 +1873,7 @@ class MusicApp:
 
             self.track_label.config(text=f"{name} - {artist}")
 
-            img_data = requests.get(album_img_url).content
+            img_data = requests.get(album_img_url, timeout=5).content
             img = Image.open(BytesIO(img_data)).resize((200, 200))
             self.album_img = ImageTk.PhotoImage(img)
             self.album_art_label.config(image=self.album_img)
@@ -1834,16 +1902,28 @@ class MusicApp:
            self.npr_player.stop()
            print("NPR Stream Stopped.")
 
-## Old NPR ##
-#        try:
-#            pygame.mixer.init()
-#            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
-#            pygame.mixer.music.play()
-#        except Exception as e:
-#            print("NPR Error:", e)
+    def fetch_playlist_tracks(self):
+        playlist_id = "7n9hHKZz1T1rRnGg3d7gHv"  # replace with your playlist
+        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
 
-#    def stop_npr(self):
-#        pygame.mixer.music.stop()
+        resp = requests.get(url, headers=headers)
+        if resp.status_code != 200:
+            print("Failed to fetch playlist:", resp.text)
+            return []
+
+        data = resp.json()
+        tracks = []
+        for item in data["items"]:
+            track = item["track"]
+            name = track["name"]
+            artist = track["artists"][0]["name"]
+            image_url = track["album"]["images"][0]["url"]
+            external_url = track["external_urls"]["spotify"]
+            tracks.append((name, artist, image_url, external_url))
+        return tracks
 
 if __name__ == "__main__":
 #  root = tk.Tk()
