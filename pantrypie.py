@@ -2,10 +2,12 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label
 from tkinter.font import Font as font
+## For Calendar ##
 from datetime import datetime
 from tkcalendar import Calendar, DateEntry
 import time
 from time import strftime
+## For Camera ##
 import cv2
 from PIL import Image, ImageTk
 import itertools
@@ -13,11 +15,16 @@ from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 import os
 import sys
+## For Database ##
 import json
 import random
 import requests
 from pynput import keyboard as pk
 from io import BytesIO
+## For Music Player ##
+#import spotipy
+#from spotipy.oauth2 import SpotifyOAuth
+import base64
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -232,6 +239,10 @@ scanImg = ImageTk.PhotoImage(img_scan)
 img_set = Image.open("pics/settings.png")
 img_set = img_set.resize((img_wdt, img_hgt), Image.LANCZOS)
 setImg = ImageTk.PhotoImage(img_set)
+## Spotify Image ##
+img_spot = Image.open("pics/spot.png")
+img_spot = img_spot.resize((img_wdt, img_hgt), Image.LANCZOS)
+spotImg = ImageTk.PhotoImage(img_spot)
 ## View Image ##
 img_view = Image.open("pics/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -322,10 +333,33 @@ class Item:
 def check_dates(days):
     return abs(days)
 
+## Spotify via Requests ##
+## Spotify Credentials ##
+#client_id = "YOUR_CLIENT_ID"
+client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
+#client_secret = "YOUR_CLIENT_SECRET"
+client_secret = "3ef33e87da0f44d593ee29a00b250b28"
+
+## Get Token ##
+auth_str = f"{client_id}:{client_secret}"
+b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+
+token_url = "https://accounts.spotify.com/api/token"
+headers = {
+    "Authorization": f"Basic {b64_auth_str}"
+}
+data = {
+    "grant_type": "client_credentials"
+}
+
+resp = requests.post(token_url, headers=headers, data=data)
+spotify_token = resp.json()["access_token"]
+
 # ------- Main Application Class -------
 class ExpirationApp:
-    def __init__(self, root):
+    def __init__(self, root, spotify_token):
         self.root = root
+        self.spotify_token = spotify_token
         self.items = []  # List to hold all items
         self.barcode = barcode = None
         self.current_view = 'home'
@@ -455,31 +489,35 @@ class ExpirationApp:
         button_frame = tk.Frame(self.root)
         button_frame.pack(pady=20)
 
-        item_btn = tk.Button(button_frame, image=itemImg, width=100, height=100, command=self.create_list_view)
+        item_btn = tk.Button(button_frame, cursor="hand2", image=itemImg, width=100, height=100, command=self.create_list_view)
         item_btn.pack(side=tk.RIGHT)
         ToolTip(item_btn, "Click to Open Food Catalog")
 
-        scan_btn = tk.Button(button_frame, image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui())
+        scan_btn = tk.Button(button_frame, cursor="hand2", image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui())
         scan_btn.pack(side=tk.RIGHT)
         ToolTip(scan_btn, "Click to Scan New Barcodes")
 
-        track_btn = tk.Button(button_frame, image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
-        weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
+        weather_btn = tk.Button(button_frame, cursor="hand2", image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
         #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
-        dark_mode_btn = tk.Button(button_frame, image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
+        spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui)
+        spot_btn.pack(side=tk.RIGHT)
+        ToolTip(spot_btn, "Click to Open Spotify")
+
+        dark_mode_btn = tk.Button(button_frame, cursor="hand2", image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
 #        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
-        set_btn = tk.Button(button_frame, image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         set_btn.pack(side=tk.LEFT)
-        ToolTip(set_btn, "Click to Enter Configuration")
+        ToolTip(set_btn, "Click to Configure Application")
 
 #    def get_time():
 #        string = strftime("%A, %D %B %Y %R")
@@ -490,6 +528,10 @@ class ExpirationApp:
         self.clear_screen()
         #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
         WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+    def open_spotify_ui(self):
+        self.clear_screen()
+        SpotifyApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1541,6 +1583,105 @@ class CameraApp:
                 self.video_label.image = imgtk
         self.frame.after(10, self.update_frame)
 
+## Spotipy ##
+#sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+#    client_id="YOUR_CLIENT_ID",
+#    client_secret="YOUR_CLIENT_SECRET",
+#    redirect_uri="http://localhost:8888/callback",
+#    scope="user-read-playback-state,user-modify-playback-state,user-read-currently-playing"
+#))
+
+#current = sp.current_playback()
+#if current:
+#    print("Currently Playing:", current['item']['name'])
+#else:
+#    print("Nothing is playing.")
+
+#play_btn = tk.Button(self.frame, text="Play", command=lambda: sp.start_playback())
+#pause_btn = tk.Button(self.frame, text="Pause", command=lambda: sp.pause_playback())
+#next_btn = tk.Button(self.frame, text="Next", command=lambda: sp.next_track())
+
+class SpotifyApp:
+    def __init__(self, root, bg_img, back_img, back_callback, token):
+    #def __init__(self, root, bg_img, back_img, back_callback, spotify_token):
+        self.root = root
+        self.bg_img = bg_img
+        self.back_img = back_img
+        self.back_callback = back_callback
+        self.token = token
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        self.bg_label = tk.Label(self.frame, image=self.bg_img)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.create_ui()
+
+    def create_ui(self):
+        # Back button
+        tk.Button(self.frame, image=self.back_img, command=self.back_callback).place(relx=0.05, rely=0.9)
+
+        # Spotify info
+        self.track_label = tk.Label(self.frame, text="Loading...", font=("Arial", 16), bg="white")
+        self.track_label.pack(pady=20)
+
+        # Album art
+        self.album_art_label = tk.Label(self.frame, bg="white")
+        self.album_art_label.pack(pady=10)
+
+        # Control buttons
+        controls = tk.Frame(self.frame, bg="white")
+        controls.pack(pady=20)
+
+        tk.Button(controls, text="Play", font=("Arial", 14), command=self.play).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
+
+        self.update_now_playing()
+
+    def update_now_playing(self):
+        headers = {"Authorization": f"Bearer {self.token}"}
+        resp = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
+
+        if resp.status_code != 200:
+            self.track_label.config(text="Nothing playing or not authorized.")
+            return
+
+        data = resp.json()
+        track = data['item']
+        name = track['name']
+        artist = track['artists'][0]['name']
+        album_url = track['album']['images'][0]['url']
+
+        self.track_label.config(text=f"{name} - {artist}")
+
+        img_data = requests.get(album_url).content
+        img = Image.open(BytesIO(img_data)).resize((200, 200))
+        self.album_img = ImageTk.PhotoImage(img)
+        self.album_art_label.config(image=self.album_img)
+
+    def play(self):
+        requests.put("https://api.spotify.com/v1/me/player/play", headers={"Authorization": f"Bearer {self.token}"})
+
+    def pause(self):
+        requests.put("https://api.spotify.com/v1/me/player/pause", headers={"Authorization": f"Bearer {self.token}"})
+
+    def next_track(self):
+        requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
+        self.update_now_playing()
+
+    def get_spotify_token(client_id, client_secret):
+        auth_str = f"{client_id}:{client_secret}"
+        b64_auth = base64.b64encode(auth_str.encode()).decode()
+
+        headers = {"Authorization": f"Basic {b64_auth}"}
+        data = {"grant_type": "client_credentials"}
+
+        response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+        return response.json().get("access_token")
+
 if __name__ == "__main__":
 #  root = tk.Tk()
  #   root.geometry("1024x600")
@@ -1556,7 +1697,8 @@ if __name__ == "__main__":
     def start_app():
         splash.destroy()
         root.deiconify()
-        ExpirationApp(root)
+        #ExpirationApp(root)
+        ExpirationApp(root, spotify_token)
 
     root.after(3500, start_app)
     root.mainloop()
