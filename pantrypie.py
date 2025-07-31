@@ -228,6 +228,10 @@ itemImg = ImageTk.PhotoImage(img_item)
 img_list = Image.open("pics/list.png")
 img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
 listImg = ImageTk.PhotoImage(img_list)
+## Music Image ##
+img_music = Image.open("pics/music.png")
+img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
+musicImg = ImageTk.PhotoImage(img_music)
 ## NPR Image ##
 img_npr = Image.open("pics/npr.png")
 img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -511,6 +515,10 @@ class ExpirationApp:
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
+        music_btn = tk.Button(button_frame, cursor="hand2", image=musicImg, width=100, height=100, command=lambda: self.open_music_ui)
+        music_btn.pack(side=tk.RIGHT)
+        ToolTip(music_btn, "Click to Open Radio")
+
         npr_btn = tk.Button(button_frame, cursor="hand2", image=nprImg, width=100, height=100, command=lambda: self.play_npr)
         npr_btn.pack(side=tk.RIGHT)
         ToolTip(npr_btn, "Click to Open Nation Public Radio")
@@ -537,6 +545,10 @@ class ExpirationApp:
         self.clear_screen()
         #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
         WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+    def open_music_ui(self):
+        self.clear_screen()
+        MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
 
     def open_spotify_ui(self):
         self.clear_screen()
@@ -1712,6 +1724,104 @@ def play_npr_stream():
 
 def stop_npr_stream():
     pygame.mixer.music.stop()
+
+## Music Page ##
+class MusicApp:
+    def __init__(self, root, bg_img, back_img, back_callback, token):
+        self.root = root
+        self.bg_img = bg_img
+        self.back_img = back_img
+        self.back_callback = back_callback
+        self.token = token
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        self.bg_label = tk.Label(self.frame, image=self.bg_img)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.create_ui()
+
+    def create_ui(self):
+        # Back button
+        tk.Button(self.frame, image=self.back_img, command=self.back_callback).place(relx=0.05, rely=0.9)
+
+        # --- Spotify Section ---
+        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=("Arial", 16), bg="white")
+        self.track_label.pack(pady=10)
+
+        self.album_art_label = tk.Label(self.frame, bg="white")
+        self.album_art_label.pack(pady=10)
+
+        controls = tk.Frame(self.frame, bg="white")
+        controls.pack(pady=10)
+
+        tk.Button(controls, text="Play",font=("Arial", 12), command=self.play_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
+
+        # --- NPR Section ---
+        npr_controls = tk.Frame(self.frame, bg="white")
+        npr_controls.pack(pady=20)
+
+        tk.Label(npr_controls, text="NPR Radio", font=("Arial", 14), bg="white").pack()
+
+        tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
+        tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
+
+        self.update_now_playing()
+
+    def update_now_playing(self):
+        headers = {"Authorization": f"Bearer {self.token}"}
+        url = "https://api.spotify.com/v1/me/player/currently-playing"
+
+        try:
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                self.track_label.config(text="No Spotify playback available.")
+                return
+
+            data = resp.json()
+            track = data.get("item")
+            if not track:
+                self.track_label.config(text="No song info available.")
+                return
+
+            name = track["name"]
+            artist = track["artists"][0]["name"]
+            album_img_url = track["album"]["images"][0]["url"]
+
+            self.track_label.config(text=f"{name} - {artist}")
+
+            img_data = requests.get(album_img_url).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            self.album_img = ImageTk.PhotoImage(img)
+            self.album_art_label.config(image=self.album_img)
+
+        except Exception as e:
+            self.track_label.config(text=f"Spotify error: {e}")
+
+    def play_spotify(self):
+        requests.put("https://api.spotify.com/v1/me/player/play", headers={"Authorization": f"Bearer {self.token}"})
+
+    def pause_spotify(self):
+        requests.put("https://api.spotify.com/v1/me/player/pause", headers={"Authorization": f"Bearer {self.token}"})
+
+    def next_track(self):
+        requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
+        self.update_now_playing()
+
+    def play_npr(self):
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+            pygame.mixer.music.play()
+        except Exception as e:
+            print("NPR Error:", e)
+
+    def stop_npr(self):
+        pygame.mixer.music.stop()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
