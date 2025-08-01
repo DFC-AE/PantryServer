@@ -727,6 +727,7 @@ class ExpirationApp:
         middle_frame.pack(fill=tk.X, padx=10)
 
         self.create_expiring_soon_panel(middle_frame)   # LEFT
+        self.create_random_recipe_panel(middle_frame)      # MIDDLE
         self.create_conversion_table_panel(middle_frame)  # RIGHT
 
         def update_clock():
@@ -784,29 +785,79 @@ class ExpirationApp:
         #self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
         #self.cal.pack(pady=(5, 10), ipady=10, ipadx=10)
 
-        calendar_frame = tk.Frame(middle_frame, bg="", bd=2, relief=tk.GROOVE)
-        calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+#        calendar_frame = tk.Frame(middle_frame, bg="", bd=2, relief=tk.GROOVE)
+#        calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.cal = Calendar(
-            middle_frame,
-            selectmode='day',
-            date_pattern="yyyy-mm-dd",
-            font=("Arial", 14),
-            background="orange",
-            disabledbackground="orange",
-            bordercolor="orange",
-            headersbackground="orange",
-            normalbackground="white",
-            weekendbackground="lightyellow",
-            othermonthwebackground="lightgray",
-            othermonthbackground="white"
-        )
-        self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
+#        self.cal = Calendar(
+#            middle_frame,
+#            selectmode='day',
+#            date_pattern="yyyy-mm-dd",
+#            font=("Arial", 14),
+#            background="orange",
+#            disabledbackground="orange",
+#            bordercolor="orange",
+#            headersbackground="orange",
+#            normalbackground="white",
+#            weekendbackground="lightyellow",
+#            othermonthwebackground="lightgray",
+#            othermonthbackground="white"
+#        )
+#        self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
 
         #self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
         #            background="orange", disabledbackground="orange",
         #            bordercolor="gray", headersbackground="orange", normalbackground="white")
         #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
+
+        # --- Random Recipe Section ---
+#        recipe_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.RIDGE)
+#        recipe_frame.pack(pady=10, padx=20)
+
+#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=("Arial", 14, "bold"), bg="white")
+#        recipe_title.pack(pady=(10, 5))
+
+#        self.recipe_img_label = tk.Label(recipe_frame, bg="white")
+#        self.recipe_img_label.pack(pady=5)
+
+#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=("Arial", 11), justify="left")
+#        self.recipe_text.pack(padx=10, pady=5)
+
+#        def fetch_random_recipe():
+#            try:
+#                url = "https://www.themealdb.com/api/json/v1/1/random.php"
+#                response = requests.get(url)
+#                data = response.json()
+
+#                meal = data['meals'][0]
+#                name = meal['strMeal']
+#                category = meal['strCategory']
+#                instructions = meal['strInstructions'][:200] + "..."
+#                image_url = meal['strMealThumb']
+#                link = meal['strSource'] or meal['strYoutube'] or "https://www.themealdb.com"
+
+#                recipe_text = f"{name} ({category})\n\n{instructions}"
+#                self.recipe_text.config(text=recipe_text)
+
+                # Load and display image
+#                img_data = requests.get(image_url, timeout=5).content
+#                img = Image.open(BytesIO(img_data)).resize((200, 200))
+#                photo = ImageTk.PhotoImage(img)
+#                self.recipe_img_label.config(image=photo)
+#                self.recipe_img_label.image = photo  # Prevent GC
+
+                # Clickable image opens recipe link
+#                self.recipe_img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+#                self.recipe_img_label.config(cursor="hand2")
+
+#            except Exception as e:
+#                self.recipe_text.config(text="Unable to load recipe.")
+#                self.recipe_img_label.config(image='', text="[No image]", fg="gray")
+
+        # Refresh button
+#        refresh_btn = tk.Button(recipe_frame, text="New Recipe", command=fetch_random_recipe, bg="#f0f0f0", relief=tk.RAISED)
+#        refresh_btn.pack(pady=5)
+
+#        fetch_random_recipe()
 
         # Buttons side by side
         button_frame = tk.Frame(self.root)
@@ -966,6 +1017,61 @@ class ExpirationApp:
                 label = tk.Label(self.expiring_frame, text=item,
                                  font=("Arial", 11), bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
+
+    def create_random_recipe_panel(self, parent):
+        panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300, height=300)
+        panel.pack(side=tk.LEFT, padx=10, pady=10)
+        panel.pack_propagate(False)
+
+        title = tk.Label(panel, text="Random Recipe", font=("Arial", 14, "bold"), bg="white")
+        title.pack(pady=(10, 5))
+
+        # Recipe image
+        self.recipe_image_label = tk.Label(panel, bg="white")
+        self.recipe_image_label.pack(pady=5)
+
+        # Recipe name
+        self.recipe_name_label = tk.Label(panel, text="", font=("Arial", 12, "bold"),
+                                          bg="white", wraplength=250)
+        self.recipe_name_label.pack(pady=5)
+
+        # Link to full recipe
+        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
+                                          cursor="hand2", bg="white")
+        self.recipe_link_label.pack(pady=5)
+        self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
+
+        # Refresh button
+        refresh_btn = tk.Button(panel, text="New Recipe", command=self.load_random_recipe)
+        refresh_btn.pack(pady=5)
+
+        # Load the first recipe
+        self.load_random_recipe()
+
+    def load_random_recipe(self):
+        try:
+            response = requests.get("https://www.themealdb.com/api/json/v1/1/random.php", timeout=5)
+            data = response.json()
+
+            meal = data["meals"][0]
+            name = meal["strMeal"]
+            image_url = meal["strMealThumb"]
+            instructions = meal["strSource"] or f"https://www.themealdb.com/meal/{meal['idMeal']}"
+
+            self.recipe_name_label.config(text=name)
+            self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
+            self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
+
+            img_data = requests.get(image_url, timeout=5).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            photo = ImageTk.PhotoImage(img)
+            self.recipe_image_label.config(image=photo)
+            self.recipe_image_label.image = photo  # Prevent GC
+
+        except Exception as e:
+            self.recipe_name_label.config(text="Failed to load recipe.")
+            self.recipe_link_label.config(text="")
+            self.recipe_image_label.config(image='')
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
