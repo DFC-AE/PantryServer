@@ -11,6 +11,8 @@ First run the zfsetup.sh script in order to automatically set up the databases.
 
 # Dependencies
 Install matplotlib, pillow, pynput, pyzbar, tkcalendar as Python dependencies before running Main Program.
+libgtk-3-dev libgirepository1.0-dev gir1.2-webkit2-4.0, gstreamer1.0-libav
+pywebview, tkhtmlview, pygame, opencv-python(mac), python-vlc
 
 # Execution
 Once the databases are established run the Main Python Program and you're on your way to monetary savings and waste reduction.
