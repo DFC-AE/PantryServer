@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
-from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, Frame, Button, Label
+from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, ttk, Frame, Button, Label
 from tkinter.font import Font as font
 ## For Calendar ##
 from datetime import datetime
@@ -488,6 +488,138 @@ class ExpirationApp:
 
         run_webview()
 
+    def create_conversion_table_panel(self, parent):
+            from_unit_var = StringVar()
+            to_unit_var = StringVar()
+            input_var = StringVar()
+            result_var = StringVar()
+            ingredient_var = StringVar(value="Water")
+
+            # Densities in g/ml
+            densities = {
+                "Water": 1.0,
+                "Flour": 0.593,
+                "Sugar": 0.845,
+                "Butter": 0.911,
+                "Oil": 0.92,
+                "Honey": 1.42,
+                "Milk": 1.03
+            }
+
+            panel = tk.Frame(parent, bg="white", bd=2, relief=tk.GROOVE)
+            panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+            tk.Label(panel, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+
+            inner = tk.Frame(panel, bg="white")
+            inner.pack(padx=10, pady=10)
+
+            # Ingredient dropdown
+            tk.Label(inner, text="Ingredient:", bg="white").grid(row=0, column=0, sticky="w")
+            ttk.Combobox(inner, textvariable=ingredient_var, values=list(densities.keys()), state="readonly", width=12).grid(row=0, column=1, sticky="w", pady=5)
+
+            # From entry
+            tk.Label(inner, text="Amount:", bg="white").grid(row=1, column=0, sticky="w")
+            entry = tk.Entry(inner, textvariable=input_var, width=10)
+            entry.grid(row=1, column=1, sticky="w", pady=5)
+
+            # From unit
+            ttk.Combobox(inner, textvariable=from_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=0, sticky="w", pady=5)
+            # To unit
+            ttk.Combobox(inner, textvariable=to_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=1, sticky="w", pady=5)
+
+            # Result display
+            tk.Label(inner, text="Converted:", bg="white").grid(row=3, column=0, sticky="w")
+            result_entry = tk.Entry(inner, textvariable=result_var, state="readonly", width=15)
+            result_entry.grid(row=3, column=1, sticky="w", pady=5)
+
+            def convert_units(*_):
+                try:
+                    amt = float(input_var.get())
+                    from_unit = from_unit_var.get()
+                    to_unit = to_unit_var.get()
+                    ingredient = ingredient_var.get()
+                    density = densities.get(ingredient, 1)
+
+                    # Convert input to grams
+                    if from_unit == "grams":
+                        grams = amt
+                    elif from_unit == "ounces":
+                        grams = amt * 28.3495
+                    elif from_unit == "cups":
+                        grams = amt * density * 240
+                    else:
+                        grams = amt
+
+                    # Convert grams to output unit
+                    if to_unit == "grams":
+                        result = grams
+                    elif to_unit == "ounces":
+                        result = grams / 28.3495
+                    elif to_unit == "cups":
+                        result = grams / (density * 240)
+                    else:
+                        result = grams
+
+                    result_var.set(f"{result:.2f}")
+                except Exception:
+                    result_var.set("Error")
+
+            # Auto conversion on input or dropdown change
+            input_var.trace_add("write", convert_units)
+            from_unit_var.trace_add("write", convert_units)
+            to_unit_var.trace_add("write", convert_units)
+            ingredient_var.trace_add("write", convert_units)
+
+    def create_conversion_table_panel_old(self, parent):
+        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
+        panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+        title = tk.Label(panel, text="Unit Conversion", font=("Arial", 14, "bold"), bg="white")
+        title.pack(pady=(10, 5))
+
+        content = tk.Frame(panel, bg="white")
+        content.pack(padx=10, pady=10)
+
+        self.amount_var = tk.StringVar()
+        self.unit_var = tk.StringVar(value="grams")
+        self.result_var = tk.StringVar()
+
+        tk.Entry(content, textvariable=self.amount_var, width=10).grid(row=0, column=0, padx=5)
+        ttk.Combobox(
+            content,
+            textvariable=self.unit_var,
+            values=["grams", "ounces", "sugar", "flour", "butter"],
+            width=10
+        ).grid(row=0, column=1, padx=5)
+
+        tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
+        tk.Label(content, textvariable=self.result_var, bg="white", font=("Arial", 11)).grid(
+            row=1, column=0, columnspan=3, pady=10
+        )
+
+    def convert_units(self):
+        try:
+            amount = float(self.amount_var.get())
+            unit = self.unit_var.get().lower()
+
+            conversions = {
+                "grams": lambda x: f"{x / 28.35:.2f} oz",
+                "ounces": lambda x: f"{x * 28.35:.2f} g",
+                "sugar": lambda x: f"{x / 200:.2f} cups",
+                "flour": lambda x: f"{x / 120:.2f} cups",
+                "butter": lambda x: f"{x / 227:.2f} cups",
+            }
+
+            if unit in conversions:
+                result = conversions[unit](amount)
+            else:
+                result = "Unsupported unit"
+
+            self.result_var.set(result)
+        except ValueError:
+            self.result_var.set("Enter a valid number")
+
     def trash(self):
         #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
         #webview.start()
@@ -536,27 +668,65 @@ class ExpirationApp:
         #label = HTMLLabel(frame, html=html)
         #label.pack(padx=20, pady=20)
 
-    ## Create Home Screen ##
-    def create_home_screen(self, item=None):
-    #def create_home_screen(self):
+    def create_home_screen_mainframe(self, item=None):
         for widget in self.root.winfo_children():
             widget.destroy()
+
         self.clear_screen()
         self.set_background()
+        self.current_view = 'home'
 
-	    ## Background Greeting ##
-        # Clock at the top
-        self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'), background='orange', foreground='yellow')
+        ## Wrapper for left + center + right panels
+        main_wrapper = tk.Frame(self.root, bg="white")
+        main_wrapper.pack(fill=tk.BOTH, expand=True)
+
+        # LEFT: Expiring Soon Panel
+        self.create_expiring_soon_panel(main_wrapper)
+
+        # CENTER: Main Content Panel
+        center_panel = tk.Frame(main_wrapper, bg="white")
+        center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # RIGHT: Unit Conversion Table Panel
+        self.create_conversion_table_panel(main_wrapper)
+
+        # Clock
+        self.clock_label = tk.Label(center_panel, font=('calibri', 30, 'bold'),
+                                    background='orange', foreground='white')
         self.clock_label.pack(pady=10)
 
-        self.weather_label = tk.Label(self.root, font=('calibri', 25), bg='orange', fg='yellow')
-        self.weather_label.pack(pady=5)
+        # Weather
+        self.weather_label = tk.Label(center_panel, font=('calibri', 25),
+                                      bg='orange', fg='yellow')
+        self.weather_label.pack(pady=(0, 2))
 
-        frame = tk.Frame(self.root)
+        # Buttons and Main Features
+        frame = tk.Frame(center_panel, bg="white")
         frame.pack(pady=10)
 
-#        button_frame = tk.Frame(self.root)
-#        button_grame.pack(pady=20)
+    def create_home_screen(self, item=None):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.clear_screen()
+        self.set_background()
+        self.current_view = 'home'
+
+        # Top area with clock and weather
+        self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'),
+                                    background='orange', foreground='yellow')
+        self.clock_label.pack(pady=(10, 0))
+
+        self.weather_label = tk.Label(self.root, font=('calibri', 25),
+                                      bg='orange', fg='yellow')
+        self.weather_label.pack(pady=(0, 10))
+
+        # Middle frame for side panels (Expiring Soon and Conversion)
+        middle_frame = tk.Frame(self.root, bg="")
+        middle_frame.pack(fill=tk.X, padx=10)
+
+        self.create_expiring_soon_panel(middle_frame)   # LEFT
+        self.create_conversion_table_panel(middle_frame)  # RIGHT
 
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
@@ -592,50 +762,14 @@ class ExpirationApp:
                     text=f"{city}: {temp:.1f}\u00b0F, {condition}"
                 )
 
-                # Weekly forecast (every 8 entries = 24 hrs)
-#                for i in range(1, 6):
-#                    forecast = data['list'][i * 8]  # approx same time each day
-#                    day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
-#                    temp = forecast['main']['temp']
-#                    condition = forecast['weather'][0]['main']
-#                    icon_code = forecast['weather'][0]['icon']
-#                    icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-#                    icon_img = Image.open(BytesIO(requests.get(icon_url).content))
-#                    icon_photo = ImageTk.PhotoImage(icon_img)
-
-#                    self.forecast_labels[i-1]['icon'].config(image=icon_photo)
-#                    self.forecast_labels[i-1]['icon'].image = icon_photo
-#                    self.forecast_labels[i-1]['text'].config(text=f"{day}\n{temp:.0f}\u00b0F\n{condition}")
-
             except Exception as e:
                 self.weather_label.config(text="Weather: Unable to load")
-
- #       def build_weather_ui(self):
- #           self.weather_label = tk.Label(self.root, font=("Arial", 14))
- #           self.weather_label.pack()
-
-#            self.weather_icon_label = tk.Label(self.root)
-#            self.weather_icon_label.pack()
-
-#            self.forecast_labels = []
-#            frame = tk.Frame(self.root)
-#            frame.pack()
-#        for _ in range(5):
-#            day_frame = tk.Frame(frame)
-#            day_frame.pack(side="left", padx=5)
-
-#            icon_label = tk.Label(day_frame)
-#            icon_label.pack()
-#            text_label = tk.Label(day_frame, font=("Arial", 10))
-#            text_label.pack()
-
-#            self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
         update_weather()
 
         # Enlarged calendar
         self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
-        self.cal.pack(pady=20, ipady=10, ipadx=10)
+        self.cal.pack(pady=(5, 10), ipady=10, ipadx=10)
 
         # Buttons side by side
         button_frame = tk.Frame(self.root)
@@ -679,10 +813,10 @@ class ExpirationApp:
         ToolTip(set_btn, "Click to Configure Application")
 
         # Unit Converter Panel
-        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
-        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
+#        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
+#        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
 
-        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
+#        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
 
         # Input field
         self.convert_input = tk.Entry(converter_frame, font=("Arial", 12), justify="center")
@@ -727,6 +861,74 @@ class ExpirationApp:
                 self.convert_result.config(text="")
 
         self.perform_conversion = perform_conversion
+
+    def create_expiring_soon_panel(self, parent):
+        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE, width=300)
+        panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        panel.pack_propagate(False)
+
+        title = tk.Label(panel, text="Expiring Soon", font=("Arial", 14, "bold"), bg="white")
+        title.pack(pady=(10, 5))
+
+        list_frame = tk.Frame(panel, bg="white")
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        canvas = Canvas(list_frame, bg="white", highlightthickness=0)
+        scrollbar = Scrollbar(list_frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+        self.expiring_frame = scrollable_frame
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Sample expiration logic (you can replace this with real pantry data)
+        from datetime import datetime, timedelta
+        today = datetime.today()
+        soon = today + timedelta(days=3)
+
+        expiring_items = [
+            item for item in self.items
+            if hasattr(item, "expiry") and item.expiry
+            and datetime.strptime(item["expiry"], "%Y-%m-%d") <= soon
+        ]
+
+        if not expiring_items:
+            tk.Label(scrollable_frame, text="No items expiring soon.",
+                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+        else:
+            for item in expiring_items:
+                name = getattr(item, "name", "Unknown")
+                expiry = getattr(item, "expiry", "Unknown")
+                label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
+                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                label.pack(fill=tk.X, padx=10, pady=5)
+
+    def populate_expiring_items(self):
+        for widget in self.expiring_frame.winfo_children():
+            widget.destroy()
+
+        dummy_items = [
+            "Milk - expires in 2 days",
+            "Bread - expires tomorrow",
+            "Yogurt - expires in 3 days"
+        ]
+
+        if not dummy_items:
+            tk.Label(self.expiring_frame, text="No items expiring soon.",
+                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+        else:
+            for item in dummy_items:
+                label = tk.Label(self.expiring_frame, text=item,
+                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                label.pack(fill=tk.X, padx=10, pady=5)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
