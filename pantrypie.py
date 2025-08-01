@@ -506,7 +506,7 @@ class ExpirationApp:
                 "Milk": 1.03
             }
 
-            panel = tk.Frame(parent, bg="white", bd=2, relief=tk.GROOVE)
+            panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE)
             panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
             tk.Label(panel, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
@@ -736,37 +736,6 @@ class ExpirationApp:
 
         update_clock()
 
-        def update_weather_old():
-            try:
-                city = "Shreveport, US"  # Change to your preferred city
-                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Use your OpenWeatherMap API key
-#                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
-                url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&units=imperial&appid={api_key}" 
-                response = requests.get(url)
-                data = response.json()
-
-                ## Show Current Weather ##
-                current = data['list'][0]
-                temp = current['main']['temp']
-                condition = current['weather'][0]['description'].capitalize()
-                icon_code = current['weather'][0]['icon']
-                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-                icon_response = requests.get(icon_url)
-                icon_img = Image.open(BytesIO(icon_response.content))
-                icon_photo = ImageTk.PhotoImage(icon_img)
-
-                self.weather_icon_label.config(image=icon_photo)
-                self.weather_icon_label.image = icon_photo  # prevent GC
-
-                self.weather_label.config(
-                    text=f"{city}: {temp:.1f}\u00b0F, {condition}"
-                )
-
-            except Exception as e:
-                self.weather_label.config(text="Weather: Unable to load")
-
-#        update_weather()
-
         def update_weather():
             try:
                 city = "Shreveport,US"
@@ -793,6 +762,8 @@ class ExpirationApp:
                 if not hasattr(self, "weather_label"):
                     self.weather_label = tk.Label(self.root, font=("calibri", 25), bg="orange", fg="yellow")
                     self.weather_label.pack(pady=(0, 10))
+
+                #self.update_weather()
 
                 self.weather_icon_label.config(image=icon_photo)
                 self.weather_icon_label.image = icon_photo  # Prevent GC
@@ -928,7 +899,7 @@ class ExpirationApp:
         self.perform_conversion = perform_conversion
 
     def create_expiring_soon_panel(self, parent):
-        panel = tk.Frame(parent, bg="white", bd=2, relief=tk.GROOVE, width=300)
+        panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
         panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         panel.pack_propagate(False)
 
