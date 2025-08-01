@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
-from tkinter import simpledialog, messagebox, Button, Label, StringVar, OptionMenu, Tk, Frame, Button, Label
+from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, Frame, Button, Label
 from tkinter.font import Font as font
 ## For Calendar ##
 from datetime import datetime
@@ -244,7 +244,7 @@ img_npr = Image.open("pics/npr.png")
 img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
 nprImg = ImageTk.PhotoImage(img_npr)
 ## Podcast Image ##
-img_pod = Image.open("pics/podcast.png").resize((50, 50), Image.LANCZOS)
+img_pod = Image.open("pics/podcast.png").resize((100, 100), Image.LANCZOS)
 podImg = ImageTk.PhotoImage(img_pod)
 ## Save Image ##
 img_save = Image.open("pics/save.jpg")
@@ -2023,7 +2023,6 @@ class MusicApp:
         self.create_ui()
 
     def create_ui(self):
-        # Back button
         #tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # --- Spotify Section ---
@@ -2049,13 +2048,71 @@ class MusicApp:
         tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
         tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
 
-        ## Apple Podcasts ##
-        podcast_btn = tk.Button(self.frame, image=self.podImg, font=("Arial", 12),
-                                command=self.open_apple_podcast)
-        podcast_btn.pack(pady=(2, 0))
+        ## Apple Podcasts Button ##
+        podcast_btn = tk.Button(
+            self.frame,
+            image=podImg,
+            font=("Arial", 12),
+            command=self.open_apple_podcast,
+            bd=0,
+            highlightthickness=0
+        )
+        podcast_btn.pack(pady=5)
 
-        #self.update_now_playing()
-        threading.Thread(target=self.load_music_data, daemon=True).start()
+        #podcast_frame = tk.Frame(self.frame, bg="white")
+        #podcast_frame.pack(pady=(5, 0), anchor="w")
+        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=("Arial", 12), command=self.open_apple_podcast)
+        #podcast_btn.pack(side=tk.LEFT, padx=10, pady=2)
+        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=("Arial", 12),
+        #podcast_btn.pack(pady=(2, 0))
+
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
+        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        back_btn.lift()
+
+        ## Spotify Horizontal Scrollbar ##
+        track_container = tk.Frame(self.frame, bg="white")
+        track_container.pack(fill=tk.X, padx=10, pady=(0, 10))  # Reduced top padding
+
+        track_canvas = tk.Canvas(track_container, height=180, bg="white", highlightthickness=0)
+        track_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        h_scrollbar = tk.Scrollbar(track_container, orient="horizontal", command=track_canvas.xview)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        track_canvas.configure(xscrollcommand=h_scrollbar.set)
+
+        scroll_frame = tk.Frame(track_canvas, bg="white")
+        track_window = track_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        def update_scrollregion(event):
+            track_canvas.configure(scrollregion=track_canvas.bbox("all"))
+            track_canvas.itemconfig(track_window, width=max(track_canvas.winfo_width(), scroll_frame.winfo_reqwidth()))
+
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        track_canvas.bind('<Configure>', update_scrollregion)
+
+        # Load and display tracks horizontally
+        tracks = self.fetch_playlist_tracks()
+        for name, artist, image_url, link in tracks[:5]:
+            card = tk.Frame(scroll_frame, bg="white", bd=1, relief=tk.RIDGE)
+            card.pack(side=tk.LEFT, padx=10, pady=5)
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+
+            except Exception as e:
+                print("Image load failed:", e)
+                tk.Label(card, text="[Image not loaded]", bg="white").pack()
+
+            tk.Label(card, text=name, bg="white", wraplength=100, font=("Arial", 9, "bold")).pack()
+            tk.Label(card, text=artist, bg="white", wraplength=100, font=("Arial", 8)).pack()
 
     def load_music_data(self):
         self.update_now_playing()  # fetch and update current song
@@ -2106,52 +2163,9 @@ class MusicApp:
 
         # Keep back button visible on top
         back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
-        back_btn.place(x=20, y=20)
+        #back_btn.place(x=20, y=20)
+        back_btn.place(relx=0.98, y=20, anchor="ne")
         back_btn.lift()
-
-    def display_tracks_old(self, tracks):
-        # Create a canvas and horizontal scrollbar for tracks
-        track_container = tk.Frame(self.frame, bg="white")
-        track_container.pack(fill=tk.X, padx=20, pady=(60, 0))  # Extra top padding to leave room for back button
-
-        canvas = tk.Canvas(track_container, bg="white", height=220, highlightthickness=0)
-        canvas.pack(side=tk.TOP, fill=tk.X)
-
-        h_scrollbar = tk.Scrollbar(track_container, orient=tk.HORIZONTAL, command=canvas.xview)
-        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
-
-        canvas.configure(xscrollcommand=h_scrollbar.set)
-
-        inner_frame = tk.Frame(canvas, bg="white")
-        canvas.create_window((0, 0), window=inner_frame, anchor='nw')
-
-        # Populate tracks in a row
-        for name, artist, image_url, link in tracks[:5]:
-            card = tk.Frame(inner_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
-            card.pack(side=tk.LEFT, padx=10, pady=10)
-
-            try:
-                img_data = requests.get(image_url, timeout=5).content
-                img = Image.open(BytesIO(img_data)).resize((100, 100))
-                photo = ImageTk.PhotoImage(img)
-                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
-                img_label.image = photo
-                img_label.pack()
-                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
-            except Exception as e:
-                print("Image load failed:", e)
-                tk.Label(card, text="[Image failed]", bg="white").pack()
-
-            tk.Label(card, text=name, font=("Arial", 10), bg="white", wraplength=100).pack()
-            tk.Label(card, text=artist, font=("Arial", 8), bg="white", wraplength=100).pack()
-
-        inner_frame.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
-
-        # Back button - place at top-left and raise it above all
-        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
-        back_btn.place(x=20, y=20)  # Adjust position as needed
-        back_btn.lift()  # Ensures button is on top of other widgets
 
     def display_tracks_vert(self, tracks):
         for name, artist, image_url, link in tracks[:5]:
