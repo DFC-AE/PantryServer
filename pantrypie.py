@@ -1092,6 +1092,7 @@ class ExpirationApp:
 
     def show_full_recipe_view(self, meal):
         self.clear_screen()
+        rating = round(random.uniform(3.5, 5.0), 1)
 
         # Create scrollable canvas
         canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
@@ -1113,11 +1114,86 @@ class ExpirationApp:
         back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="white", bd=0)
         back_btn.pack(pady=10, anchor="w", padx=10)
 
+        ## New ##
+        # Horizontal container for image and text
+        content_frame = tk.Frame(scrollable_frame, bg="white")
+        content_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        # Meal image (LEFT)
+        try:
+            image_url = meal["strMealThumb"]
+            img_data = requests.get(image_url, timeout=5).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            photo = ImageTk.PhotoImage(img)
+
+            self.recipe_full_image_label = tk.Label(content_frame, image=photo, bg="white")
+            self.recipe_full_image_label.image = photo  # Prevent GC
+            self.recipe_full_image_label.pack(side=tk.LEFT, padx=10)
+        except Exception as e:
+            print("Error loading image:", e)
+
+        # Text content (RIGHT)
+        text_frame = tk.Frame(content_frame, bg="white")
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Vertically center the text content using stretch and expand
+        text_frame.grid_rowconfigure(0, weight=1)
+        text_frame.grid_columnconfigure(0, weight=1)
+
+        text_inner = tk.Frame(text_frame, bg="white")
+        text_inner.pack(expand=True)
+
+        tk.Label(text_inner, text=meal["strMeal"], font=("Arial", 18, "bold"),
+                 bg="white", anchor="w").pack(anchor="w", pady=(0, 5))
+
+        tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
+                 font=("Arial", 12), bg="white", anchor="w").pack(anchor="w")
+
+        ## Side ##
+        # Horizontal container for image and basic info
+#        content_frame = tk.Frame(scrollable_frame, bg="white")
+#        content_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        # Meal image (LEFT)
+#        try:
+#            image_url = meal["strMealThumb"]
+#            img_data = requests.get(image_url, timeout=5).content
+#            img = Image.open(BytesIO(img_data)).resize((200, 200))
+#            photo = ImageTk.PhotoImage(img)
+
+#            self.recipe_full_image_label = tk.Label(content_frame, image=photo, bg="white")
+#            self.recipe_full_image_label.image = photo  # Prevent GC
+#            self.recipe_full_image_label.pack(side=tk.LEFT, padx=10)
+#        except Exception as e:
+#            print("Error loading image:", e)
+
+        # Meal name and category + rating (RIGHT)
+#        text_frame = tk.Frame(content_frame, bg="white")
+#        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+#        tk.Label(text_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(anchor="w", pady=5)
+#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=("Arial", 12), bg="white").pack(anchor="w")
+
+         ## Above ##
+#        # Meal image
+#        try:
+#            image_url = meal["strMealThumb"]
+#            img_data = requests.get(image_url, timeout=5).content
+#            img = Image.open(BytesIO(img_data)).resize((250, 250))
+#            photo = ImageTk.PhotoImage(img)
+
+#            self.recipe_full_image_label = tk.Label(scrollable_frame, image=photo, bg="white")
+#            self.recipe_full_image_label.image = photo  # Prevent garbage collection
+#            self.recipe_full_image_label.pack(pady=10)
+#        except Exception as e:
+#            print("Error loading image:", e)
+
         # Meal name
         tk.Label(scrollable_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(pady=10)
 
         # Category and rating (simulated rating)
-        rating = "4/5"
+        #rating = "4/5"
+        rating = random.uniform(3.5, 5.0)
         tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
                  font=("Arial", 14), bg="white").pack(pady=5)
 
