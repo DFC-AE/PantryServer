@@ -774,10 +774,26 @@ class ExpirationApp:
         calendar_frame = tk.Frame(middle_frame, bg="", bd=2, relief=tk.GROOVE)
         calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
-                    background="orange", disabledbackground="orange",
-                    bordercolor="gray", headersbackground="orange", normalbackground="white")
-        self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
+        self.cal = Calendar(
+            middle_frame,
+            selectmode='day',
+            date_pattern="yyyy-mm-dd",
+            font=("Arial", 14),
+            background="orange",
+            disabledbackground="orange",
+            bordercolor="orange",
+            headersbackground="orange",
+            normalbackground="white",
+            weekendbackground="lightyellow",
+            othermonthwebackground="lightgray",
+            othermonthbackground="white"
+        )
+        self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
+
+        #self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
+        #            background="orange", disabledbackground="orange",
+        #            bordercolor="gray", headersbackground="orange", normalbackground="white")
+        #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
 
         # Buttons side by side
         button_frame = tk.Frame(self.root)
