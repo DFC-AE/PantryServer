@@ -736,9 +736,9 @@ class ExpirationApp:
 
         update_clock()
 
-        def update_weather():
+        def update_weather_old():
             try:
-                city = "Shreveport"  # Change to your preferred city
+                city = "Shreveport, US"  # Change to your preferred city
                 api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Use your OpenWeatherMap API key
 #                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
                 url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&units=imperial&appid={api_key}" 
@@ -764,6 +764,47 @@ class ExpirationApp:
 
             except Exception as e:
                 self.weather_label.config(text="Weather: Unable to load")
+
+#        update_weather()
+
+        def update_weather():
+            try:
+                city = "Shreveport,US"
+                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+                response = requests.get(url)
+                data = response.json()
+
+                temp = data["main"]["temp"]
+                condition = data["weather"][0]["description"].capitalize()
+                icon_code = data["weather"][0]["icon"]
+                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+                icon_response = requests.get(icon_url)
+                icon_img = Image.open(BytesIO(icon_response.content))
+                icon_photo = ImageTk.PhotoImage(icon_img)
+
+                # Create label if it doesn't exist yet
+                if not hasattr(self, "weather_icon_label"):
+                    self.weather_icon_label = tk.Label(self.root, bg="orange")
+                    self.weather_icon_label.pack()
+
+                if not hasattr(self, "weather_label"):
+                    self.weather_label = tk.Label(self.root, font=("calibri", 25), bg="orange", fg="yellow")
+                    self.weather_label.pack(pady=(0, 10))
+
+                self.weather_icon_label.config(image=icon_photo)
+                self.weather_icon_label.image = icon_photo  # Prevent GC
+
+                self.weather_label.config(
+                    text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
+                )
+
+            except Exception as e:
+                print("Weather fetch error:", e)
+                if hasattr(self, "weather_label"):
+                    self.weather_label.config(text="Weather: Unable to load")
 
         update_weather()
 
@@ -887,7 +928,7 @@ class ExpirationApp:
         self.perform_conversion = perform_conversion
 
     def create_expiring_soon_panel(self, parent):
-        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE, width=300)
+        panel = tk.Frame(parent, bg="white", bd=2, relief=tk.GROOVE, width=300)
         panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         panel.pack_propagate(False)
 
@@ -1723,7 +1764,7 @@ class ToolTip:
             self.tip_window.destroy()
             self.tip_window = None
 
-def get_weather(city="Shreveport"):
+def get_weather(city="Shreveport, US"):
     api_key = "f63847d7129eb9be9c7a464e1e5ef67b" # Replace with your real API key
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid={api_key}"
 
@@ -1743,7 +1784,7 @@ weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
 weather_label.pack(pady=20)
 
 def update_weather_old():
-    weather = get_weather("Shreveport")  # Change city as needed
+    weather = get_weather("Shreveport, US")  # Change city as needed
 #    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
 #       return
     weather_label.config(text=weather)
@@ -1786,7 +1827,7 @@ class WeatherApp:
 #        self.clear_screen()
 #        self.root.geometry("500x400")
 
-        self.city = "Shreveport"
+        self.city = "Shreveport, US"
         self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 
         self.weather_ui()
@@ -1900,7 +1941,7 @@ class WeatherApp:
     def update_weather(self):
         try:
             if not hasattr(self, 'city'):
-                  self.city = "Shreveport"
+                  self.city = "Shreveport, US"
             if not hasattr(self, 'api_key'):
                   self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
 
