@@ -396,6 +396,7 @@ class ExpirationApp:
         self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png").resize((50,50), Image.LANCZOS))
         self.load_items()
         self.init_camera()
+        self.search_var = tk.StringVar()
         self.create_home_screen()
 #        self.weather_ui()
 
@@ -1108,12 +1109,21 @@ class ExpirationApp:
     ## Create list view ##
     def create_list_view(self):
         self.clear_screen()
+
         # Set specific background for list view
         bg_label = tk.Label(self.root, image=self.list_backgroundImg)
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         bg_label.lower()
 
         self.current_view = "list"
+
+        search_frame = tk.Frame(self.root, bg="lightgray")
+        search_frame.pack(pady=5)
+
+        tk.Label(search_frame, text="Search:", bg="lightgray").pack(side=tk.LEFT, padx=5)
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
+        search_entry.pack(side=tk.LEFT, padx=5)
+        search_entry.bind("<KeyRelease>", lambda e: self.refresh_list())
 
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
         sort_menu.pack(pady=5)
@@ -1124,7 +1134,6 @@ class ExpirationApp:
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
         #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
         scroll_frame = tk.Frame(canvas, bg="lightgray")
-
 
         scroll_frame.bind(
             "<Configure>",
@@ -1137,7 +1146,12 @@ class ExpirationApp:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        #for item in self.items:
+        search_term = self.search_var.get().lower()
         for item in self.items:
+            if search_term and search_term not in item.name.lower():
+               continue
+
             frame = tk.Frame(scroll_frame, bg=self.root["bg"])
             frame.pack(fill=tk.X, pady=2)
 
@@ -1153,8 +1167,10 @@ class ExpirationApp:
                              #command=self.create_home_screen)
                              command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
-#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+    def refresh_list(self):
+        self.create_list_view()
 
     def refresh_views(self):
         if self.current_view == "card":
