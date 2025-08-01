@@ -489,8 +489,8 @@ class ExpirationApp:
         run_webview()
 
     def create_conversion_table_panel(self, parent):
-            from_unit_var = StringVar(value="grams")
-            to_unit_var = StringVar(value="ounces")
+            from_unit_var = StringVar(value="ounces")
+            to_unit_var = StringVar(value="cups")
             input_var = StringVar()
             result_var = StringVar()
             ingredient_var = StringVar(value="Water")
@@ -768,8 +768,16 @@ class ExpirationApp:
         update_weather()
 
         # Enlarged calendar
-        self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
-        self.cal.pack(pady=(5, 10), ipady=10, ipadx=10)
+        #self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
+        #self.cal.pack(pady=(5, 10), ipady=10, ipadx=10)
+
+        calendar_frame = tk.Frame(middle_frame, bg="", bd=2, relief=tk.GROOVE)
+        calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
+                    background="orange", disabledbackground="orange",
+                    bordercolor="gray", headersbackground="orange", normalbackground="white")
+        self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
 
         # Buttons side by side
         button_frame = tk.Frame(self.root)
