@@ -15,3 +15,6 @@
 - Show Sales on Expiring Items from local stores
 - Add detail view from list view
 - Currently out of key items indicator
+- Podcast app
+- calculator and convertion table
+- update weather background to correspond to actual weather conditions
