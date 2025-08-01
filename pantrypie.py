@@ -1117,7 +1117,8 @@ class ExpirationApp:
 
         self.current_view = "list"
 
-        search_frame = tk.Frame(self.root, bg="lightgray")
+        #search_frame = tk.Frame(self.root, bg="lightgray")
+        search_frame = tk.Frame(self.root, bg="")
         search_frame.pack(pady=5)
 
         tk.Label(search_frame, text="Search:", bg="lightgray").pack(side=tk.LEFT, padx=5)
@@ -1133,7 +1134,7 @@ class ExpirationApp:
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
         #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
-        scroll_frame = tk.Frame(canvas, bg="lightgray")
+        scroll_frame = tk.Frame(canvas, bg="")
 
         scroll_frame.bind(
             "<Configure>",
