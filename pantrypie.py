@@ -1065,9 +1065,7 @@ class ExpirationApp:
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
         search_entry.pack(side=tk.LEFT, padx=(10, 5))
-
-        search_btn = tk.Button(search_frame, text="Search", command=self.create_card_view)
-        search_btn.pack(side=tk.LEFT)
+        search_entry.bind("<KeyRelease>", lambda event: self.create_card_view())
 
         # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
@@ -1092,21 +1090,27 @@ class ExpirationApp:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        search_term = self.search_var.get().lower().strip()
+
         row = col = 0
         for item in self.items:
+            if search_term and search_term not in item.name.lower():
+                continue  # Skip items that don't match search
+
             color = item.get_color()
             days = item.days_until_expired()
-            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired {check_dates(days)} days ago"
+            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
+
             c_btn = tk.Button(
-                scroll_frame, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
-                width=15, height=6, highlightthickness=0, bd=1,
-                command=lambda i=item: self.show_detail_view(i)
+               scroll_frame, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
+               width=15, height=6, highlightthickness=0, bd=1,
+               command=lambda i=item: self.show_detail_view(i)
             )
             c_btn.grid(row=row, column=col, padx=10, pady=10)
             col += 1
             if col == 3:
-                col = 0
-                row += 1
+               col = 0
+               row += 1
 
         card_back_btn = tk.Button(self.root,
                                   cursor="hand2",
@@ -1114,72 +1118,63 @@ class ExpirationApp:
                                   #command=self.create_home_screen)
                                   command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
         card_back_btn.pack(pady=10)
-#        Hovertip(card_back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(card_back_btn, "Click to Return to the Previous Screen")
 
-    ## Create list view ##
     def create_list_view(self):
         self.clear_screen()
+        self.current_view = "list"
 
-        # Set specific background for list view
+        # Background image
         bg_label = tk.Label(self.root, image=self.list_backgroundImg)
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         bg_label.lower()
 
-        self.current_view = "list"
+        # Sort menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)")
+        sort_menu.pack(pady=5)
 
-        #search_frame = tk.Frame(self.root, bg="lightgray")
+        # Search bar frame
         search_frame = tk.Frame(self.root, bg="")
         search_frame.pack(pady=5)
 
-        tk.Label(search_frame, text="Search:", bg="lightgray").pack(side=tk.LEFT, padx=5)
         search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
         search_entry.pack(side=tk.LEFT, padx=5)
-        search_entry.bind("<KeyRelease>", lambda e: self.refresh_list())
+        search_entry.bind("<KeyRelease>", lambda event: self.create_list_view())
 
-        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
-        sort_menu.pack(pady=5)
+        tk.Button(search_frame, text="Clear", command=lambda: self.clear_search(self.create_list_view)).pack(side=tk.LEFT)
 
-        # Scrollable canvas setup
-        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        # Scrollable canvas
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
         scroll_frame = tk.Frame(canvas, bg="")
 
-        scroll_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set, bg=self.root["bg"])
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        #for item in self.items:
-        search_term = self.search_var.get().lower()
+        # Search filtering
+        search_term = self.search_var.get().lower().strip()
+
         for item in self.items:
             if search_term and search_term not in item.name.lower():
-               continue
+                continue
 
             frame = tk.Frame(scroll_frame, bg=self.root["bg"])
             frame.pack(fill=tk.X, pady=2)
 
             color = item.get_color()
             days = item.days_until_expired()
-            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired {check_dates(days)} days ago"
+            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
             tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
-            tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT, padx=5)
+            tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
 
-        back_btn = tk.Button(self.root,
-                             cursor="hand2",
-                             image=backImg,
-                             #command=self.create_home_screen)
-                             command=lambda: self.create_tracker_ui(None))
+        # Back button
+        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
-        ToolTip(back_btn, "Click to Return to the Previous Screen")
+        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
 
     def refresh_list(self):
         self.create_list_view()
