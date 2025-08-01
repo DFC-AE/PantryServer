@@ -1059,6 +1059,17 @@ class ExpirationApp:
 
         self.current_view = "card"
 
+        # Search bar
+        search_frame = tk.Frame(self.root, bg="")
+        search_frame.pack(pady=(10, 0))
+
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
+        search_entry.pack(side=tk.LEFT, padx=(10, 5))
+
+        search_btn = tk.Button(search_frame, text="Search", command=self.create_card_view)
+        search_btn.pack(side=tk.LEFT)
+
+        # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
         sort_menu.pack(pady=10)
 
@@ -1067,7 +1078,7 @@ class ExpirationApp:
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
         #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
-        scroll_frame = tk.Frame(canvas, bg="lightgray")
+        scroll_frame = tk.Frame(canvas, bg="")
 
 
         scroll_frame.bind(
