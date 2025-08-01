@@ -1055,6 +1055,7 @@ class ExpirationApp:
 
         # Load the first recipe
         self.load_random_recipe()
+        #self.load_random_recipe(self.current_recipe = meal)
 
     def load_random_recipe(self):
         try:
@@ -1062,11 +1063,19 @@ class ExpirationApp:
             data = response.json()
 
             meal = data["meals"][0]
+            self.current_recipe = meal
+
             name = meal["strMeal"]
             image_url = meal["strMealThumb"]
             instructions = meal["strSource"] or f"https://www.themealdb.com/meal/{meal['idMeal']}"
 
             self.recipe_name_label.config(text=name)
+
+            # Bind click event on image to open detail view
+            #self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view())
+            self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view(self.current_recipe))
+            self.recipe_image_label.config(cursor="hand2")
+
             self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
             self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
 
@@ -1080,6 +1089,169 @@ class ExpirationApp:
             self.recipe_name_label.config(text="Failed to load recipe.")
             self.recipe_link_label.config(text="")
             self.recipe_image_label.config(image='')
+
+    def show_full_recipe_view(self, meal):
+        self.clear_screen()
+
+        # Create scrollable canvas
+        canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Back button
+        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="white", bd=0)
+        back_btn.pack(pady=10, anchor="w", padx=10)
+
+        # Meal name
+        tk.Label(scrollable_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(pady=10)
+
+        # Category and rating (simulated rating)
+        rating = "4/5"
+        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
+                 font=("Arial", 14), bg="white").pack(pady=5)
+
+        tk.Label(scrollable_frame, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        for i in range(1, 21):
+            ingredient = meal.get(f"strIngredient{i}")
+            measure = meal.get(f"strMeasure{i}")
+            if ingredient and ingredient.strip():
+                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
+                         font=("Arial", 12), bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+
+        # Instructions
+        tk.Label(scrollable_frame, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
+                 font=("Arial", 12), bg="white").pack(padx=20, pady=5)
+
+        # Print & PDF export buttons
+        button_frame = tk.Frame(scrollable_frame, bg="white")
+        button_frame.pack(pady=10)
+
+        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+
+    def show_full_recipe_view_olde(self, meal):
+        self.clear_screen()
+
+        # Set background if needed
+        bg_label = tk.Label(self.root, image=self.backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        # Recipe title
+        tk.Label(self.root, text=meal['strMeal'], font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+
+        # Recipe image
+        img_data = requests.get(meal["strMealThumb"], timeout=5).content
+        img = Image.open(BytesIO(img_data)).resize((300, 300))
+        photo = ImageTk.PhotoImage(img)
+        img_label = tk.Label(self.root, image=photo, bg="white")
+        img_label.image = photo
+        img_label.pack(pady=5)
+
+        rating = "4/5"
+        tk.Label(self.root, text=f"Category: {meal['strCategory']}   {rating}",
+                 font=("Arial", 14), bg="white").pack(pady=5)
+
+        # Ingredients
+        tk.Label(self.root, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        ingredients_frame = tk.Frame(self.root, bg="white")
+        ingredients_frame.pack()
+
+        for i in range(1, 21):
+            ing = meal.get(f"strIngredient{i}")
+            measure = meal.get(f"strMeasure{i}")
+            if ing and ing.strip():
+                tk.Label(ingredients_frame, text=f"{ing} - {measure}",
+                         font=("Arial", 12), bg="white").pack(anchor="w")
+
+        # Instructions
+        tk.Label(self.root, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=("Arial", 12), bg="white")
+        instructions.insert(tk.END, meal['strInstructions'])
+        instructions.config(state=tk.DISABLED)
+        instructions.pack(padx=20, pady=5)
+
+        # Buttons (Save, Print, Export PDF)
+        btn_frame = tk.Frame(self.root, bg="white")
+        btn_frame.pack(pady=10)
+
+        tk.Button(btn_frame, text="Save to Favorites", command=lambda: self.save_to_favorites(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Export to PDF", command=lambda: self.export_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+
+        # Back Button
+        tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2").pack(pady=20)
+
+    def save_to_favorites(self, meal):
+        # Save logic (e.g., append to a JSON file)
+        print("Saved:", meal["strMeal"])
+
+    def print_recipe(self, meal):
+        print("Print requested for:", meal["strMeal"])
+
+    def export_to_pdf(self, meal):
+        print("Export to PDF for:", meal["strMeal"])
+
+    def show_full_recipe_view_old(self):
+        if not hasattr(self, "current_recipe") or not self.current_recipe:
+            return
+
+        self.clear_screen()
+
+        meal = self.current_recipe
+        name = meal["strMeal"]
+        instructions = meal["strInstructions"]
+        image_url = meal["strMealThumb"]
+
+        # Background
+        bg_label = tk.Label(self.root, image=self.card_backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        # Title
+        tk.Label(self.root, text=name, font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+
+        # Image
+        img_data = requests.get(image_url, timeout=5).content
+        img = Image.open(BytesIO(img_data)).resize((300, 300))
+        photo = ImageTk.PhotoImage(img)
+        img_label = tk.Label(self.root, image=photo, bg="white")
+        img_label.image = photo
+        img_label.pack(pady=10)
+
+        # Instructions (scrollable)
+        frame = tk.Frame(self.root)
+        frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(frame, height=200, bg="white")
+        scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        scroll_frame = tk.Frame(canvas, bg="white")
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Back button
+        back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
+        back_btn.pack(pady=10)
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
