@@ -489,8 +489,8 @@ class ExpirationApp:
         run_webview()
 
     def create_conversion_table_panel(self, parent):
-            from_unit_var = StringVar()
-            to_unit_var = StringVar()
+            from_unit_var = StringVar(value="grams")
+            to_unit_var = StringVar(value="ounces")
             input_var = StringVar()
             result_var = StringVar()
             ingredient_var = StringVar(value="Water")
