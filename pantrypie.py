@@ -713,6 +713,10 @@ class ExpirationApp:
         self.set_background()
         self.current_view = 'home'
 
+       # Create top-left frame for weather icon
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+
         # Top area with clock and weather
         self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'),
                                     background='orange', foreground='yellow')
@@ -756,15 +760,19 @@ class ExpirationApp:
                 icon_img = Image.open(BytesIO(icon_response.content))
                 icon_photo = ImageTk.PhotoImage(icon_img)
 
-                # Create label if it doesn't exist yet
                 if not hasattr(self, "weather_icon_label"):
-                    self.weather_icon_label = tk.Label(self.root, bg="orange")
+                    self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
                     self.weather_icon_label.pack()
 
                 if not hasattr(self, "weather_label"):
-                    self.weather_label = tk.Label(self.root, font=("calibri", 25), bg="orange", fg="yellow")
-                    self.weather_label.pack(pady=(0, 10))
+                    self.weather_label = tk.Label(
+                        self.root,
+                        font=("calibri", 25),
+                        bg="orange",
+                        fg="yellow"
+                    )
 
+                    self.weather_label.pack(pady=(0, 10))
                 #self.update_weather()
 
                 self.weather_icon_label.config(image=icon_photo)
