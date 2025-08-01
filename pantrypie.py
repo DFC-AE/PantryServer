@@ -30,6 +30,9 @@ import vlc
 import webbrowser
 ## MultiThreading ##
 import threading
+## Web Browser ##
+from tkhtmlview import HTMLLabel
+import webview
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -271,6 +274,9 @@ back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 ## Weather Back Button Image ##
 img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
 backsmallImg = ImageTk.PhotoImage(img_back_small)
+## Weather Back Button Image ##
+img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
+webImg = ImageTk.PhotoImage(img_web)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -429,6 +435,104 @@ class ExpirationApp:
         pygame.mixer.music.stop()
         print("NPR stream stopped.")
 
+    def open_music_web(self):
+        #import webview
+        #webview.create_window("Spotify Player", "https://open.spotify.com")
+        #webview.start()
+
+        self.clear_screen()
+
+        frame = tk.Frame(self.root)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        html = """
+        <h2>OpenFoodFacts</h2>
+        <a href='https://open.spotify.com'>Open Spotify in Browser</a>
+        """
+        label = HTMLLabel(frame, html=html)
+        label.pack(padx=20, pady=20)
+
+    def open_foodfacts(self):
+        self.root.withdraw()  # Hide the Tkinter app window
+
+        def on_closed():
+            self.root.deiconify()
+            self.create_home_screen()
+
+        def run_webview():
+            window = webview.create_window(
+                "OpenFoodFacts",
+                "https://world.openfoodfacts.org/",
+                width=1024,
+                height=600
+            )
+
+            # Try to attach an event handler to detect when the window is closed
+            try:
+                window.events.closed += on_closed
+            except AttributeError:
+                print("Warning: Your version of pywebview does not support 'events.closed'.")
+                # Fallback: just re-show the window after blocking start
+                webview.start()
+                self.root.deiconify()
+                self.create_home_screen()
+                return
+
+            webview.start()
+
+        run_webview()
+
+    def trash(self):
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
+        #webview.start()
+        #self.clear_screen()
+        self.root.withdraw()
+
+        ## Callback to Run After Closing Browser Window ##
+        def on_browser_closed():
+            self.root.deiconify()
+            self.create_home_screen()
+
+            def on_browser_closed():
+                self.root.after(0, lambda: [
+                    self.root.deiconify(),
+                    self.create_home_screen()
+                ])
+
+        def launch_webview():
+            if not webview.windows:
+                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+                webview.start(gui='gtk')  # Call start only ONCE per app run
+            else:
+                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+
+        threading.Thread(target=launch_webview, daemon=True).start()
+
+        #frame = tk.Frame(self.root)
+        #frame.pack(fill=tk.BOTH, expand=True)
+
+        #back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        #back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
+        #webview.start()
+
+	## Make Same Dimentions as Main Window set in Variable Later ##
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+
+        #webview.start()
+        #self.root.deiconify()
+
+        #html = """
+        #<h2>OpenFoodFacts</h2>
+        #<a href='https://world.openfoodfacts.org/' target="_blank">Visit OpenFoodFacts</a>
+        #"""
+        #label = HTMLLabel(frame, html=html)
+        #label.pack(padx=20, pady=20)
+
     ## Create Home Screen ##
     def create_home_screen(self, item=None):
     #def create_home_screen(self):
@@ -555,9 +659,9 @@ class ExpirationApp:
         music_btn.pack(side=tk.RIGHT)
         ToolTip(music_btn, "Click to Open Radio")
 
-        npr_btn = tk.Button(button_frame, cursor="hand2", image=nprImg, width=100, height=100, command=lambda: self.play_npr())
-        npr_btn.pack(side=tk.RIGHT)
-        ToolTip(npr_btn, "Click to Open Nation Public Radio")
+        web_btn = tk.Button(button_frame, cursor="hand2", image=webImg, width=100, height=100, command=lambda: self.open_foodfacts())
+        web_btn.pack(side=tk.RIGHT)
+        ToolTip(web_btn, "Click to Open Web Browser")
 
         spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui())
         spot_btn.pack(side=tk.RIGHT)
@@ -1706,6 +1810,15 @@ class SpotifyApp:
                 print(f"Failed to Load Image: {e}")
                 tk.Label(self.frame, text="Image Failed to Load", bg="white").pack()
 
+        html_content = """
+        <h2>Spotify Web Player</h2>
+        <p><a href='https://open.spotify.com/'>Open Spotify</a></p>
+        <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+        """
+
+        html_widget = HTMLLabel(self.frame, html=html_content)
+        html_widget.pack(pady=20)
+
     def load_music_data(self):
         self.update_now_playing()
         tracks = self.fetch_playlist_tracks()
@@ -1982,6 +2095,26 @@ class MusicApp:
             external_url = track["external_urls"]["spotify"]
             tracks.append((name, artist, image_url, external_url))
         return tracks
+
+    def open_music_web(self):
+        #import webview
+        #webview.create_window("Spotify Player", "https://open.spotify.com")
+        #webview.start()
+
+        self.clear_screen()
+
+        frame = tk.Frame(self.root)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        html = """
+        <h2>Spotify Web Preview</h2>
+        <a href='https://open.spotify.com'>Open Spotify in Browser</a>
+        """
+        label = HTMLLabel(frame, html=html)
+        label.pack(padx=20, pady=20)
 
 if __name__ == "__main__":
 #  root = tk.Tk()
