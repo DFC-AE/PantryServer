@@ -82,7 +82,7 @@ class SplashScreen(tk.Toplevel):
         self.after(delay, self.destroy)
 
     def _animate(self):
-        if not self.winfo_exists(): 
+        if not self.winfo_exists():
             return
         self._frame_index = (self._frame_index + 1) % len(self.frames)
         self.label.configure(image=self.frames[self._frame_index])
@@ -243,6 +243,9 @@ musicImg = ImageTk.PhotoImage(img_music)
 img_npr = Image.open("pics/npr.png")
 img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
 nprImg = ImageTk.PhotoImage(img_npr)
+## Podcast Image ##
+img_pod = Image.open("pics/podcast.png").resize((50, 50), Image.LANCZOS)
+podImg = ImageTk.PhotoImage(img_pod)
 ## Save Image ##
 img_save = Image.open("pics/save.jpg")
 img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -1953,6 +1956,8 @@ class MusicApp:
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
+        self.nprImg = ImageTk.PhotoImage(Image.open("pics/npr.png").resize((100, 100)))
+        self.podImg = ImageTk.PhotoImage(Image.open("pics/podcast.png").resize((100, 100)))
 
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
@@ -1983,14 +1988,19 @@ class MusicApp:
         tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
 
-        # --- NPR Section ---
+        ## NPR Section ##
         npr_controls = tk.Frame(self.frame, bg="white")
         npr_controls.pack(pady=20)
 
-        tk.Label(npr_controls, text="NPR Radio", font=("Arial", 14), bg="white").pack()
+        tk.Label(npr_controls, image=self.nprImg, font=("Arial", 14)).pack()
 
         tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
         tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
+
+        ## Apple Podcasts ##
+        podcast_btn = tk.Button(self.frame, image=self.podImg, font=("Arial", 12),
+                                command=self.open_apple_podcast)
+        podcast_btn.pack(pady=10)
 
         #self.update_now_playing()
         threading.Thread(target=self.load_music_data, daemon=True).start()
@@ -2115,6 +2125,26 @@ class MusicApp:
         """
         label = HTMLLabel(frame, html=html)
         label.pack(padx=20, pady=20)
+
+    def open_apple_podcast(self):
+            self.root.withdraw()
+
+            def on_closed():
+                self.root.deiconify()
+                self.back_callback()  # Go back to home or previous screen
+
+            # Open Apple Podcasts in a pywebview window
+            try:
+                webview.create_window(
+                    "Apple Podcasts",
+                    "https://podcasts.apple.com/us/podcast/the-daily/id1200361736",  # Replace with any podcast URL
+                    width=1024,
+                    height=600
+                )
+                webview.start(gui='gtk', debug=True)
+            except Exception as e:
+                print("Failed to launch Apple Podcasts:", e)
+                self.root.deiconify()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
