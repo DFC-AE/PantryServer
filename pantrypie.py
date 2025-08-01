@@ -672,17 +672,61 @@ class ExpirationApp:
 
         dark_mode_btn = tk.Button(button_frame, cursor="hand2", image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
-#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
         set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
-#    def get_time():
-#        string = strftime("%A, %D %B %Y %R")
-#        self.clk.config(text=string)
-#        self.clk.after(1000, get_time)
+        # Unit Converter Panel
+        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
+        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
+
+        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
+
+        # Input field
+        self.convert_input = tk.Entry(converter_frame, font=("Arial", 12), justify="center")
+        self.convert_input.pack(pady=5)
+        self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
+
+        # From unit dropdown
+        self.from_unit = tk.StringVar(value="grams")
+        tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+
+        # Result label
+        self.convert_result = tk.Label(converter_frame, text="", font=("Arial", 12), bg="white")
+        self.convert_result.pack(pady=5)
+
+        # To unit dropdown
+        self.to_unit = tk.StringVar(value="ounces")
+        tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+
+        # Conversion logic
+        self.unit_factors = {
+            ("grams", "ounces"): lambda x: x * 0.0353,
+            ("ounces", "grams"): lambda x: x / 0.0353,
+            ("sugar", "grams"): lambda x: x * 200,
+            ("flour", "grams"): lambda x: x * 120,
+            ("butter", "grams"): lambda x: x * 227,
+            ("grams", "sugar"): lambda x: x / 200,
+            ("grams", "flour"): lambda x: x / 120,
+            ("grams", "butter"): lambda x: x / 227,
+        }
+
+        def perform_conversion():
+            try:
+                val = float(self.convert_input.get())
+                from_u = self.from_unit.get()
+                to_u = self.to_unit.get()
+                if from_u == to_u:
+                    result = val
+                else:
+                    result = self.unit_factors.get((from_u, to_u), lambda x: "N/A")(val)
+                self.convert_result.config(text=f"= {round(result, 2)} {to_u}")
+            except:
+                self.convert_result.config(text="")
+
+        self.perform_conversion = perform_conversion
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -703,8 +747,6 @@ class ExpirationApp:
 			#command=lambda: self.add_item_popup)
 			command=self.add_item_popup)
         add_btn.pack(pady=5)
-
-#        Hovertip(add_btn, "Click to Add Item", hover_delay=500)
         ToolTip(add_btn, "Click to Add Item")
 
 	## Open Camera ##
@@ -1991,6 +2033,8 @@ class SpotifyApp:
 
             #self.frame.after(0, render)
 
+           self.display_youtube_videos()
+
 ## NPR ##
 def play_npr_stream():
     pygame.mixer.init()
@@ -2364,6 +2408,69 @@ class MusicApp:
 
         # Launch webview on main thread (required by pywebview)
         launch_podcast()
+
+    def display_youtube_videos(self):
+        import requests
+        from urllib.parse import quote
+        import webbrowser
+
+        # --- Horizontal Scrollable Canvas for YouTube ---
+        yt_container = tk.Frame(self.frame, bg="white")
+        yt_container.pack(fill=tk.X, padx=10, pady=10)
+
+        yt_canvas = Canvas(yt_container, height=240, bg="white", highlightthickness=0)
+        yt_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        yt_scrollbar = Scrollbar(yt_container, orient="horizontal", command=yt_canvas.xview)
+        yt_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        yt_canvas.configure(xscrollcommand=yt_scrollbar.set)
+
+        scroll_frame = tk.Frame(yt_canvas, bg="white")
+        yt_window = yt_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        def update_scrollregion(event):
+            yt_canvas.configure(scrollregion=yt_canvas.bbox("all"))
+            yt_canvas.itemconfig(yt_window, width=max(yt_canvas.winfo_width(), scroll_frame.winfo_reqwidth()))
+
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        yt_canvas.bind("<Configure>", update_scrollregion)
+
+        video = [
+             {
+                "title": "Gordon Ramsay's Ultimate Cookery Course",
+                "url": "https://www.youtube.com/watch?v=5uXIPhxL5XA",
+                "thumb": "https://img.youtube.com/vi/5uXIPhxL5XA/0.jpg"
+             },
+             {
+                "title": "Binging with Babish: Ratatouille",
+                "url": "https://www.youtube.com/watch?v=iCMGPRiDXQg",
+                "thumb": "https://img.youtube.com/vi/iCMGPRiDXQg/0.jpg"
+             },
+             {
+                "title": "Jamie Oliver's Food Tube",
+                "url": "https://www.youtube.com/watch?v=J6Vb4T2LCiI",
+                "thumb": "https://img.youtube.com/vi/J6Vb4T2LCiI/0.jpg"
+             }
+        ]
+
+        for video in videos:
+            card = tk.Frame(scroll_frame, bg="white", bd=1, relief=tk.RIDGE)
+            card.pack(side=tk.LEFT, padx=10, pady=5)
+
+            try:
+                img_data = requests.get(video["thumb"], timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((120, 90))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=video["url"]: webbrowser.open(url))
+            except Exception as e:
+                print("Failed to load YouTube thumbnail:", e)
+                tk.Label(card, text="[Image not loaded]", bg="white").pack()
+
+            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=("Arial", 9)).pack()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
