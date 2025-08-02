@@ -33,6 +33,8 @@ import threading
 ## Web Browser ##
 from tkhtmlview import HTMLLabel
 import webview
+## For System Fonts ##
+import tkinter.font as tkFont
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -197,6 +199,9 @@ root.geometry("1024x600")
 root.title("Pantry Server")
 
 ## Variables ##
+APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT.configure(size=12)
 SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
@@ -510,7 +515,7 @@ class ExpirationApp:
             panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE)
             panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
-            tk.Label(panel, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+            tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
 
             inner = tk.Frame(panel, bg="white")
             inner.pack(padx=10, pady=10)
@@ -576,7 +581,7 @@ class ExpirationApp:
         panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
         panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
-        title = tk.Label(panel, text="Unit Conversion", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Unit Conversion", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         content = tk.Frame(panel, bg="white")
@@ -595,7 +600,7 @@ class ExpirationApp:
         ).grid(row=0, column=1, padx=5)
 
         tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
-        tk.Label(content, textvariable=self.result_var, bg="white", font=("Arial", 11)).grid(
+        tk.Label(content, textvariable=self.result_var, bg="white", font=APP_FONT).grid(
             row=1, column=0, columnspan=3, pady=10
         )
 
@@ -713,6 +718,11 @@ class ExpirationApp:
         self.set_background()
         self.current_view = 'home'
 
+        #def set_background(self):
+        #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #    self.bg_label.lower()
+
        # Create top-left frame for weather icon
         self.weather_icon_frame = tk.Frame(self.root, bg="orange")
         self.weather_icon_frame.place(x=10, y=10)
@@ -800,7 +810,7 @@ class ExpirationApp:
 #            middle_frame,
 #            selectmode='day',
 #            date_pattern="yyyy-mm-dd",
-#            font=("Arial", 14),
+#            font=APP_FONT,
 #            background="orange",
 #            disabledbackground="orange",
 #            bordercolor="orange",
@@ -821,13 +831,13 @@ class ExpirationApp:
 #        recipe_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.RIDGE)
 #        recipe_frame.pack(pady=10, padx=20)
 
-#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=("Arial", 14, "bold"), bg="white")
+#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=APP_FONT, bg="white")
 #        recipe_title.pack(pady=(10, 5))
 
 #        self.recipe_img_label = tk.Label(recipe_frame, bg="white")
 #        self.recipe_img_label.pack(pady=5)
 
-#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=("Arial", 11), justify="left")
+#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=APP_FONT, justify="left")
 #        self.recipe_text.pack(padx=10, pady=5)
 
 #        def fetch_random_recipe():
@@ -912,24 +922,24 @@ class ExpirationApp:
 #        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
 #        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
 
-#        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
+#        tk.Label(converter_frame, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=10)
 
         # Input field
-        self.convert_input = tk.Entry(converter_frame, font=("Arial", 12), justify="center")
-        self.convert_input.pack(pady=5)
-        self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
+        #self.convert_input = tk.Entry(converter_frame, font=APP_FONT, justify="center")
+        #self.convert_input.pack(pady=5)
+        #self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
 
         # From unit dropdown
-        self.from_unit = tk.StringVar(value="grams")
-        tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+        #self.from_unit = tk.StringVar(value="grams")
+        #tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
 
         # Result label
-        self.convert_result = tk.Label(converter_frame, text="", font=("Arial", 12), bg="white")
-        self.convert_result.pack(pady=5)
+        #self.convert_result = tk.Label(converter_frame, text="", font=APP_FONT, bg="white")
+        #self.convert_result.pack(pady=5)
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
-        tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+        #tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
 
         # Conversion logic
         self.unit_factors = {
@@ -958,12 +968,15 @@ class ExpirationApp:
 
         self.perform_conversion = perform_conversion
 
+        for widget in self.root.winfo_children():
+            widget.lift()
+
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
         panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Expiring Soon", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         list_frame = tk.Frame(panel, bg="white")
@@ -998,13 +1011,13 @@ class ExpirationApp:
 
         if not expiring_items:
             tk.Label(scrollable_frame, text="No items expiring soon.",
-                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in expiring_items:
                 name = getattr(item, "name", "Unknown")
                 expiry = getattr(item, "expiry", "Unknown")
                 label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
-                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
 
     def populate_expiring_items(self):
@@ -1019,11 +1032,11 @@ class ExpirationApp:
 
         if not dummy_items:
             tk.Label(self.expiring_frame, text="No items expiring soon.",
-                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in dummy_items:
                 label = tk.Label(self.expiring_frame, text=item,
-                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
 
     def create_random_recipe_panel(self, parent):
@@ -1031,7 +1044,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, padx=10, pady=10)
         panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Random Recipe", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         # Recipe image
@@ -1039,7 +1052,7 @@ class ExpirationApp:
         self.recipe_image_label.pack(pady=5)
 
         # Recipe name
-        self.recipe_name_label = tk.Label(panel, text="", font=("Arial", 12, "bold"),
+        self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
                                           bg="white", wraplength=250)
         self.recipe_name_label.pack(pady=5)
 
@@ -1053,7 +1066,7 @@ class ExpirationApp:
         refresh_btn = tk.Button(panel, text="New Recipe", command=self.load_random_recipe)
         refresh_btn.pack(pady=5)
 
-        # Load the first recipe
+            # Load the first recipe
         self.load_random_recipe()
         #self.load_random_recipe(self.current_recipe = meal)
 
@@ -1143,11 +1156,11 @@ class ExpirationApp:
         text_inner = tk.Frame(text_frame, bg="white")
         text_inner.pack(expand=True)
 
-        tk.Label(text_inner, text=meal["strMeal"], font=("Arial", 18, "bold"),
+        tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
                  bg="white", anchor="w").pack(anchor="w", pady=(0, 5))
 
         tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
-                 font=("Arial", 12), bg="white", anchor="w").pack(anchor="w")
+                 font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
 
         ## Side ##
         # Horizontal container for image and basic info
@@ -1171,8 +1184,8 @@ class ExpirationApp:
 #        text_frame = tk.Frame(content_frame, bg="white")
 #        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-#        tk.Label(text_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(anchor="w", pady=5)
-#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=("Arial", 12), bg="white").pack(anchor="w")
+#        tk.Label(text_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(anchor="w", pady=5)
+#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=APP_FONT, bg="white").pack(anchor="w")
 
          ## Above ##
 #        # Meal image
@@ -1189,26 +1202,26 @@ class ExpirationApp:
 #            print("Error loading image:", e)
 
         # Meal name
-        tk.Label(scrollable_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(pady=10)
+        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
         # Category and rating (simulated rating)
         #rating = "4/5"
         rating = random.uniform(3.5, 5.0)
         tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=("Arial", 14), bg="white").pack(pady=5)
+                 font=APP_FONT, bg="white").pack(pady=5)
 
-        tk.Label(scrollable_frame, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
         for i in range(1, 21):
             ingredient = meal.get(f"strIngredient{i}")
             measure = meal.get(f"strMeasure{i}")
             if ingredient and ingredient.strip():
                 tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
-                         font=("Arial", 12), bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
 
         # Instructions
-        tk.Label(scrollable_frame, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
         tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
-                 font=("Arial", 12), bg="white").pack(padx=20, pady=5)
+                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
 
         # Print & PDF export buttons
         button_frame = tk.Frame(scrollable_frame, bg="white")
@@ -1227,7 +1240,12 @@ class ExpirationApp:
         bg_label.lower()
 
         # Recipe title
-        tk.Label(self.root, text=meal['strMeal'], font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+        label_rcp = tk.Label(self.root,
+                 text=meal['strMeal'],
+                 font=APP_FONT_BOLD,
+                 fg="black", bg="white")
+        label_rcp.pack(pady=10)
+        label_rcp.lift()
 
         # Recipe image
         img_data = requests.get(meal["strMealThumb"], timeout=5).content
@@ -1239,10 +1257,10 @@ class ExpirationApp:
 
         rating = "4/5"
         tk.Label(self.root, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=("Arial", 14), bg="white").pack(pady=5)
+                 font=APP_FONT, bg="white").pack(pady=5)
 
         # Ingredients
-        tk.Label(self.root, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        tk.Label(self.root, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
         ingredients_frame = tk.Frame(self.root, bg="white")
         ingredients_frame.pack()
 
@@ -1251,11 +1269,11 @@ class ExpirationApp:
             measure = meal.get(f"strMeasure{i}")
             if ing and ing.strip():
                 tk.Label(ingredients_frame, text=f"{ing} - {measure}",
-                         font=("Arial", 12), bg="white").pack(anchor="w")
+                         font=APP_FONT, bg="white").pack(anchor="w")
 
         # Instructions
-        tk.Label(self.root, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
-        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=("Arial", 12), bg="white")
+        tk.Label(self.root, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=APP_FONT, bg="white")
         instructions.insert(tk.END, meal['strInstructions'])
         instructions.config(state=tk.DISABLED)
         instructions.pack(padx=20, pady=5)
@@ -1298,7 +1316,7 @@ class ExpirationApp:
         bg_label.lower()
 
         # Title
-        tk.Label(self.root, text=name, font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+        tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
         # Image
         img_data = requests.get(image_url, timeout=5).content
@@ -1464,7 +1482,7 @@ class ExpirationApp:
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
 
             c_btn = tk.Button(
-               scroll_frame, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
+               scroll_frame, text=text, bg=color, fg="black", font=APP_FONT, wraplength=150,
                width=15, height=6, highlightthickness=0, bd=1,
                command=lambda i=item: self.show_detail_view(i)
             )
@@ -1530,7 +1548,7 @@ class ExpirationApp:
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
-            tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            tk.Label(frame, text=text, bg=color, fg="black", font=APP_FONT).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
 
         # Back button
@@ -1565,14 +1583,14 @@ class ExpirationApp:
             nutrition_frame = tk.Frame(self.root)
             nutrition_frame.place(x=30, y=150)  # Adjust position as needed
 
-            tk.Label(nutrition_frame, text="Nutrition Facts:", font=("Arial", 18, "underline"), anchor="w", justify="left").pack(anchor="w")
+            tk.Label(nutrition_frame, text="Nutrition Facts:", font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
 
             for key, value in item.nutrition_info.items():
                 fact = f"{key}: {value}"
-                tk.Label(nutrition_frame, text=fact, font=("Arial", 14), anchor="w", justify="left").pack(anchor="w")
+                tk.Label(nutrition_frame, text=fact, font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
 
 
-        label = tk.Label(self.root, text=detail_text, font=("Arial", 20), justify="left")
+        label = tk.Label(self.root, text=detail_text, font=APP_FONT, justify="left")
         label.pack(pady=30)
 
         # Scanner and barcode buttons (only shown on item click)
@@ -1601,7 +1619,7 @@ class ExpirationApp:
         ToolTip(barcode_btn, "Click to Display Scanned Barcode")
 
               # Barcode Entry (auto‑pop OSK on focus)
-        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
         self.barcode_entry = tk.Entry(self.root)
@@ -1742,7 +1760,7 @@ class ExpirationApp:
         info_window.title("Nutrition Information")
 
         for key, value in nutrition_info.items():
-            label = tk.Label(info_window, text=f"{key}: {value}", font=("Arial", 14), anchor="w")
+            label = tk.Label(info_window, text=f"{key}: {value}", font=APP_FONT, anchor="w")
             label.pack(fill=tk.X, padx=10, pady=2)
 
         close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
@@ -1783,8 +1801,11 @@ class ExpirationApp:
     def load_items(self):
         if os.path.exists(SAVE_FILE):
             with open(SAVE_FILE, 'r') as f:
+              try:  
                 data = json.load(f)
-                self.items = [Item.from_dict(d) for d in data]
+              except json.JSONDecodeError:
+                data = []
+            self.items = [Item.from_dict(d) for d in data]
 
     ## Saves items to file ##
     def save_items(self):
@@ -1814,7 +1835,7 @@ class ExpirationApp:
 
         tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
 
-        tk.Label(self.root, text="Enter Item Name:", font=("Arial", 15)).pack(pady=5)
+        tk.Label(self.root, text="Enter Item Name:", font=APP_FONT).pack(pady=5)
 
         # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
@@ -1826,12 +1847,12 @@ class ExpirationApp:
         )
 
         # — Expiration date picker (unchanged) —
-        tk.Label(self.root, text="Select Expiration Date:", font=("Arial", 15), justify="center").pack()
+        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
         # Barcode Entry (auto‑pop OSK on focus)
-        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
         self.barcode_entry = tk.Entry(self.root)
@@ -2136,17 +2157,8 @@ def get_weather(city="Shreveport, US"):
     except Exception as e:
         return f"Error: {e}"
 
-weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
+weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
 weather_label.pack(pady=20)
-
-def update_weather_old():
-    weather = get_weather("Shreveport, US")  # Change city as needed
-#    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
-#       return
-    weather_label.config(text=weather)
-    root.after(600000, update_weather_old)  # Update every 10 minutes
-
-update_weather_old()
 
 class WeatherApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None):
@@ -2198,12 +2210,14 @@ class WeatherApp:
       try:
         if hasattr(self, "bg_label"):
            self.bg_label.destroy()
+
 #        if self.backgroundImg:
-        #self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
-        self.bg_label = bg_label
+        
+        #self.bg_label = bg_label
 #        try:
 #            self.background_label = tk.Label(self.root, image=backgroundImg)
 #            self.background_label.place(relwidth=1, relheight=1)
@@ -2234,9 +2248,9 @@ class WeatherApp:
 #        content_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         ## Current Weather Label ##
-        #self.weather_label = tk.Label(self.root, font=("Arial", 16))
-        #self.weather_label = tk.Label(content_frame, font=("Arial", 16), bg="white")
-        self.weather_label = tk.Label(content_frame, font=("Arial", 16))
+        #self.weather_label = tk.Label(self.root, font=APP_FONT)
+        #self.weather_label = tk.Label(content_frame, font=APP_FONT, bg="white")
+        self.weather_label = tk.Label(content_frame, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
@@ -2260,8 +2274,8 @@ class WeatherApp:
             icon_label = tk.Label(day_frame)
             icon_label.pack()
 
-            #text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
-            text_label = tk.Label(day_frame, font=("Arial", 10))
+            #text_label = tk.Label(day_frame, font=APP_FONT, bg="white")
+            text_label = tk.Label(day_frame, font=APP_FONT)
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
@@ -2439,7 +2453,7 @@ class SpotifyApp:
         tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # Spotify info
-        self.track_label = tk.Label(self.frame, text="Loading...", font=("Arial", 16), bg="white")
+        self.track_label = tk.Label(self.frame, text="Loading...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=20)
 
         # Album art
@@ -2450,7 +2464,7 @@ class SpotifyApp:
         controls = tk.Frame(self.frame, bg="white")
         controls.pack(pady=20)
 
-        tk.Button(controls, text="Play", font=("Arial", 14), command=self.play).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
 
@@ -2462,7 +2476,7 @@ class SpotifyApp:
         tracks = self.fetch_top_tracks()
 
         for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
-            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
             label.pack()
 
             try:
@@ -2614,8 +2628,8 @@ class SpotifyApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image failed]", bg="white").pack()
 
-            tk.Label(card, text=name, font=("Arial", 10), bg="white", wraplength=100).pack()
-            tk.Label(card, text=artist, font=("Arial", 8), bg="white", wraplength=100).pack()
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
 
         # Update scroll region after populating
         inner_frame.update_idletasks()
@@ -2629,7 +2643,7 @@ class SpotifyApp:
            track_card = tk.Frame(track_frame, bg="white")
            track_card.pack(side=tk.LEFT, padx=10)
            #def render():
-           #     label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+           #     label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
            #     label.pack()
 
            try:
@@ -2651,8 +2665,8 @@ class SpotifyApp:
                     img_label.pack()
                     img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
 
-           tk.Label(track_card, text=name, font=("Arial", 10), bg="white").pack()
-           tk.Label(track_card, text=artist, font=("Arial", 8), bg="white").pack()
+           tk.Label(track_card, text=name, font=APP_FONT, bg="white").pack()
+           tk.Label(track_card, text=artist, font=APP_FONT, bg="white").pack()
 
             #self.frame.after(0, render)
 
@@ -2693,7 +2707,7 @@ class MusicApp:
         #tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # --- Spotify Section ---
-        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=("Arial", 16), bg="white")
+        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=10)
 
         self.album_art_label = tk.Label(self.frame, bg="white")
@@ -2702,7 +2716,7 @@ class MusicApp:
         controls = tk.Frame(self.frame, bg="white")
         controls.pack(pady=10)
 
-        tk.Button(controls, text="Play",font=("Arial", 12), command=self.play_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Play",font=APP_FONT, command=self.play_spotify).pack(side=tk.LEFT, padx=5)
         tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
 
@@ -2710,7 +2724,7 @@ class MusicApp:
         npr_controls = tk.Frame(self.frame, bg="white")
         npr_controls.pack(pady=20)
 
-        tk.Label(npr_controls, image=self.nprImg, font=("Arial", 14)).pack()
+        tk.Label(npr_controls, image=self.nprImg, font=APP_FONT).pack()
 
         tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
         tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
@@ -2719,7 +2733,7 @@ class MusicApp:
         podcast_btn = tk.Button(
             self.frame,
             image=podImg,
-            font=("Arial", 12),
+            font=APP_FONT,
             command=self.open_apple_podcast,
             bd=0,
             highlightthickness=0
@@ -2728,9 +2742,9 @@ class MusicApp:
 
         #podcast_frame = tk.Frame(self.frame, bg="white")
         #podcast_frame.pack(pady=(5, 0), anchor="w")
-        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=("Arial", 12), command=self.open_apple_podcast)
+        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=APP_FONT, command=self.open_apple_podcast)
         #podcast_btn.pack(side=tk.LEFT, padx=10, pady=2)
-        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=("Arial", 12),
+        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
         #podcast_btn.pack(pady=(2, 0))
 
         back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
@@ -2778,8 +2792,8 @@ class MusicApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image not loaded]", bg="white").pack()
 
-            tk.Label(card, text=name, bg="white", wraplength=100, font=("Arial", 9, "bold")).pack()
-            tk.Label(card, text=artist, bg="white", wraplength=100, font=("Arial", 8)).pack()
+            tk.Label(card, text=name, bg="white", wraplength=100, font=APP_FONT_BOLD).pack()
+            tk.Label(card, text=artist, bg="white", wraplength=100, font=APP_FONT).pack()
 
     def load_music_data(self):
         self.update_now_playing()  # fetch and update current song
@@ -2822,8 +2836,8 @@ class MusicApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image failed]", bg="white").pack()
 
-            tk.Label(card, text=name, font=("Arial", 10), bg="white", wraplength=100).pack()
-            tk.Label(card, text=artist, font=("Arial", 8), bg="white", wraplength=100).pack()
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
 
         inner_frame.update_idletasks()
         canvas.configure(scrollregion=canvas.bbox("all"))
@@ -2837,7 +2851,7 @@ class MusicApp:
     def display_tracks_vert(self, tracks):
         for name, artist, image_url, link in tracks[:5]:
             def render():
-                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
                 label.pack()
 
                 try:
@@ -3093,7 +3107,7 @@ class MusicApp:
                 print("Failed to load YouTube thumbnail:", e)
                 tk.Label(card, text="[Image not loaded]", bg="white").pack()
 
-            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=("Arial", 9)).pack()
+            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=APP_FONT).pack()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
