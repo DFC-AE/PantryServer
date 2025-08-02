@@ -1,0 +1,56 @@
+Java Operators
+
+Arithmatic
+
+TypeCasting
+		Python	Java
+1 / 2		0.5	0
+1.0 / 2		0.5	0.5
+1 / 2.0		0.5	0.5
+(float)1/2	0.5	0.5
+1/(float)2	0.5	0.5
+
+Relational or Comparison Operations
+> Greater Than
+< Less Than
+>= Greater Than of Equal to
+<= Less Than of Equal to
+== Equality
+!= Inequality
+
+Prefix and Postfix Operators
+int p = 3;
+p++ // p = 4
+++p // p = 5
+int q = 5;
+q-- // q = 4
+--q // q = 3
+
+Assignments Operators
+Operators	Usage							Example
+=		a = b, sets a to b					a = 17.0
++=		a += b increment a by b					a += 12
+-=		a -= b decrements a by b				a -= 6
+*=		a *= b mmultiplies a by b and stores it in a
+/=		a /= b divides a by b and stores it in a
+%=		a %= b divides a by b and stores the remainder in a
+
+Logical Operators: Result in a boolean
+a is true
+b is false
+&& - Logical And a && b is false
+|| - Logical Or a || b is true
+! - Logical Not !a is false, !b is true
+
+Bitwise Operators
+& and
+| or
+^ xor
+~ not
+<< left shift
+>> right shift
+
+Sequence
+
+
+

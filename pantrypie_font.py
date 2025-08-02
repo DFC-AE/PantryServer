@@ -1,0 +1,3135 @@
+# -*- coding: utf-8 -*-
+import tkinter as tk
+from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, ttk, Frame, Button, Label
+from tkinter.font import Font as font
+## For Calendar ##
+from datetime import datetime
+from tkcalendar import Calendar, DateEntry
+import time
+from time import strftime
+## For Camera ##
+import cv2
+from PIL import Image, ImageTk
+import itertools
+from pyzbar.pyzbar import decode
+import matplotlib.pyplot as plt
+import os
+import sys
+## For Database ##
+import json
+import random
+import requests
+from pynput import keyboard as pk
+from io import BytesIO
+## For Music Player ##
+#import spotipy
+#from spotipy.oauth2 import SpotifyOAuth
+import base64
+import pygame
+import vlc
+import webbrowser
+## MultiThreading ##
+import threading
+## Web Browser ##
+from tkhtmlview import HTMLLabel
+import webview
+## For System Fonts ##
+import tkinter.font as tkFont
+
+##setup Virtual Keyboard
+# Splashscreen Setup
+class SplashScreen(tk.Toplevel):
+    def __init__(self, parent, gif_path, delay=3500):
+
+        super().__init__(parent)
+        self.parent = parent
+
+        # Remove window decorations
+        self.overrideredirect(True)
+
+        # Load frames from an animated GIF
+        self.frames = []
+        try:
+            img = Image.open(gif_path)
+            for frame in itertools.count():
+                try:
+                    img.seek(frame)
+                    frame_img = ImageTk.PhotoImage(img.copy())
+                    self.frames.append(frame_img)
+                except EOFError:
+                    break
+        except Exception:
+            # fallback: single image
+            self.frames = [ImageTk.PhotoImage(Image.open(gif_path))]
+
+        # Display first frame
+        self.label = tk.Label(self, image=self.frames[0], bg='black')
+        self.label.pack()
+
+        # Center the splash on screen
+        self.update_idletasks()
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        x = (sw - w) // 2
+        y = (sh - h) // 2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Start animating
+        self._frame_index = 0
+        self._animate()
+
+        # Schedule splash to close after `delay` ms
+        self.after(delay, self.destroy)
+
+    def _animate(self):
+        if not self.winfo_exists():
+            return
+        self._frame_index = (self._frame_index + 1) % len(self.frames)
+        self.label.configure(image=self.frames[self._frame_index])
+        # call again after 100ms (adjust for smoother / faster playback)
+        self.after(100, self._animate)
+# ================= On-Screen Keyboard Integration =================
+OSK_WIDTH = 800
+OSK_HEIGHT = 300
+ACCENT_COL = "#C62145"
+
+class OnScreenKeyboard:
+
+    _current = None
+
+    def __init__(self, parent, target_entry):
+        # Close an existing keyboard if it’s still open
+        if OnScreenKeyboard._current and OnScreenKeyboard._current.window.winfo_exists():
+            OnScreenKeyboard._current._on_close()
+        OnScreenKeyboard._current = self
+
+        self.parent = parent
+        self.target = target_entry
+        self.CAPS = False
+
+        # Make sure the parent’s geometry is up to date
+        parent.update_idletasks()
+        pw = parent.winfo_width()      # e.g. 1024
+        ph = parent.winfo_height()     # e.g. 600
+        px = parent.winfo_rootx()
+        py = parent.winfo_rooty()
+
+        # Bottom half geometry
+        ok_w = pw
+        ok_h = ph // 2
+        ok_x = px
+        ok_y = py + ph - ok_h
+
+        self.window = tk.Toplevel(parent)
+        self.window.title("On‑Screen Keyboard")
+        # size & position
+        self.window.geometry(f"{ok_w}x{ok_h}+{ok_x}+{ok_y}")
+        self.window.configure(bg="#1a1a1a")
+        self.window.resizable(False, False)
+        self.window.transient(parent)
+        self.window.lift()
+
+        # A container for all buttons
+        self.frame = tk.Frame(self.window, bg="#1a1a1a")
+        self.frame.pack(expand=True, fill="both")
+
+        self._build_keys()
+        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_keys(self):
+        # rows of keys: digits, QWERTY, ASDF, ZXCV, specials
+        rows = [
+            ['1','2','3','4','5','6','7','8','9','0'],
+            list('qwertyuiop'),
+            list('asdfghjkl'),
+            ['Caps'] + list('zxcvbnm') + ['Backspace'],
+            ['Space','Enter']
+        ]
+
+        btn_font = font(size=14)
+        max_cols = max(len(r) for r in rows)
+
+        for r, row in enumerate(rows):
+            for c, key in enumerate(row):
+                btn = tk.Button(
+                    self.frame,
+                    text=key,
+                    font=btn_font,
+                    bg="#333", fg="#fff",
+                    relief='flat',
+                    command=lambda k=key: self._on_key_press(k)
+                )
+                btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+
+        # Make columns expand evenly
+        for c in range(max_cols):
+            self.frame.grid_columnconfigure(c, weight=1)
+
+    def _on_key_press(self, key):
+        if key == 'Backspace':
+            self.target.delete("insert-1c")
+            return
+        if key == 'Caps':
+            self.CAPS = not self.CAPS
+            return
+        if key == 'Space':
+            self.target.insert(tk.INSERT, ' ')
+            return
+        if key == 'Enter':
+            self.target.insert(tk.INSERT, '\n')
+            self._on_close()
+            return
+
+        # letter or digit
+        char = key.upper() if (self.CAPS and key.isalpha()) else key
+        self.target.insert(tk.INSERT, char)
+
+    def _on_close(self):
+        OnScreenKeyboard._current = None
+        self.window.destroy()
+
+## Create Root ##
+root = tk.Tk()
+root.geometry("1024x600")
+#root.geometry("1920x1080")
+#root.geometry("3180x2160")
+#root.title("Expiration Tracker")
+root.title("Pantry Server")
+
+## Variables ##
+APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT.configure(size=12)
+SAVE_FILE = "items.json"
+
+### Import and Resize Button Images ###
+## Button Size ##
+img_wdt = 75
+img_hgt = 75
+## Add Image ##
+img_add = Image.open("pics/add.png")
+img_add = img_add.resize((img_wdt, img_hgt), Image.LANCZOS)
+addImg = ImageTk.PhotoImage(img_add)
+## Back Image ##
+img_back = Image.open("pics/back.png")
+img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
+backImg = ImageTk.PhotoImage(img_back)
+## Camera Image ##
+img_cam = Image.open("pics/cam.jpg")
+img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
+camImg = ImageTk.PhotoImage(img_cam)
+## Card Image ##
+img_card = Image.open("pics/card4.png")
+img_card = img_card.resize((img_wdt, img_hgt), Image.LANCZOS)
+cardImg = ImageTk.PhotoImage(img_card)
+## Light Image ##
+img_light = Image.open("pics/light.png")
+img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
+lightImg = ImageTk.PhotoImage(img_light)
+## Home Image ##
+img_home = Image.open("pics/home.png")
+img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
+homeImg = ImageTk.PhotoImage(img_home)
+## Item Image ##
+img_item = Image.open("pics/item.png")
+img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
+itemImg = ImageTk.PhotoImage(img_item)
+## List Image ##
+img_list = Image.open("pics/list.png")
+img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
+listImg = ImageTk.PhotoImage(img_list)
+## Music Image ##
+img_music = Image.open("pics/music.png")
+img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
+musicImg = ImageTk.PhotoImage(img_music)
+## NPR Image ##
+img_npr = Image.open("pics/npr.png")
+img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
+nprImg = ImageTk.PhotoImage(img_npr)
+## Podcast Image ##
+img_pod = Image.open("pics/podcast.png").resize((100, 100), Image.LANCZOS)
+podImg = ImageTk.PhotoImage(img_pod)
+## Save Image ##
+img_save = Image.open("pics/save.jpg")
+img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
+saveImg = ImageTk.PhotoImage(img_save)
+## Scan Image ##
+img_scan = Image.open("pics/scan.jpg")
+img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
+scanImg = ImageTk.PhotoImage(img_scan)
+## Settings Image ##
+img_set = Image.open("pics/settings.png")
+img_set = img_set.resize((img_wdt, img_hgt), Image.LANCZOS)
+setImg = ImageTk.PhotoImage(img_set)
+## Spotify Image ##
+img_spot = Image.open("pics/spot.png")
+img_spot = img_spot.resize((img_wdt, img_hgt), Image.LANCZOS)
+spotImg = ImageTk.PhotoImage(img_spot)
+## View Image ##
+img_view = Image.open("pics/view.png")
+img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
+viewImg = ImageTk.PhotoImage(img_view)
+## Weather Image ##
+img_weather = Image.open("pics/weather.png")
+img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+weatherImg = ImageTk.PhotoImage(img_weather)
+## Weather Background Image ##
+img_back_weather = Image.open("pics/weather.jpg")
+img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_weatherImg = ImageTk.PhotoImage(img_back_weather)
+## Weather Back Button Image ##
+img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
+backsmallImg = ImageTk.PhotoImage(img_back_small)
+## Weather Back Button Image ##
+img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
+webImg = ImageTk.PhotoImage(img_web)
+
+### Import Barcode Image ###
+## Scan ##
+img_code = cv2.imread("codes/barcode.png")
+## Code ##
+img_scan1 = Image.open("codes/barcode.png")
+img_scan1 = img_scan1.resize((300, 100), Image.Resampling.LANCZOS)
+img_scan2 = ImageTk.PhotoImage(img_scan1)
+
+### Keybindings ###
+## Quit with Esc ##
+root.bind('<Escape>', lambda e: root.quit())
+## Restart with Home ##
+def restart_program():
+        print("Restarting Program...")
+        executable = sys.executable
+        ## Windows ##
+        if os.name == 'nt':
+                os.system(f'start {executable} {" ".join(sys.argv)}')
+        ## Linux Mac ##
+        else:
+                os.execv(executable, [executable] + sys.argv)
+        sys.exit()
+#root.bind('<Prior>', lambda e: restart_program())
+root.bind('<Home>', lambda e: restart_program())
+
+######################## ------- Item Model ------- ################################
+class Item:
+    def __init__(self, name, expiration_date, nutrition_info=None):
+        # Store name and parse expiration date
+        self.name = name
+        self.expiration_date = datetime.strptime(expiration_date, "%Y-%m-%d")
+        self.nutrition_info = nutrition_info or {}
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "expiration_date": self.expiration_date.strftime("%Y-%m-%d"),
+            "nutrition_info": self.nutrition_info
+        }
+
+    @staticmethod
+    def from_dict(data):
+        return Item(data['name'], data['expiration_date'], data.get('nutrition_info'))
+
+    @staticmethod
+    def from_dict(data):
+        return Item(
+            data['name'],
+            data['expiration_date'],
+            data.get('nutrition_info', {})  # optional fallback
+        )
+
+    def days_until_expired(self):
+        # Return number of days remaining (or negative if expired)
+        return (self.expiration_date - datetime.now()).days + 1
+
+    def get_color(self):
+        # Return color from red to green based on expiration
+        days = self.days_until_expired() - 1
+        gradient_colors = [
+            "#FF0000", "#FF1A00", "#FF3300", "#FF4D00", "#FF6600", "#FF8000",
+            "#FF9900", "#FFB200", "#FFCC00", "#FFE500", "#E5FF00", "#CCFF00",
+            "#99FF00", "#66FF00", "#33FF00",
+        ]
+        if days < 0:
+            return gradient_colors[0]
+        elif days >= len(gradient_colors):
+            return gradient_colors[-1]
+        else:
+            return gradient_colors[days]
+
+def check_dates(days):
+    return abs(days)
+
+## Spotify via Requests ##
+## Spotify Credentials ##
+#client_id = "YOUR_CLIENT_ID"
+client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
+#client_secret = "YOUR_CLIENT_SECRET"
+client_secret = "3ef33e87da0f44d593ee29a00b250b28"
+
+## Get Token ##
+auth_str = f"{client_id}:{client_secret}"
+b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+
+token_url = "https://accounts.spotify.com/api/token"
+headers = {
+    "Authorization": f"Basic {b64_auth_str}"
+}
+data = {
+    "grant_type": "client_credentials"
+}
+
+resp = requests.post(token_url, headers=headers, data=data)
+spotify_token = resp.json()["access_token"]
+
+# ------- Main Application Class -------
+class ExpirationApp:
+    def __init__(self, root, spotify_token):
+        self.root = root
+        self.spotify_token = spotify_token
+        self.items = []  # List to hold all items
+        self.barcode = barcode = None
+        self.current_view = 'home'
+        self.dark_mode = False  # Track dark mode state
+        self.sort_option = StringVar()
+        self.sort_option.set("Sort By")
+        self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
+        self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
+        self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
+        #self.backImg = PhotoImage(file="pics/back.png")
+        self.bg_color = "#f0f0f0"
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png").resize((50,50), Image.LANCZOS))
+        self.load_items()
+        self.init_camera()
+        self.search_var = tk.StringVar()
+        self.create_home_screen()
+#        self.weather_ui()
+
+    ## Create Background ##
+    def set_background(self):
+        background = tk.Label(self.root, image=self.backgroundImg)
+        background.place(x=0, y=0, relwidth=1, relheight=1)
+        background.lower()
+
+    def open_camera_ui(self):
+        self.clear_screen()
+        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+
+    def open_weather_ui(self):
+        self.clear_screen()
+        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+    def open_music_ui(self):
+        self.clear_screen()
+        try:
+            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+        except Exception as e:
+            print("Error Launching MusicApp:", e)
+
+    def open_spotify_ui(self):
+        self.clear_screen()
+        SpotifyApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+
+    def play_npr(self):
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+            pygame.mixer.music.play()
+            print("NPR stream started.")
+        except Exception as e:
+            print("Error playing NPR:", e)
+
+    def stop_npr(self):
+        pygame.mixer.music.stop()
+        print("NPR stream stopped.")
+
+    def open_music_web(self):
+        #import webview
+        #webview.create_window("Spotify Player", "https://open.spotify.com")
+        #webview.start()
+
+        self.clear_screen()
+
+        frame = tk.Frame(self.root)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        html = """
+        <h2>OpenFoodFacts</h2>
+        <a href='https://open.spotify.com'>Open Spotify in Browser</a>
+        """
+        label = HTMLLabel(frame, html=html)
+        label.pack(padx=20, pady=20)
+
+    def open_foodfacts(self):
+        self.root.withdraw()  # Hide the Tkinter app window
+
+        def on_closed():
+            self.root.deiconify()
+            self.create_home_screen()
+
+        def run_webview():
+            window = webview.create_window(
+                "OpenFoodFacts",
+                "https://world.openfoodfacts.org/",
+                width=1024,
+                height=600
+            )
+
+            # Try to attach an event handler to detect when the window is closed
+            try:
+                window.events.closed += on_closed
+            except AttributeError:
+                print("Warning: Your version of pywebview does not support 'events.closed'.")
+                # Fallback: just re-show the window after blocking start
+                webview.start()
+                self.root.deiconify()
+                self.create_home_screen()
+                return
+
+            webview.start()
+
+        run_webview()
+
+    def create_conversion_table_panel(self, parent):
+            from_unit_var = StringVar(value="ounces")
+            to_unit_var = StringVar(value="cups")
+            input_var = StringVar()
+            result_var = StringVar()
+            ingredient_var = StringVar(value="Water")
+
+            # Densities in g/ml
+            densities = {
+                "Water": 1.0,
+                "Flour": 0.593,
+                "Sugar": 0.845,
+                "Butter": 0.911,
+                "Oil": 0.92,
+                "Honey": 1.42,
+                "Milk": 1.03
+            }
+
+            panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE)
+            panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+            tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
+
+            inner = tk.Frame(panel, bg="white")
+            inner.pack(padx=10, pady=10)
+
+            # Ingredient dropdown
+            tk.Label(inner, text="Ingredient:", bg="white").grid(row=0, column=0, sticky="w")
+            ttk.Combobox(inner, textvariable=ingredient_var, values=list(densities.keys()), state="readonly", width=12).grid(row=0, column=1, sticky="w", pady=5)
+
+            # From entry
+            tk.Label(inner, text="Amount:", bg="white").grid(row=1, column=0, sticky="w")
+            entry = tk.Entry(inner, textvariable=input_var, width=10)
+            entry.grid(row=1, column=1, sticky="w", pady=5)
+
+            # From unit
+            ttk.Combobox(inner, textvariable=from_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=0, sticky="w", pady=5)
+            # To unit
+            ttk.Combobox(inner, textvariable=to_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=1, sticky="w", pady=5)
+
+            # Result display
+            tk.Label(inner, text="Converted:", bg="white").grid(row=3, column=0, sticky="w")
+            result_entry = tk.Entry(inner, textvariable=result_var, state="readonly", width=15)
+            result_entry.grid(row=3, column=1, sticky="w", pady=5)
+
+            def convert_units(*_):
+                try:
+                    amt = float(input_var.get())
+                    from_unit = from_unit_var.get()
+                    to_unit = to_unit_var.get()
+                    ingredient = ingredient_var.get()
+                    density = densities.get(ingredient, 1)
+
+                    # Convert input to grams
+                    if from_unit == "grams":
+                        grams = amt
+                    elif from_unit == "ounces":
+                        grams = amt * 28.3495
+                    elif from_unit == "cups":
+                        grams = amt * density * 240
+                    else:
+                        grams = amt
+
+                    # Convert grams to output unit
+                    if to_unit == "grams":
+                        result = grams
+                    elif to_unit == "ounces":
+                        result = grams / 28.3495
+                    elif to_unit == "cups":
+                        result = grams / (density * 240)
+                    else:
+                        result = grams
+
+                    result_var.set(f"{result:.2f}")
+                except Exception:
+                    result_var.set("Error")
+
+            # Auto conversion on input or dropdown change
+            input_var.trace_add("write", convert_units)
+            from_unit_var.trace_add("write", convert_units)
+            to_unit_var.trace_add("write", convert_units)
+            ingredient_var.trace_add("write", convert_units)
+
+    def create_conversion_table_panel_old(self, parent):
+        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
+        panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+        title = tk.Label(panel, text="Unit Conversion", font=APP_FONT, bg="white")
+        title.pack(pady=(10, 5))
+
+        content = tk.Frame(panel, bg="white")
+        content.pack(padx=10, pady=10)
+
+        self.amount_var = tk.StringVar()
+        self.unit_var = tk.StringVar(value="grams")
+        self.result_var = tk.StringVar()
+
+        tk.Entry(content, textvariable=self.amount_var, width=10).grid(row=0, column=0, padx=5)
+        ttk.Combobox(
+            content,
+            textvariable=self.unit_var,
+            values=["grams", "ounces", "sugar", "flour", "butter"],
+            width=10
+        ).grid(row=0, column=1, padx=5)
+
+        tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
+        tk.Label(content, textvariable=self.result_var, bg="white", font=APP_FONT).grid(
+            row=1, column=0, columnspan=3, pady=10
+        )
+
+    def convert_units(self):
+        try:
+            amount = float(self.amount_var.get())
+            unit = self.unit_var.get().lower()
+
+            conversions = {
+                "grams": lambda x: f"{x / 28.35:.2f} oz",
+                "ounces": lambda x: f"{x * 28.35:.2f} g",
+                "sugar": lambda x: f"{x / 200:.2f} cups",
+                "flour": lambda x: f"{x / 120:.2f} cups",
+                "butter": lambda x: f"{x / 227:.2f} cups",
+            }
+
+            if unit in conversions:
+                result = conversions[unit](amount)
+            else:
+                result = "Unsupported unit"
+
+            self.result_var.set(result)
+        except ValueError:
+            self.result_var.set("Enter a valid number")
+
+    def trash(self):
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
+        #webview.start()
+        #self.clear_screen()
+        self.root.withdraw()
+
+        ## Callback to Run After Closing Browser Window ##
+        def on_browser_closed():
+            self.root.deiconify()
+            self.create_home_screen()
+
+            def on_browser_closed():
+                self.root.after(0, lambda: [
+                    self.root.deiconify(),
+                    self.create_home_screen()
+                ])
+
+        def launch_webview():
+            if not webview.windows:
+                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+                webview.start(gui='gtk')  # Call start only ONCE per app run
+            else:
+                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+
+        threading.Thread(target=launch_webview, daemon=True).start()
+
+        #frame = tk.Frame(self.root)
+        #frame.pack(fill=tk.BOTH, expand=True)
+
+        #back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        #back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
+        #webview.start()
+
+	## Make Same Dimentions as Main Window set in Variable Later ##
+        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
+
+        #webview.start()
+        #self.root.deiconify()
+
+        #html = """
+        #<h2>OpenFoodFacts</h2>
+        #<a href='https://world.openfoodfacts.org/' target="_blank">Visit OpenFoodFacts</a>
+        #"""
+        #label = HTMLLabel(frame, html=html)
+        #label.pack(padx=20, pady=20)
+
+    def create_home_screen_mainframe(self, item=None):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.clear_screen()
+        self.set_background()
+        self.current_view = 'home'
+
+        ## Wrapper for left + center + right panels
+        main_wrapper = tk.Frame(self.root, bg="white")
+        main_wrapper.pack(fill=tk.BOTH, expand=True)
+
+        # LEFT: Expiring Soon Panel
+        self.create_expiring_soon_panel(main_wrapper)
+
+        # CENTER: Main Content Panel
+        center_panel = tk.Frame(main_wrapper, bg="white")
+        center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # RIGHT: Unit Conversion Table Panel
+        self.create_conversion_table_panel(main_wrapper)
+
+        # Clock
+        self.clock_label = tk.Label(center_panel, font=('calibri', 30, 'bold'),
+                                    background='orange', foreground='white')
+        self.clock_label.pack(pady=10)
+
+        # Weather
+        self.weather_label = tk.Label(center_panel, font=('calibri', 25),
+                                      bg='orange', fg='yellow')
+        self.weather_label.pack(pady=(0, 2))
+
+        # Buttons and Main Features
+        frame = tk.Frame(center_panel, bg="white")
+        frame.pack(pady=10)
+
+    def create_home_screen(self, item=None):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.clear_screen()
+        self.set_background()
+        self.current_view = 'home'
+
+        #def set_background(self):
+        #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #    self.bg_label.lower()
+
+       # Create top-left frame for weather icon
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+
+        # Top area with clock and weather
+        self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'),
+                                    background='orange', foreground='yellow')
+        self.clock_label.pack(pady=(10, 0))
+
+        self.weather_label = tk.Label(self.root, font=('calibri', 25),
+                                      bg='orange', fg='yellow')
+        self.weather_label.pack(pady=(0, 10))
+
+        # Middle frame for side panels (Expiring Soon and Conversion)
+        middle_frame = tk.Frame(self.root, bg="")
+        middle_frame.pack(fill=tk.X, padx=10)
+
+        self.create_expiring_soon_panel(middle_frame)   # LEFT
+        self.create_random_recipe_panel(middle_frame)      # MIDDLE
+        self.create_conversion_table_panel(middle_frame)  # RIGHT
+
+        def update_clock():
+            string = strftime("%A, %B %d %Y %H:%M:%S")
+            if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
+                self.clock_label.config(text=string)
+                self.root.after(1000, update_clock)
+
+        update_clock()
+
+        def update_weather():
+            try:
+                city = "Shreveport,US"
+                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+                response = requests.get(url)
+                data = response.json()
+
+                temp = data["main"]["temp"]
+                condition = data["weather"][0]["description"].capitalize()
+                icon_code = data["weather"][0]["icon"]
+                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+                icon_response = requests.get(icon_url)
+                icon_img = Image.open(BytesIO(icon_response.content))
+                icon_photo = ImageTk.PhotoImage(icon_img)
+
+                if not hasattr(self, "weather_icon_label"):
+                    self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
+                    self.weather_icon_label.pack()
+
+                if not hasattr(self, "weather_label"):
+                    self.weather_label = tk.Label(
+                        self.root,
+                        font=("calibri", 25),
+                        bg="orange",
+                        fg="yellow"
+                    )
+
+                    self.weather_label.pack(pady=(0, 10))
+                #self.update_weather()
+
+                self.weather_icon_label.config(image=icon_photo)
+                self.weather_icon_label.image = icon_photo  # Prevent GC
+
+                self.weather_label.config(
+                    text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
+                )
+
+            except Exception as e:
+                print("Weather fetch error:", e)
+                if hasattr(self, "weather_label"):
+                    self.weather_label.config(text="Weather: Unable to load")
+
+        update_weather()
+
+        # Enlarged calendar
+        #self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
+        #self.cal.pack(pady=(5, 10), ipady=10, ipadx=10)
+
+#        calendar_frame = tk.Frame(middle_frame, bg="", bd=2, relief=tk.GROOVE)
+#        calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+#        self.cal = Calendar(
+#            middle_frame,
+#            selectmode='day',
+#            date_pattern="yyyy-mm-dd",
+#            font=APP_FONT,
+#            background="orange",
+#            disabledbackground="orange",
+#            bordercolor="orange",
+#            headersbackground="orange",
+#            normalbackground="white",
+#            weekendbackground="lightyellow",
+#            othermonthwebackground="lightgray",
+#            othermonthbackground="white"
+#        )
+#        self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
+
+        #self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
+        #            background="orange", disabledbackground="orange",
+        #            bordercolor="gray", headersbackground="orange", normalbackground="white")
+        #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
+
+        # --- Random Recipe Section ---
+#        recipe_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.RIDGE)
+#        recipe_frame.pack(pady=10, padx=20)
+
+#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=APP_FONT, bg="white")
+#        recipe_title.pack(pady=(10, 5))
+
+#        self.recipe_img_label = tk.Label(recipe_frame, bg="white")
+#        self.recipe_img_label.pack(pady=5)
+
+#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=APP_FONT, justify="left")
+#        self.recipe_text.pack(padx=10, pady=5)
+
+#        def fetch_random_recipe():
+#            try:
+#                url = "https://www.themealdb.com/api/json/v1/1/random.php"
+#                response = requests.get(url)
+#                data = response.json()
+
+#                meal = data['meals'][0]
+#                name = meal['strMeal']
+#                category = meal['strCategory']
+#                instructions = meal['strInstructions'][:200] + "..."
+#                image_url = meal['strMealThumb']
+#                link = meal['strSource'] or meal['strYoutube'] or "https://www.themealdb.com"
+
+#                recipe_text = f"{name} ({category})\n\n{instructions}"
+#                self.recipe_text.config(text=recipe_text)
+
+                # Load and display image
+#                img_data = requests.get(image_url, timeout=5).content
+#                img = Image.open(BytesIO(img_data)).resize((200, 200))
+#                photo = ImageTk.PhotoImage(img)
+#                self.recipe_img_label.config(image=photo)
+#                self.recipe_img_label.image = photo  # Prevent GC
+
+                # Clickable image opens recipe link
+#                self.recipe_img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+#                self.recipe_img_label.config(cursor="hand2")
+
+#            except Exception as e:
+#                self.recipe_text.config(text="Unable to load recipe.")
+#                self.recipe_img_label.config(image='', text="[No image]", fg="gray")
+
+        # Refresh button
+#        refresh_btn = tk.Button(recipe_frame, text="New Recipe", command=fetch_random_recipe, bg="#f0f0f0", relief=tk.RAISED)
+#        refresh_btn.pack(pady=5)
+
+#        fetch_random_recipe()
+
+        # Buttons side by side
+        button_frame = tk.Frame(self.root)
+        button_frame.pack(pady=20)
+
+        item_btn = tk.Button(button_frame, cursor="hand2", image=itemImg, width=100, height=100, command=self.create_list_view)
+        item_btn.pack(side=tk.RIGHT)
+        ToolTip(item_btn, "Click to Open Food Catalog")
+
+        scan_btn = tk.Button(button_frame, cursor="hand2", image=scanImg, width=100, height=100, command=lambda: self.open_camera_ui())
+        scan_btn.pack(side=tk.RIGHT)
+        ToolTip(scan_btn, "Click to Scan New Barcodes")
+
+        track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        track_btn.pack(side=tk.RIGHT)
+        ToolTip(track_btn, "Click to Enter the Expiration Tracker")
+
+        weather_btn = tk.Button(button_frame, cursor="hand2", image=weatherImg, width=100, height=100, command=lambda: self.open_weather_ui())
+        #weather_btn = tk.Button(button_frame, image=weatherImg, width=100, height=100, command=lambda: WeatherApp(self.root))
+        weather_btn.pack(side=tk.RIGHT)
+        ToolTip(weather_btn, "Click to Open Weather Forcast")
+
+        music_btn = tk.Button(button_frame, cursor="hand2", image=musicImg, width=100, height=100, command=lambda: self.open_music_ui())
+        music_btn.pack(side=tk.RIGHT)
+        ToolTip(music_btn, "Click to Open Radio")
+
+        web_btn = tk.Button(button_frame, cursor="hand2", image=webImg, width=100, height=100, command=lambda: self.open_foodfacts())
+        web_btn.pack(side=tk.RIGHT)
+        ToolTip(web_btn, "Click to Open Web Browser")
+
+        spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui())
+        spot_btn.pack(side=tk.RIGHT)
+        ToolTip(spot_btn, "Click to Open Spotify")
+
+        dark_mode_btn = tk.Button(button_frame, cursor="hand2", image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
+        dark_mode_btn.pack(side=tk.LEFT)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
+
+        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        set_btn.pack(side=tk.LEFT)
+        ToolTip(set_btn, "Click to Configure Application")
+
+        # Unit Converter Panel
+#        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
+#        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
+
+#        tk.Label(converter_frame, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=10)
+
+        # Input field
+        #self.convert_input = tk.Entry(converter_frame, font=APP_FONT, justify="center")
+        #self.convert_input.pack(pady=5)
+        #self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
+
+        # From unit dropdown
+        #self.from_unit = tk.StringVar(value="grams")
+        #tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+
+        # Result label
+        #self.convert_result = tk.Label(converter_frame, text="", font=APP_FONT, bg="white")
+        #self.convert_result.pack(pady=5)
+
+        # To unit dropdown
+        self.to_unit = tk.StringVar(value="ounces")
+        #tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+
+        # Conversion logic
+        self.unit_factors = {
+            ("grams", "ounces"): lambda x: x * 0.0353,
+            ("ounces", "grams"): lambda x: x / 0.0353,
+            ("sugar", "grams"): lambda x: x * 200,
+            ("flour", "grams"): lambda x: x * 120,
+            ("butter", "grams"): lambda x: x * 227,
+            ("grams", "sugar"): lambda x: x / 200,
+            ("grams", "flour"): lambda x: x / 120,
+            ("grams", "butter"): lambda x: x / 227,
+        }
+
+        def perform_conversion():
+            try:
+                val = float(self.convert_input.get())
+                from_u = self.from_unit.get()
+                to_u = self.to_unit.get()
+                if from_u == to_u:
+                    result = val
+                else:
+                    result = self.unit_factors.get((from_u, to_u), lambda x: "N/A")(val)
+                self.convert_result.config(text=f"= {round(result, 2)} {to_u}")
+            except:
+                self.convert_result.config(text="")
+
+        self.perform_conversion = perform_conversion
+
+        for widget in self.root.winfo_children():
+            widget.lift()
+
+    def create_expiring_soon_panel(self, parent):
+        panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
+        panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        panel.pack_propagate(False)
+
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
+        title.pack(pady=(10, 5))
+
+        list_frame = tk.Frame(panel, bg="white")
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        canvas = Canvas(list_frame, bg="white", highlightthickness=0)
+        scrollbar = Scrollbar(list_frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+        self.expiring_frame = scrollable_frame
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Sample expiration logic (you can replace this with real pantry data)
+        from datetime import datetime, timedelta
+        today = datetime.today()
+        soon = today + timedelta(days=3)
+
+        expiring_items = [
+            item for item in self.items
+            if hasattr(item, "expiry") and item.expiry
+            and datetime.strptime(item["expiry"], "%Y-%m-%d") <= soon
+        ]
+
+        if not expiring_items:
+            tk.Label(scrollable_frame, text="No items expiring soon.",
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
+        else:
+            for item in expiring_items:
+                name = getattr(item, "name", "Unknown")
+                expiry = getattr(item, "expiry", "Unknown")
+                label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
+                label.pack(fill=tk.X, padx=10, pady=5)
+
+    def populate_expiring_items(self):
+        for widget in self.expiring_frame.winfo_children():
+            widget.destroy()
+
+        dummy_items = [
+            "Milk - expires in 2 days",
+            "Bread - expires tomorrow",
+            "Yogurt - expires in 3 days"
+        ]
+
+        if not dummy_items:
+            tk.Label(self.expiring_frame, text="No items expiring soon.",
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
+        else:
+            for item in dummy_items:
+                label = tk.Label(self.expiring_frame, text=item,
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
+                label.pack(fill=tk.X, padx=10, pady=5)
+
+    def create_random_recipe_panel(self, parent):
+        panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300, height=300)
+        panel.pack(side=tk.LEFT, padx=10, pady=10)
+        panel.pack_propagate(False)
+
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
+        title.pack(pady=(10, 5))
+
+        # Recipe image
+        self.recipe_image_label = tk.Label(panel, bg="white")
+        self.recipe_image_label.pack(pady=5)
+
+        # Recipe name
+        self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
+                                          bg="white", wraplength=250)
+        self.recipe_name_label.pack(pady=5)
+
+        # Link to full recipe
+        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
+                                          cursor="hand2", bg="white")
+        self.recipe_link_label.pack(pady=5)
+        self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
+
+        # Refresh button
+        refresh_btn = tk.Button(panel, text="New Recipe", command=self.load_random_recipe)
+        refresh_btn.pack(pady=5)
+
+        # Load the first recipe
+        self.load_random_recipe()
+        #self.load_random_recipe(self.current_recipe = meal)
+
+    def load_random_recipe(self):
+        try:
+            response = requests.get("https://www.themealdb.com/api/json/v1/1/random.php", timeout=5)
+            data = response.json()
+
+            meal = data["meals"][0]
+            self.current_recipe = meal
+
+            name = meal["strMeal"]
+            image_url = meal["strMealThumb"]
+            instructions = meal["strSource"] or f"https://www.themealdb.com/meal/{meal['idMeal']}"
+
+            self.recipe_name_label.config(text=name)
+
+            # Bind click event on image to open detail view
+            #self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view())
+            self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view(self.current_recipe))
+            self.recipe_image_label.config(cursor="hand2")
+
+            self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
+            self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
+
+            img_data = requests.get(image_url, timeout=5).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            photo = ImageTk.PhotoImage(img)
+            self.recipe_image_label.config(image=photo)
+            self.recipe_image_label.image = photo  # Prevent GC
+
+        except Exception as e:
+            self.recipe_name_label.config(text="Failed to load recipe.")
+            self.recipe_link_label.config(text="")
+            self.recipe_image_label.config(image='')
+
+    def show_full_recipe_view(self, meal):
+        self.clear_screen()
+        rating = round(random.uniform(3.5, 5.0), 1)
+
+        # Create scrollable canvas
+        canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Back button
+        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="white", bd=0)
+        back_btn.pack(pady=10, anchor="w", padx=10)
+
+        ## New ##
+        # Horizontal container for image and text
+        content_frame = tk.Frame(scrollable_frame, bg="white")
+        content_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        # Meal image (LEFT)
+        try:
+            image_url = meal["strMealThumb"]
+            img_data = requests.get(image_url, timeout=5).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            photo = ImageTk.PhotoImage(img)
+
+            self.recipe_full_image_label = tk.Label(content_frame, image=photo, bg="white")
+            self.recipe_full_image_label.image = photo  # Prevent GC
+            self.recipe_full_image_label.pack(side=tk.LEFT, padx=10)
+        except Exception as e:
+            print("Error loading image:", e)
+
+        # Text content (RIGHT)
+        text_frame = tk.Frame(content_frame, bg="white")
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Vertically center the text content using stretch and expand
+        text_frame.grid_rowconfigure(0, weight=1)
+        text_frame.grid_columnconfigure(0, weight=1)
+
+        text_inner = tk.Frame(text_frame, bg="white")
+        text_inner.pack(expand=True)
+
+        tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
+                 bg="white", anchor="w").pack(anchor="w", pady=(0, 5))
+
+        tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
+                 font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
+
+        ## Side ##
+        # Horizontal container for image and basic info
+#        content_frame = tk.Frame(scrollable_frame, bg="white")
+#        content_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        # Meal image (LEFT)
+#        try:
+#            image_url = meal["strMealThumb"]
+#            img_data = requests.get(image_url, timeout=5).content
+#            img = Image.open(BytesIO(img_data)).resize((200, 200))
+#            photo = ImageTk.PhotoImage(img)
+
+#            self.recipe_full_image_label = tk.Label(content_frame, image=photo, bg="white")
+#            self.recipe_full_image_label.image = photo  # Prevent GC
+#            self.recipe_full_image_label.pack(side=tk.LEFT, padx=10)
+#        except Exception as e:
+#            print("Error loading image:", e)
+
+        # Meal name and category + rating (RIGHT)
+#        text_frame = tk.Frame(content_frame, bg="white")
+#        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+#        tk.Label(text_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(anchor="w", pady=5)
+#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=APP_FONT, bg="white").pack(anchor="w")
+
+         ## Above ##
+#        # Meal image
+#        try:
+#            image_url = meal["strMealThumb"]
+#            img_data = requests.get(image_url, timeout=5).content
+#            img = Image.open(BytesIO(img_data)).resize((250, 250))
+#            photo = ImageTk.PhotoImage(img)
+
+#            self.recipe_full_image_label = tk.Label(scrollable_frame, image=photo, bg="white")
+#            self.recipe_full_image_label.image = photo  # Prevent garbage collection
+#            self.recipe_full_image_label.pack(pady=10)
+#        except Exception as e:
+#            print("Error loading image:", e)
+
+        # Meal name
+        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
+
+        # Category and rating (simulated rating)
+        #rating = "4/5"
+        rating = random.uniform(3.5, 5.0)
+        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
+                 font=APP_FONT, bg="white").pack(pady=5)
+
+        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+        for i in range(1, 21):
+            ingredient = meal.get(f"strIngredient{i}")
+            measure = meal.get(f"strMeasure{i}")
+            if ingredient and ingredient.strip():
+                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
+                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+
+        # Instructions
+        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
+                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
+
+        # Print & PDF export buttons
+        button_frame = tk.Frame(scrollable_frame, bg="white")
+        button_frame.pack(pady=10)
+
+        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+
+    def show_full_recipe_view_olde(self, meal):
+        self.clear_screen()
+
+        # Set background if needed
+        bg_label = tk.Label(self.root, image=self.backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        # Recipe title
+        tk.Label(self.root, text=meal['strMeal'], font=APP_FONT_BOLD, bg="white").pack(pady=10)
+
+        # Recipe image
+        img_data = requests.get(meal["strMealThumb"], timeout=5).content
+        img = Image.open(BytesIO(img_data)).resize((300, 300))
+        photo = ImageTk.PhotoImage(img)
+        img_label = tk.Label(self.root, image=photo, bg="white")
+        img_label.image = photo
+        img_label.pack(pady=5)
+
+        rating = "4/5"
+        tk.Label(self.root, text=f"Category: {meal['strCategory']}   {rating}",
+                 font=APP_FONT, bg="white").pack(pady=5)
+
+        # Ingredients
+        tk.Label(self.root, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+        ingredients_frame = tk.Frame(self.root, bg="white")
+        ingredients_frame.pack()
+
+        for i in range(1, 21):
+            ing = meal.get(f"strIngredient{i}")
+            measure = meal.get(f"strMeasure{i}")
+            if ing and ing.strip():
+                tk.Label(ingredients_frame, text=f"{ing} - {measure}",
+                         font=APP_FONT, bg="white").pack(anchor="w")
+
+        # Instructions
+        tk.Label(self.root, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=APP_FONT, bg="white")
+        instructions.insert(tk.END, meal['strInstructions'])
+        instructions.config(state=tk.DISABLED)
+        instructions.pack(padx=20, pady=5)
+
+        # Buttons (Save, Print, Export PDF)
+        btn_frame = tk.Frame(self.root, bg="white")
+        btn_frame.pack(pady=10)
+
+        tk.Button(btn_frame, text="Save to Favorites", command=lambda: self.save_to_favorites(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Export to PDF", command=lambda: self.export_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+
+        # Back Button
+        tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2").pack(pady=20)
+
+    def save_to_favorites(self, meal):
+        # Save logic (e.g., append to a JSON file)
+        print("Saved:", meal["strMeal"])
+
+    def print_recipe(self, meal):
+        print("Print requested for:", meal["strMeal"])
+
+    def export_to_pdf(self, meal):
+        print("Export to PDF for:", meal["strMeal"])
+
+    def show_full_recipe_view_old(self):
+        if not hasattr(self, "current_recipe") or not self.current_recipe:
+            return
+
+        self.clear_screen()
+
+        meal = self.current_recipe
+        name = meal["strMeal"]
+        instructions = meal["strInstructions"]
+        image_url = meal["strMealThumb"]
+
+        # Background
+        bg_label = tk.Label(self.root, image=self.card_backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        # Title
+        tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
+
+        # Image
+        img_data = requests.get(image_url, timeout=5).content
+        img = Image.open(BytesIO(img_data)).resize((300, 300))
+        photo = ImageTk.PhotoImage(img)
+        img_label = tk.Label(self.root, image=photo, bg="white")
+        img_label.image = photo
+        img_label.pack(pady=10)
+
+        # Instructions (scrollable)
+        frame = tk.Frame(self.root)
+        frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(frame, height=200, bg="white")
+        scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        scroll_frame = tk.Frame(canvas, bg="white")
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Back button
+        back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
+        back_btn.pack(pady=10)
+
+    ## Create Tracker Screen ##
+    def create_tracker_ui(self, item):
+        self.clear_screen()
+        self.set_background()
+
+	## Background Greeting ##
+        welcome = Label(root,
+                        text = " Expiration Tracker:",
+                        font=("Comic Sans MS", 33)).pack()
+
+	## Add Item ##
+        add_btn = tk.Button(self.root,
+			anchor="n",
+			cursor="hand2",
+			#text="Add Item",
+			image=addImg,
+			#command=lambda: self.add_item_popup)
+			command=self.add_item_popup)
+        add_btn.pack(pady=5)
+        ToolTip(add_btn, "Click to Add Item")
+
+	## Open Camera ##
+        cam_btn = tk.Button(self.root,
+			cursor="hand2",
+			image=camImg,
+			#command=self.update_camera)
+			### Lambda Breaks Button Here IDKY ###
+			#command=lambda: self.show_camera)
+			command=self.show_camera)
+        cam_btn.pack(pady=5)
+
+#        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
+        ToolTip(cam_btn, "Click to Open Camera")
+
+	## Show List View ##
+        list_view_btn = tk.Button(self.root,
+				cursor="hand2",
+				#text="List View",
+				image=listImg,
+				#command=lambda: self.create_list_view)
+				command=self.create_list_view)
+        list_view_btn.pack(pady=5)
+
+#        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
+        ToolTip(list_view_btn, "Click to Open Inventory in List View")
+
+	## Show Card View ##
+        card_view_btn = tk.Button(self.root,
+				cursor="hand2",
+				#text="Card View",
+				image=cardImg,
+				#command=lambda: self.create_card_view)
+				command=self.create_card_view)
+        card_view_btn.pack(pady=5)
+
+#        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
+        ToolTip(card_view_btn, "Click to Open Inventory in Card View")
+
+	## Mode ##
+        dark_mode_btn = tk.Button(self.root,
+				cursor="hand2",
+				#text="Toggle Dark Mode",
+				image=lightImg,
+				#command=lambda: self.toggle_dark_mode)
+				command=self.toggle_dark_mode)
+        dark_mode_btn.pack(pady=10)
+
+#        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
+        ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode")
+
+	## Show Back ##
+        back_btn = tk.Button(self.root,
+			anchor="w",
+			cursor="hand2",
+			image=backImg,
+			command=lambda: self.create_home_screen(None))
+        back_btn.pack(pady=10)
+
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+    ## Create Card view ##
+    def create_card_view(self):
+        self.clear_screen()
+
+        # Set specific background for card view
+        bg_label = tk.Label(self.root, image=self.card_backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        self.current_view = "card"
+
+        # Search bar
+        search_frame = tk.Frame(self.root, bg="")
+        search_frame.pack(pady=(10, 0))
+
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
+        search_entry.pack(side=tk.LEFT, padx=(10, 5))
+        search_entry.bind("<KeyRelease>", lambda event: self.create_card_view())
+
+        # Sort menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
+        sort_menu.pack(pady=10)
+
+        # Setup scrollable canvas
+        #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
+        scroll_frame = tk.Frame(canvas, bg="")
+
+
+        scroll_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set, bg=self.root["bg"])
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        search_term = self.search_var.get().lower().strip()
+
+        row = col = 0
+        for item in self.items:
+            if search_term and search_term not in item.name.lower():
+                continue  # Skip items that don't match search
+
+            color = item.get_color()
+            days = item.days_until_expired()
+            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
+
+            c_btn = tk.Button(
+               scroll_frame, text=text, bg=color, fg="black", font=APP_FONT, wraplength=150,
+               width=15, height=6, highlightthickness=0, bd=1,
+               command=lambda i=item: self.show_detail_view(i)
+            )
+            c_btn.grid(row=row, column=col, padx=10, pady=10)
+            col += 1
+            if col == 3:
+               col = 0
+               row += 1
+
+        card_back_btn = tk.Button(self.root,
+                                  cursor="hand2",
+                                  image=backImg,
+                                  #command=self.create_home_screen)
+                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+        card_back_btn.pack(pady=10)
+        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
+
+    def create_list_view(self):
+        self.clear_screen()
+        self.current_view = "list"
+
+        # Background image
+        bg_label = tk.Label(self.root, image=self.list_backgroundImg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.lower()
+
+        # Sort menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)")
+        sort_menu.pack(pady=5)
+
+        # Search bar frame
+        search_frame = tk.Frame(self.root, bg="")
+        search_frame.pack(pady=5)
+
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
+        search_entry.pack(side=tk.LEFT, padx=5)
+        search_entry.bind("<KeyRelease>", lambda event: self.create_list_view())
+
+        tk.Button(search_frame, text="Clear", command=lambda: self.clear_search(self.create_list_view)).pack(side=tk.LEFT)
+
+        # Scrollable canvas
+        canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        scroll_frame = tk.Frame(canvas, bg="")
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set, bg=self.root["bg"])
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Search filtering
+        search_term = self.search_var.get().lower().strip()
+
+        for item in self.items:
+            if search_term and search_term not in item.name.lower():
+                continue
+
+            frame = tk.Frame(scroll_frame, bg=self.root["bg"])
+            frame.pack(fill=tk.X, pady=2)
+
+            color = item.get_color()
+            days = item.days_until_expired()
+            text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
+            tk.Label(frame, text=text, bg=color, fg="black", font=APP_FONT).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
+
+        # Back button
+        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=10)
+        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
+
+    def refresh_list(self):
+        self.create_list_view()
+
+    def refresh_views(self):
+        if self.current_view == "card":
+            self.create_card_view()
+        elif self.current_view == "list":
+            self.create_list_view()
+
+    def show_detail_view(self, item):
+        self.current_item = item
+        self.clear_screen()
+        self.set_background()
+        days = item.days_until_expired()
+
+        # Show item details
+        detail_text = (
+            f"Item: {item.name}\n"
+            f"Expiration: {item.expiration_date.strftime('%Y-%m-%d')}\n"
+            f"Days Left: {check_dates(days) if days > 0 else 0}"
+        )
+
+        # Show nutrition facts on detail screen
+        if item.nutrition_info:
+            nutrition_frame = tk.Frame(self.root)
+            nutrition_frame.place(x=30, y=150)  # Adjust position as needed
+
+            tk.Label(nutrition_frame, text="Nutrition Facts:", font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
+
+            for key, value in item.nutrition_info.items():
+                fact = f"{key}: {value}"
+                tk.Label(nutrition_frame, text=fact, font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
+
+
+        label = tk.Label(self.root, text=detail_text, font=APP_FONT, justify="left")
+        label.pack(pady=30)
+
+        # Scanner and barcode buttons (only shown on item click)
+        scanner_btn = tk.Button(self.root,
+				cursor="hand2",
+				#text="Open Scanner",
+				image=camImg,
+				#command=lambda: self.show_camera)
+				command=self.show_camera)
+				#command=lambda: self.detect_barcode_from_camera())
+        scanner_btn.pack(pady=5)
+
+#        Hovertip(scanner_btn, "Click to Open Barcode Scanner", hover_delay=500)
+        ToolTip(scanner_btn, "Click to Open Barcode Scanner")
+
+        barcode_btn = tk.Button(self.root,
+				cursor="hand2",
+				#text="Detect Barcode",
+				image=scanImg,
+				#command=lambda: self.detect_barcode("codes/barcode.png"))
+				command=lambda: self.detect_barcode("codes/barcode.png"))
+				#command=lambda: self.detect_barcode_from_camera())
+        barcode_btn.pack(pady=5)
+
+#        Hovertip(barcode_btn, "Click to Display Scanned Barcode", hover_delay=500)
+        ToolTip(barcode_btn, "Click to Display Scanned Barcode")
+
+              # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
+        label_code.pack(pady=5)
+
+        self.barcode_entry = tk.Entry(self.root)
+        self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
+
+#        manual_btn = tk.Button(self.root, text="Enter Barcode", command=self.barcode_entry)
+#        manual_btn.pack(pady=10)
+#        Hovertip(manual_btn, "Click to Enter Barcode Manually", hover_delay=500)
+
+        # Back to card view
+        back_btn = tk.Button(self.root,
+			cursor="hand2",
+			#text="Back",
+			image=cardImg,
+			#command=lambda: self.create_card_view)
+			command=lambda: [self.stop_camera(), self.create_card_view])
+        back_btn.pack(pady=10)
+        ToolTip(back_btn, "Click to Return to Card View")
+
+    def barcode_entry(self):
+        barcode = simpledialog.askstring("Barcode Entry", "Enter barcode number:")
+        if not barcode:
+            return
+        nutrition_info = self.fetch_open_food_facts(barcode)
+        if nutrition_info:
+            product_name = nutrition_info.get("Product Name", "")
+            if product_name and product_name != "Unknown":
+                # Update the item name and nutrition info
+                self.current_item.name = product_name
+                self.current_item.nutrition_info = nutrition_info
+                self.save_items()
+                self.show_detail_view(self.current_item)
+
+    def detect_barcode_from_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+        self.cpt = cv2.VideoCapture(0)
+
+        if not self.cpt.isOpened():
+            print("Cannot open camera")
+            return
+
+        self.update_frame()
+
+    def update_frame(self):
+        if not hasattr(self, 'cpt') or not self.cpt.isOpened():
+           return
+
+        ret, frame = self.cpt.read()
+        if not ret:
+            print("Failed to Grab Frame")
+            self.cpt.release()
+            return
+
+        barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+
+        for barcode in barcodes:
+            data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            print(f"Detected Barcode: {barcode_type} - {data}")
+
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, data, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Convert to ImageTk
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_rgb)
+        imgtk = ImageTk.PhotoImage(image=img_pil)
+
+	## Only Update if Camera Label Still Exists ##
+        if hasattr(self, 'camera_label') and self.camera_label.winfo_exists():
+            self.camera_label.imgtk = imgtk  # prevent garbage collection
+            self.camera_label.config(image=imgtk)
+
+        # Schedule the next frame
+        self.root.after(10, self.update_frame)
+
+    def fetch_open_food_facts(self, barcode, item=None):
+        import requests
+
+        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        print(f"Fetching barcode: {barcode}")  # Debug
+
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if data.get('status') == 1:
+                product = data.get('product', {})
+                nutriments = product.get('nutriments', {})
+                nutrition_info = {
+                    "Product Name": product.get('product_name', 'Unknown'),
+                    "Calories (kcal)": nutriments.get('energy-kcal_100g', 'N/A'),
+                    "Fat (g)": nutriments.get('fat_100g', 'N/A'),
+                    "Saturated Fat (g)": nutriments.get('saturated-fat_100g', 'N/A'),
+                    "Carbohydrates (g)": nutriments.get('carbohydrates_100g', 'N/A'),
+                    "Sugars (g)": nutriments.get('sugars_100g', 'N/A'),
+                    "Fiber (g)": nutriments.get('fiber_100g', 'N/A'),
+                    "Proteins (g)": nutriments.get('proteins_100g', 'N/A'),
+                    "Salt (g)": nutriments.get('salt_100g', 'N/A'),
+                    "Sodium (g)": nutriments.get('sodium_100g', 'N/A'),
+                    "Serving Size": product.get('serving_size', 'N/A'),
+                }
+
+                print("Product found:", nutrition_info["Product Name"])  # Debug
+
+                self.show_nutrition_info(nutrition_info)
+
+                product_name = nutrition_info["Product Name"]
+
+                if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
+                    if product_name and product_name != 'Unknown':
+                        self.name_entry.delete(0, tk.END)
+                        self.name_entry.insert(0, product_name)
+
+                elif item:
+                    if product_name and product_name != 'Unknown':
+                        item.name = product_name
+                        self.save_items()
+                        self.refresh_views()
+                return nutrition_info
+            else:
+                messagebox.showerror("Error", "Product not found in Open Food Facts.")
+                return {}
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to fetch data: {e}")
+        return nutrition_info
+
+    def show_nutrition_info(self, nutrition_info):
+        # Show nutrition information in a popup window
+        info_window = tk.Toplevel(self.root)
+        info_window.title("Nutrition Information")
+
+        for key, value in nutrition_info.items():
+            label = tk.Label(info_window, text=f"{key}: {value}", font=APP_FONT, anchor="w")
+            label.pack(fill=tk.X, padx=10, pady=2)
+
+        close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
+        close_btn.pack(pady=10)
+
+    def sort_items(self, sort_type):
+        if sort_type == "Expiration (Soonest)":
+            self.items.sort(key=lambda x: x.expiration_date)
+        elif sort_type == "Expiration (Latest)":
+            self.items.sort(key=lambda x: x.expiration_date, reverse=True)
+        elif sort_type == "Name (A-Z)":
+            self.items.sort(key=lambda x: x.name.lower())
+        elif sort_type == "Name (Z-A)":
+            self.items.sort(key=lambda x: x.name.lower(), reverse=True)
+
+        # Refresh the correct view
+        if self.current_view == "card":
+            self.create_card_view()
+        else:
+            self.create_list_view()
+
+    def edit_item(self, item):
+        # Prompt user to edit name and date
+        new_name = simpledialog.askstring("Edit Name", "Enter new name:", initialvalue=item.name)
+        new_date = simpledialog.askstring("Edit Date", "Enter new expiration date (YYYY-MM-DD):", initialvalue=item.expiration_date.strftime("%Y-%m-%d"))
+
+        if new_name:
+            item.name = new_name
+        try:
+            if new_date:
+                item.expiration_date = datetime.strptime(new_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid date format.")
+
+        self.refresh_views()
+
+    ## Loads items from file
+    def load_items(self):
+        if os.path.exists(SAVE_FILE):
+            with open(SAVE_FILE, 'r') as f:
+              try:  
+                data = json.load(f)
+              except json.JSONDecodeError:
+                data = []
+            self.items = [Item.from_dict(d) for d in data]
+
+    ## Saves items to file ##
+    def save_items(self):
+        with open(SAVE_FILE, 'w') as f:
+            json.dump([item.to_dict() for item in self.items], f)
+
+    def delete_item(self, item):
+        if messagebox.askyesno("Delete", f"Delete {item.name}?"):
+            self.items.remove(item)
+            self.save_items()
+            self.create_list_view()
+
+    def toggle_dark_mode(self):
+        self.dark_mode = not self.dark_mode
+        bg = "#2E2E2E" if self.dark_mode else "white"
+        fg = "white" if self.dark_mode else "black"
+        self.root.configure(bg=bg)
+        for widget in self.root.winfo_children():
+            try:
+                widget.configure(bg=bg, fg=fg)
+            except:
+                pass
+
+    def add_item_popup(self):
+        self.clear_screen()
+        self.set_background()
+
+        tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
+
+        tk.Label(self.root, text="Enter Item Name:", font=APP_FONT).pack(pady=5)
+
+        # Item Name Entry (auto‑pop OSK on focus)
+        self.name_entry = tk.Entry(self.root)
+        self.name_entry.pack(pady=5)
+        # bind focus‑in to launch OSK
+        self.name_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.name_entry)
+        )
+
+        # — Expiration date picker (unchanged) —
+        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
+        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
+        self.date_picker.pack(pady=5)
+
+        # Barcode Entry (auto‑pop OSK on focus)
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
+        label_code.pack(pady=5)
+
+        self.barcode_entry = tk.Entry(self.root)
+        self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
+        )
+
+        # Allow barcode to pre-fill name
+        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry())
+        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
+        #barcode_btn.pack(pady=10)
+
+        scan_btn = tk.Button(self.root,
+		#text="Scan",
+		cursor="hand2",
+		image=scanImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		#command=lambda: self.detect_barcode("codes/barcode.png"))
+		#command=lambda: self.detect_barcode_from_camera())
+		command=lambda: self.show_camera())
+
+        scan_btn.pack(pady=5)
+#        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
+        ToolTip(scan_btn, "Click to Show Scanned Barcode")
+
+        save_btn = tk.Button(self.root,
+		#text="Save",
+		cursor="hand2",
+		image=saveImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		command=self.save_new_item)
+        save_btn.pack(pady=5)
+#        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
+        ToolTip(save_btn, "Click to Save Data")
+
+        mode_btn = tk.Button(self.root,
+		#text="Save",
+		cursor="hand2",
+		image=lightImg,
+		#command=lambda: self.save_new_item).pack(pady=5)
+		command=self.toggle_dark_mode)
+        mode_btn.pack(pady=5)
+#        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
+        ToolTip(mode_btn, "Click to Toggle Light/Dark Mode")
+
+        back_btn = tk.Button(self.root,
+		#text="Back",
+		cursor="hand2",
+		image=backImg,
+		#command=self.create_tracker_ui(None)).pack(pady=5)
+		#command=lambda: self.create_tracker_ui(None))
+		command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+        back_btn.pack(pady=5)
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+	## Create Side View of Camera ##
+#        self.camera_label = tk.Label(self.root)
+#        self.camera_label.pack(pady=10)
+#        self.camera_label.pack(pady=10, side="right")
+#        self.camera_label.grid(row=0, column=0, columnspan=2, pady=10)
+
+    ## Saves item to list ##
+    def save_new_item(self):
+        name = self.name_entry.get()
+        date = self.date_picker.get()
+        barcode = self.barcode_entry.get() if hasattr(self, 'barcode_entry') else ""
+
+        nutrition_info = {}
+        product_name = None
+
+        # Step 1: Fetch nutrition and product name if barcode exists
+        if barcode:
+            fetched_info = self.fetch_open_food_facts(barcode)
+            if fetched_info:
+                nutrition_info = fetched_info
+                product_name = fetched_info.get("Product Name", "")
+                if product_name and product_name != "Unknown":
+                    name = product_name  #Force overwrite with product name
+                    self.name_entry.delete(0, tk.END)
+                    self.name_entry.insert(0, name)
+
+        # Step 2: Validate name
+        if not name:
+            messagebox.showerror("Error", "Item name required")
+            return
+
+        # Step 3: Create and save item
+        try:
+            item = Item(name, date, nutrition_info)
+            self.items.append(item)
+            self.save_items()
+            self.refresh_views()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save item: {e}")
+
+    def clear_screen(self):
+        try:
+          if hasattr(self, "camera_loop_id"):
+            self.root.after_cancel(self.camera_loop_id)
+            del self.camera_loop_id
+        except Exception as e:
+            print("Failed to Cancel Camera Loop:", e)
+#        except AttributeError:
+#            pass
+
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def init_camera(self):
+	## Ensure Camera Is Not Currently Open ##
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+
+	## Open Camera and Store in self.cap ##
+        self.cpt = cv2.VideoCapture(0)
+        self.cpt.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cpt.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        if not self.cpt.isOpened():
+           print("Cannot Open Camera")
+           return
+
+	## Show Camera Feed ##
+        #self.camera_label = tk.Label(self.root)
+
+    def show_camera(self):
+        self.clear_screen()
+        self.set_background()
+        self.init_camera()
+
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+               self.cpt.release()
+
+        ## Create of Reuse Camera Label ##
+#        if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+#               self.camera_label = tk.Label(self.root)
+        self.camera_label = tk.Label(self.root)
+        self.camera_label.pack(pady=20, side="top")
+        self.update_camera()
+
+        back_btn = tk.Button(self.root,
+                             image=backImg,
+        		     command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+                             #command=lambda: self.create_tracker_ui(None))
+        back_btn.pack(pady=10, side="left")
+#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+        scan_btn = tk.Button(self.root,
+                             image=scanImg,
+                             command=lambda: self.detect_barcode_from_camera())
+        scan_btn.pack(pady=10, side="right")
+        ToolTip(scan_btn, "Click to Scan Barcode")
+
+        #self.detect_barcode_from_camera()
+
+    def update_camera(self):
+      if self.cpt.isOpened():
+         if not hasattr(self, "camera_label") or not self.camera_label.winfo_exists():
+            return
+
+#      if not self.camera_label.winfo_exists():
+#        return
+
+      if hasattr(self, 'cpt') and self.cpt.isOpened():
+        ret, frame = self.cpt.read()
+        if ret:
+            decoded_barcodes = decode(frame)
+
+            if decoded_barcodes:
+               for barcode in decoded_barcodes:
+                   (x, y, w, h) = barcode.rect
+                   cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                   barcode_data = barcode.data.decode("utf-8")
+                   barcode_type = barcode.type
+
+                   text = f'{barcode_type}: {barcode_data}'
+                   cv2.putText(frame, text, (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                   if getattr(self, "last_barcode", None) != barcode_data:
+                        print(f"New Barcode Detected: {barcode_data}")
+                        self.last_barcode = barcode_data
+
+                   print(f"Scanned: {barcode_data}")
+
+        if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+            img = Image.fromarray(frame)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.camera_label.imgtk = imgtk
+            self.camera_label.config(image=imgtk)
+      self.camera_loop_id = self.root.after(10, self.update_camera)
+
+    def stop_camera(self):
+        if hasattr(self, 'cpt') and self.cpt.isOpened():
+            self.cpt.release()
+        if hasattr(self, 'camera_loop_id'):
+            self.root.after_cancel(self.camera_loop_id)
+        if hasattr(self, 'camera_label'):
+            self.camera_label.destroy()
+
+    def stop_camera_loop(self):
+        if hasattr(self, "camera_loop_id"):
+               self.root.after_cancel(self.camera_loop_id)
+        if self.cpt.isOpened():
+               self.cpt.release()
+
+    def detect_barcode(self, image_path):
+        if not os.path.exists(image_path):
+                print("Barcode Image Not Found at:", image_path)
+                return
+
+        image = cv2.imread(image_path)
+        if image is None:
+                print("Failed to Load Image.")
+                return
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        barcodes = decode(gray)
+
+        if not barcodes:
+            print("No Barcode Found in Image.")
+            return
+
+        for barcode in barcodes:
+            data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            print(f"Detected Barcode: {barcode_type} - {data}")
+
+        (x, y, w, h) = barcode.rect
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.putText(image, data, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb)
+        plt.axis('off')
+        plt.show()
+
+#        self.detect_barcode_from_camera
+
+class ToolTip:
+    def __init__(self, widget, text, delay=500):
+        self.widget = widget
+        self.text = text
+        self.delay = delay
+        self.tip_window = None
+        self.id = None
+
+        self.widget.bind("<Enter>", self.schedule)
+        self.widget.bind("<Leave>", self.unschedule)
+        self.widget.bind("<Motion>", self.move)
+
+    def schedule(self, event=None):
+        self.unschedule()
+        self.id = self.widget.after(self.delay, self.show_tip)
+
+    def unschedule(self, event=None):
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+        self.hide_tip()
+
+    def move(self, event):
+        if self.tip_window:
+            x, y = event.x_root + 20, event.y_root + 10
+            self.tip_window.geometry(f"+{x}+{y}")
+
+    def show_tip(self):
+        if self.tip_window or not self.text:
+            return
+        x, y = self.widget.winfo_pointerxy()
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x+20}+{y+10}")
+        label = tk.Label(tw, text=self.text, background="#ffffe0", relief='solid', borderwidth=1,
+                         font=("tahoma", 10, "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
+
+def get_weather(city="Shreveport, US"):
+    api_key = "f63847d7129eb9be9c7a464e1e5ef67b" # Replace with your real API key
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid={api_key}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+        if data["cod"] == 200:
+            temp = data["main"]["temp"]
+            condition = data["weather"][0]["description"].capitalize()
+            return f"{city}: {temp}\u00b0F, {condition}"
+        else:
+            return "Weather not found"
+    except Exception as e:
+        return f"Error: {e}"
+
+weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
+weather_label.pack(pady=20)
+
+def update_weather_old():
+    weather = get_weather("Shreveport, US")  # Change city as needed
+#    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+#       return
+    weather_label.config(text=weather)
+    root.after(600000, update_weather_old)  # Update every 10 minutes
+
+update_weather_old()
+
+class WeatherApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    #def __init__(self, root, backImg, back_callback=None):
+        self.root = root
+        self.root.title("Weather Forecast")
+        self.backgroundImg = backgroundImg
+        self.backImg = backsmallImg
+        #self.backImg = ImageTK.PhotoImage(Image.open("pics/back.png"))
+        self.back_callback = back_callback
+
+	## Frame For Weather App Content ##
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        self.weather_ui()
+
+	## Background Image ##
+        #self.backgroundImg = backgroundImg
+        #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
+        pil_weather = Image.open("pics/weather.jpg").resize(
+            #(self.root.winfo_screenwidth(), self.root.winfo_screenheight())
+            (self.frame.winfo_screenwidth(), self.frame.winfo_screenheight())
+        )
+        self.backgroundImg = ImageTk.PhotoImage(pil_weather)
+#        self.backgroundImg = back_weatherImg
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.image = self.backgroundImg
+
+	## Back Button Image ##
+#        self.backImg = backImg
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
+        self.back_callback = back_callback
+#        self.clear_screen()
+#        self.root.geometry("500x400")
+
+        self.city = "Shreveport, US"
+        self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+
+        self.weather_ui()
+        #self.update_weather()
+
+    def clear_screen(self):
+        #for widget in self.root.winfo_children():
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+
+    def set_background(self):
+      try:
+        if hasattr(self, "bg_label"):
+           self.bg_label.destroy()
+
+#        if self.backgroundImg:
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        
+        #self.bg_label = bg_label
+#        try:
+#            self.background_label = tk.Label(self.root, image=backgroundImg)
+#            self.background_label.place(relwidth=1, relheight=1)
+#        except Exception as e:
+#        else:
+#           print("No Background Image Set.")
+      except Exception as e:
+        print("Error setting background:", e)
+
+    def weather_ui(self):
+        self.clear_screen()
+#        self.set_background()
+
+        ## Set Background Image and Place in the Background ##
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+        self.bg_label.image = self.backgroundImg
+
+        ## Main Transparent Content Frame for Layout ##
+        content_frame = tk.Frame(self.frame, bg="", padx=10, pady=10)
+#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+#        content_frame.pack(fill="both", expand=True)
+        content_frame.pack(expand=True)
+
+	## Current Weather Content Frame ##
+#        content_frame = tk.Frame(self.root, bg="white", padx=10, pady=10)
+#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        ## Current Weather Label ##
+        #self.weather_label = tk.Label(self.root, font=APP_FONT)
+        #self.weather_label = tk.Label(content_frame, font=APP_FONT, bg="white")
+        self.weather_label = tk.Label(content_frame, font=APP_FONT)
+        self.weather_label.pack(pady=10)
+
+        ## Weather Icon ##
+        #self.weather_icon_label = tk.Label(self.root)
+        #self.weather_icon_label = tk.Label(content_frame, bg="white")
+        self.weather_icon_label = tk.Label(content_frame)
+        self.weather_icon_label.pack()
+
+        ## Forecast Frame ##
+        #forecast_frame = tk.Frame(self.root)
+        #forecast_frame = tk.Frame(content_frame, bg="white")
+        forecast_frame = tk.Frame(content_frame)
+        forecast_frame.pack(pady=10)
+
+        self.forecast_labels = []
+        for _ in range(5):
+            day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame.pack(side="left", padx=5)
+
+            #icon_label = tk.Label(day_frame, bg="white")
+            icon_label = tk.Label(day_frame)
+            icon_label.pack()
+
+            #text_label = tk.Label(day_frame, font=APP_FONT, bg="white")
+            text_label = tk.Label(day_frame, font=APP_FONT)
+            text_label.pack()
+
+            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        ## Back Button ##
+        #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
+        #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
+        #back_btn.pack(pady=10)
+#        if callable(self.back_callback):
+        self.back_btn = tk.Button(self.frame,
+                              cursor="hand2",
+                              #image=self.backImg,
+                              image=backsmallImg,
+                                  #command=self.back_callback)
+                                  #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
+                              command=self.back_callback)
+                                  #command=lambda: self.create_home_screen(None))
+#        else:
+#            self.back_btn = tk.Button(self.root,
+#                                  cursor="hand2",
+#                                  image=self.backImg,
+                                  #command=self.back_callback)
+#                                  command=self.root.destroy)
+                                  #command=lambda: self.create_home_screen(None))
+        #self.back_btn.pack(pady=10)
+        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        #self.back_btn.place(x=10, y=10, anchor="s")
+        self.back_btn.image = self.backImg
+        ToolTip(self.back_btn, "Click to Return to the Previous Screen")
+
+        self.update_weather()
+
+    def update_weather(self):
+        try:
+            if not hasattr(self, 'city'):
+                  self.city = "Shreveport, US"
+            if not hasattr(self, 'api_key'):
+                  self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+
+            url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            if "list" not in data or len(data["list"]) < 6:
+               raise ValueError("Incomplete Forecast Data")
+
+            # Current weather
+            current = data['list'][0]
+            temp = current['main']['temp']
+            condition = current['weather'][0]['description'].capitalize()
+            icon_code = current['weather'][0]['icon']
+            icon_img = self.get_icon(icon_code)
+
+            if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
+               return
+
+            self.weather_icon_label.config(image=icon_img)
+            self.weather_icon_label.image = icon_img
+            self.weather_label.config(text=f"{self.city}: {temp:.1f}\u00b0F, {condition}")
+
+            # 5-day forecast
+            for i in range(1, 6):
+                index = i * 8
+                if index >= len(data['list']):
+                   print(f"Skipping Forecast Index {index} (out of range)")
+                   continue
+
+                #forecast = data['list'][i * 8]  # 24 hours apart
+                forecast = data['list'][index]  # 24 hours apart
+                day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
+                temp = forecast['main']['temp']
+                condition = forecast['weather'][0]['main']
+                icon_code = forecast['weather'][0]['icon']
+                icon_img = self.get_icon(icon_code)
+
+                self.forecast_labels[i - 1]['icon'].config(image=icon_img)
+                self.forecast_labels[i - 1]['icon'].image = icon_img
+                self.forecast_labels[i - 1]['text'].config(
+                    text=f"{day}\n{temp:.0f}\u00b0F\n{condition}"
+                )
+
+        except Exception as e:
+            import traceback
+            print("Error fetching weather:", e)
+            if hasattr(self, "weather_label"):
+                 self.weather_label.config(text="Weather: Unable to load")
+
+    def get_icon(self, code):
+        try:
+            url = f"http://openweathermap.org/img/wn/{code}@2x.png"
+            response = requests.get(url)
+            img_data = Image.open(BytesIO(response.content))
+            return ImageTk.PhotoImage(img_data)
+        except Exception as e:
+            print("Icon load failed:", e)
+            return None
+
+class CameraApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+           print("Failed to Open Camera")
+        else:
+           print("Camera Opened Successfully")
+
+        self.camera_ui()
+        self.update_frame()
+
+    def camera_ui(self):
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.video_label = tk.Label(self.frame, bg="black")
+        self.video_label.place(relx=0.5, rely=0.4, anchor="center")
+
+        self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
+        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+
+    def update_frame(self):
+        if self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(cv2image)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.video_label.configure(image=imgtk)
+                self.video_label.image = imgtk
+        self.frame.after(10, self.update_frame)
+
+## Spotipy ##
+#sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+#    client_id="YOUR_CLIENT_ID",
+#    client_secret="YOUR_CLIENT_SECRET",
+#    redirect_uri="http://localhost:8888/callback",
+#    scope="user-read-playback-state,user-modify-playback-state,user-read-currently-playing"
+#))
+
+#current = sp.current_playback()
+#if current:
+#    print("Currently Playing:", current['item']['name'])
+#else:
+#    print("Nothing is playing.")
+
+#play_btn = tk.Button(self.frame, text="Play", command=lambda: sp.start_playback())
+#pause_btn = tk.Button(self.frame, text="Pause", command=lambda: sp.pause_playback())
+#next_btn = tk.Button(self.frame, text="Next", command=lambda: sp.next_track())
+
+class SpotifyApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback, token):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+        self.token = token
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.create_ui()
+
+    def create_ui(self):
+        # Back button
+        tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
+
+        # Spotify info
+        self.track_label = tk.Label(self.frame, text="Loading...", font=APP_FONT, bg="white")
+        self.track_label.pack(pady=20)
+
+        # Album art
+        self.album_art_label = tk.Label(self.frame, bg="white")
+        self.album_art_label.pack(pady=10)
+
+        # Control buttons
+        controls = tk.Frame(self.frame, bg="white")
+        controls.pack(pady=20)
+
+        tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
+
+        #self.update_now_playing()
+        #threading.Thread(target=self.load_music_data, daemon=True).start()
+
+	## Requires Auth Token not Client ##
+        #tracks = self.fetch_playlist_tracks()
+        tracks = self.fetch_top_tracks()
+
+        for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
+            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
+            label.pack()
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                img_label.image = photo  # prevent garbage collection
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+            except Exception as e:
+                print(f"Failed to Load Image: {e}")
+                tk.Label(self.frame, text="Image Failed to Load", bg="white").pack()
+
+        html_content = """
+        <h2>Spotify Web Player</h2>
+        <p><a href='https://open.spotify.com/'>Open Spotify</a></p>
+        <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+        """
+
+        html_widget = HTMLLabel(self.frame, html=html_content)
+        html_widget.pack(pady=20)
+
+    def load_music_data(self):
+        self.update_now_playing()
+        tracks = self.fetch_playlist_tracks()
+        self.display_tracks(tracks)
+
+    def update_now_playing(self):
+        headers = {"Authorization": f"Bearer {self.token}"}
+        resp = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
+
+        if resp.status_code != 200:
+            self.track_label.config(text="Nothing playing or not authorized.")
+            return
+
+        data = resp.json()
+        track = data['item']
+        name = track['name']
+        artist = track['artists'][0]['name']
+        album_url = track['album']['images'][0]['url']
+
+        self.track_label.config(text=f"{name} - {artist}")
+
+        img_data = requests.get(album_url, timeout=5).content
+        img = Image.open(BytesIO(img_data)).resize((200, 200))
+        self.album_img = ImageTk.PhotoImage(img)
+        self.album_art_label.config(image=self.album_img)
+
+    def play(self):
+        requests.put("https://api.spotify.com/v1/me/player/play", headers={"Authorization": f"Bearer {self.token}"})
+
+    def pause(self):
+        requests.put("https://api.spotify.com/v1/me/player/pause", headers={"Authorization": f"Bearer {self.token}"})
+
+    def next_track(self):
+        requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
+        #self.update_now_playing()
+        threading.Thread(target=self.load_music_data, daemon=True).start()
+
+    def get_spotify_token(client_id, client_secret):
+        auth_str = f"{client_id}:{client_secret}"
+        b64_auth = base64.b64encode(auth_str.encode()).decode()
+
+        headers = {"Authorization": f"Basic {b64_auth}"}
+        data = {"grant_type": "client_credentials"}
+
+        response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+        return response.json().get("access_token")
+
+    def fetch_playlist_tracks(self):
+            playlist_id = "37i9dQZF1DXcBWIGoYBM5M"  # Replace with your playlist ID
+            url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+            headers = {
+                "Authorization": f"Bearer {self.token}"
+            }
+
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                print("Failed to fetch playlist:", resp.text)
+                return []
+
+            data = resp.json()
+            tracks = []
+            for item in data["items"]:
+                track = item["track"]
+                name = track["name"]
+                artist = track["artists"][0]["name"]
+                image_url = track["album"]["images"][0]["url"]
+                external_url = track["external_urls"]["spotify"]
+                tracks.append((name, artist, image_url, external_url))
+            return tracks
+
+    def fetch_top_tracks(self):
+        url = "https://api.spotify.com/v1/search"
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+        params = {
+            "q": "Today's Top Hits",
+            "type": "track",
+            "limit": 5
+       }
+
+        resp = requests.get(url, headers=headers, params=params)
+        if resp.status_code != 200:
+            print("Failed to fetch tracks:", resp.text)
+            return []
+
+        data = resp.json()
+        tracks = []
+        for item in data["tracks"]["items"]:
+            name = item["name"]
+            artist = item["artists"][0]["name"]
+            image_url = item["album"]["images"][0]["url"]
+            external_url = item["external_urls"]["spotify"]
+            tracks.append((name, artist, image_url, external_url))
+        return tracks
+
+    def display_tracks(self, tracks):
+        # Create a canvas and horizontal scrollbar
+        canvas = tk.Canvas(self.frame, bg="white", height=220)
+        canvas.pack(fill=tk.X, padx=20)
+
+        h_scrollbar = tk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=canvas.xview)
+        h_scrollbar.pack(fill=tk.X)
+
+        canvas.configure(xscrollcommand=h_scrollbar.set)
+
+        # Create a frame inside the canvas
+        inner_frame = tk.Frame(canvas, bg="white")
+        canvas.create_window((0, 0), window=inner_frame, anchor='nw')
+
+        # Populate the inner frame with track cards horizontally
+        for name, artist, image_url, link in tracks[:5]:
+            card = tk.Frame(inner_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
+            card.pack(side=tk.LEFT, padx=10, pady=10)
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo  # Keep reference
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+            except Exception as e:
+                print("Image load failed:", e)
+                tk.Label(card, text="[Image failed]", bg="white").pack()
+
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
+
+        # Update scroll region after populating
+        inner_frame.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def display_tracks_vert(self, tracks):
+        track_frame = tk.Frame(self.frame, bg="white")
+        track_frame.pack(pady=10)
+
+        for name, artist, image_url, link in tracks[:5]:
+           track_card = tk.Frame(track_frame, bg="white")
+           track_card.pack(side=tk.LEFT, padx=10)
+           #def render():
+           #     label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
+           #     label.pack()
+
+           try:
+                    img_data = requests.get(image_url, timeout=5).content
+                    img = Image.open(BytesIO(img_data)).resize((100, 100))
+                    photo = ImageTk.PhotoImage(img)
+                    #img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                    #img_label.image = photo
+                    #img_label.pack()
+                    #img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+           except Exception as e:
+                    print("Image load failed:", e)
+                    fallback = tk.Label(self.frame, text="[Image not loaded]", bg="white")
+                    fallback.pack()
+
+           if photo:
+                    img_label = tk.Label(track_card, image=photo, cursor="hand2", bg="white")
+                    img_label.image = photo  # Prevent garbage collection
+                    img_label.pack()
+                    img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+
+           tk.Label(track_card, text=name, font=APP_FONT, bg="white").pack()
+           tk.Label(track_card, text=artist, font=APP_FONT, bg="white").pack()
+
+            #self.frame.after(0, render)
+
+           self.display_youtube_videos()
+
+## NPR ##
+def play_npr_stream():
+    pygame.mixer.init()
+    pygame.mixer.music.load("https://npr-ice.streamguys1.com/live.mp3")
+    pygame.mixer.music.play()
+
+def stop_npr_stream():
+    pygame.mixer.music.stop()
+
+## Music Page ##
+class MusicApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback, token):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+        self.token = token
+        self.nprImg = ImageTk.PhotoImage(Image.open("pics/npr.png").resize((100, 100)))
+        self.podImg = ImageTk.PhotoImage(Image.open("pics/podcast.png").resize((100, 100)))
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.npr_player = None
+
+        self.create_ui()
+
+    def create_ui(self):
+        #tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
+
+        # --- Spotify Section ---
+        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=APP_FONT, bg="white")
+        self.track_label.pack(pady=10)
+
+        self.album_art_label = tk.Label(self.frame, bg="white")
+        self.album_art_label.pack(pady=10)
+
+        controls = tk.Frame(self.frame, bg="white")
+        controls.pack(pady=10)
+
+        tk.Button(controls, text="Play",font=APP_FONT, command=self.play_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
+
+        ## NPR Section ##
+        npr_controls = tk.Frame(self.frame, bg="white")
+        npr_controls.pack(pady=20)
+
+        tk.Label(npr_controls, image=self.nprImg, font=APP_FONT).pack()
+
+        tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
+        tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
+
+        ## Apple Podcasts Button ##
+        podcast_btn = tk.Button(
+            self.frame,
+            image=podImg,
+            font=APP_FONT,
+            command=self.open_apple_podcast,
+            bd=0,
+            highlightthickness=0
+        )
+        podcast_btn.pack(pady=5)
+
+        #podcast_frame = tk.Frame(self.frame, bg="white")
+        #podcast_frame.pack(pady=(5, 0), anchor="w")
+        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=APP_FONT, command=self.open_apple_podcast)
+        #podcast_btn.pack(side=tk.LEFT, padx=10, pady=2)
+        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
+        #podcast_btn.pack(pady=(2, 0))
+
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
+        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        back_btn.lift()
+
+        ## Spotify Horizontal Scrollbar ##
+        track_container = tk.Frame(self.frame, bg="white")
+        track_container.pack(fill=tk.X, padx=10, pady=(0, 10))  # Reduced top padding
+
+        track_canvas = tk.Canvas(track_container, height=180, bg="white", highlightthickness=0)
+        track_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        h_scrollbar = tk.Scrollbar(track_container, orient="horizontal", command=track_canvas.xview)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        track_canvas.configure(xscrollcommand=h_scrollbar.set)
+
+        scroll_frame = tk.Frame(track_canvas, bg="white")
+        track_window = track_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        def update_scrollregion(event):
+            track_canvas.configure(scrollregion=track_canvas.bbox("all"))
+            track_canvas.itemconfig(track_window, width=max(track_canvas.winfo_width(), scroll_frame.winfo_reqwidth()))
+
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        track_canvas.bind('<Configure>', update_scrollregion)
+
+        # Load and display tracks horizontally
+        tracks = self.fetch_playlist_tracks()
+        for name, artist, image_url, link in tracks[:5]:
+            card = tk.Frame(scroll_frame, bg="white", bd=1, relief=tk.RIDGE)
+            card.pack(side=tk.LEFT, padx=10, pady=5)
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+
+            except Exception as e:
+                print("Image load failed:", e)
+                tk.Label(card, text="[Image not loaded]", bg="white").pack()
+
+            tk.Label(card, text=name, bg="white", wraplength=100, font=APP_FONT_BOLD).pack()
+            tk.Label(card, text=artist, bg="white", wraplength=100, font=APP_FONT).pack()
+
+    def load_music_data(self):
+        self.update_now_playing()  # fetch and update current song
+        #tracks = self.fetch_playlist_tracks()  # fetch playlist
+        tracks = self.fetch_top_tracks()
+        self.display_tracks(tracks)  # safely update UI
+
+    def display_tracks(self, tracks):
+        # Container frame for horizontal scroller
+        track_container = tk.Frame(self.frame, bg="white")
+        track_container.pack(fill=tk.X, padx=20, pady=(60, 10))
+
+        # Canvas + horizontal scrollbar
+        canvas = tk.Canvas(track_container, bg="white", height=200, highlightthickness=0)
+        canvas.pack(side=tk.TOP, fill=tk.X, expand=False)
+
+        h_scrollbar = tk.Scrollbar(track_container, orient=tk.HORIZONTAL, command=canvas.xview)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        canvas.configure(xscrollcommand=h_scrollbar.set)
+
+        # Inner frame for tracks
+        inner_frame = tk.Frame(canvas, bg="white")
+        canvas.create_window((0, 0), window=inner_frame, anchor='nw')
+
+        # Add each track horizontally
+        for name, artist, image_url, link in tracks[:5]:
+            card = tk.Frame(inner_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
+            card.pack(side=tk.LEFT, padx=10, pady=10)
+
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+            except Exception as e:
+                print("Image load failed:", e)
+                tk.Label(card, text="[Image failed]", bg="white").pack()
+
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
+
+        inner_frame.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+        # Keep back button visible on top
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
+        #back_btn.place(x=20, y=20)
+        back_btn.place(relx=0.98, y=20, anchor="ne")
+        back_btn.lift()
+
+    def display_tracks_vert(self, tracks):
+        for name, artist, image_url, link in tracks[:5]:
+            def render():
+                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
+                label.pack()
+
+                try:
+                    img_data = requests.get(image_url, timeout=5).content
+                    img = Image.open(BytesIO(img_data)).resize((100, 100))
+                    photo = ImageTk.PhotoImage(img)
+                    img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
+                    img_label.image = photo  # prevent garbage collection
+                    img_label.pack()
+                    img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+                except Exception as e:
+                    print("Image load failed:", e)
+                    fallback = tk.Label(self.frame, text="[Image not loaded]", bg="white")
+                    fallback.pack()
+
+            self.frame.after(0, render)
+
+    def update_now_playing(self):
+        headers = {"Authorization": f"Bearer {self.token}"}
+        url = "https://api.spotify.com/v1/me/player/currently-playing"
+
+        try:
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                self.track_label.config(text="No Spotify playback available.")
+                return
+
+            data = resp.json()
+            track = data.get("item")
+            if not track:
+                self.track_label.config(text="No song info available.")
+                return
+
+            name = track["name"]
+            artist = track["artists"][0]["name"]
+            album_img_url = track["album"]["images"][0]["url"]
+
+            self.track_label.config(text=f"{name} - {artist}")
+
+            img_data = requests.get(album_img_url, timeout=5).content
+            img = Image.open(BytesIO(img_data)).resize((200, 200))
+            self.album_img = ImageTk.PhotoImage(img)
+            self.album_art_label.config(image=self.album_img)
+
+        except Exception as e:
+            self.track_label.config(text=f"Spotify error: {e}")
+
+    def play_spotify(self):
+        requests.put("https://api.spotify.com/v1/me/player/play", headers={"Authorization": f"Bearer {self.token}"})
+
+    def pause_spotify(self):
+        requests.put("https://api.spotify.com/v1/me/player/pause", headers={"Authorization": f"Bearer {self.token}"})
+
+    def next_track(self):
+        requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {self.token}"})
+        #self.update_now_playing()
+        threading.Thread(target=self.load_music_data, daemon=True).start()
+
+    def play_npr(self):
+        if self.npr_player is None:
+           self.npr_player = vlc.MediaPlayer("https://npr-ice.streamguys1.com/live.mp3")
+        self.npr_player.play()
+        print("NPR Stream Started.")
+
+    def stop_npr(self):
+        if self.npr_player:
+           self.npr_player.stop()
+           print("NPR Stream Stopped.")
+
+    def fetch_playlist_tracks(self):
+        #playlist_id = "37i9dQZF1DX0XUsuxWHRQd"  # Replace with a real public playlist ID
+        playlist_id = "37i9dQZF1DX1lVhptIYRda"  # Replace with a real public playlist ID
+        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+
+        try:
+            resp = requests.get(url, headers=headers, timeout=5)
+            if resp.status_code != 200:
+                print("Failed to fetch playlist:", resp.text)
+                return []
+
+            data = resp.json()
+            items = data.get("items", [])
+            if not items:
+               print("Playlist is Empty:", data)
+            tracks = []
+            for item in data["items"]:
+                track = item.get("track")
+                if track:
+                    name = track["name"]
+                    artist = track["artists"][0]["name"]
+                    image_url = track["album"]["images"][0]["url"]
+                    external_url = track["external_urls"]["spotify"]
+                    tracks.append((name, artist, image_url, external_url))
+
+            return tracks
+        except Exception as e:
+            print("Error fetching playlist:", e)
+            return []
+
+    def fetch_top_tracks(self):
+        url = "https://api.spotify.com/v1/search"
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+        params = {
+            "q": "Cooking",  # can be changed to match podcast/music mood
+            "type": "track",
+            "limit": 5
+        }
+
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=5)
+            if resp.status_code != 200:
+                print("Failed to fetch search results:", resp.text)
+                return []
+
+            data = resp.json()
+            tracks = []
+            for item in data["tracks"]["items"]:
+                name = item["name"]
+                artist = item["artists"][0]["name"]
+                image_url = item["album"]["images"][0]["url"]
+                external_url = item["external_urls"]["spotify"]
+                tracks.append((name, artist, image_url, external_url))
+            return tracks
+
+        except Exception as e:
+            print("Error fetching top tracks:", e)
+            return []
+
+    def open_music_web(self):
+        #import webview
+        #webview.create_window("Spotify Player", "https://open.spotify.com")
+        #webview.start()
+
+        self.clear_screen()
+
+        frame = tk.Frame(self.root)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn.pack(anchor="nw", padx=10, pady=10)
+
+        html = """
+        <h2>Spotify Web Preview</h2>
+        <a href='https://open.spotify.com'>Open Spotify in Browser</a>
+        """
+        label = HTMLLabel(frame, html=html)
+        label.pack(padx=20, pady=20)
+
+    def open_apple_podcast_old(self):
+            self.root.withdraw()
+
+            def on_closed():
+                self.root.deiconify()
+                self.back_callback()  # Go back to home or previous screen
+
+            # Open Apple Podcasts in a pywebview window
+            try:
+                webview.create_window(
+                    "Apple Podcasts",
+                    "https://podcasts.apple.com/us/podcast/the-daily/id1200361736",  # Replace with any podcast URL
+                    width=1024,
+                    height=600
+                )
+                webview.start(gui='gtk', debug=True)
+            except Exception as e:
+                print("Failed to launch Apple Podcasts:", e)
+                self.root.deiconify()
+
+    def open_apple_podcast(self):
+
+        def launch_podcast():
+            # Hide main app window
+            self.root.withdraw()
+
+            # Create and start webview window
+            window = webview.create_window(
+                "Apple Podcasts - Cooking",
+                "https://podcasts.apple.com/us/genre/podcasts-arts-food/id1307",
+                width=1024,
+                height=600
+            )
+            webview.start()
+
+            # Re-show main app window after closing
+            self.root.deiconify()
+
+        # Launch webview on main thread (required by pywebview)
+        launch_podcast()
+
+    def display_youtube_videos(self):
+        import requests
+        from urllib.parse import quote
+        import webbrowser
+
+        # --- Horizontal Scrollable Canvas for YouTube ---
+        yt_container = tk.Frame(self.frame, bg="white")
+        yt_container.pack(fill=tk.X, padx=10, pady=10)
+
+        yt_canvas = Canvas(yt_container, height=240, bg="white", highlightthickness=0)
+        yt_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        yt_scrollbar = Scrollbar(yt_container, orient="horizontal", command=yt_canvas.xview)
+        yt_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        yt_canvas.configure(xscrollcommand=yt_scrollbar.set)
+
+        scroll_frame = tk.Frame(yt_canvas, bg="white")
+        yt_window = yt_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        def update_scrollregion(event):
+            yt_canvas.configure(scrollregion=yt_canvas.bbox("all"))
+            yt_canvas.itemconfig(yt_window, width=max(yt_canvas.winfo_width(), scroll_frame.winfo_reqwidth()))
+
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        yt_canvas.bind("<Configure>", update_scrollregion)
+
+        video = [
+             {
+                "title": "Gordon Ramsay's Ultimate Cookery Course",
+                "url": "https://www.youtube.com/watch?v=5uXIPhxL5XA",
+                "thumb": "https://img.youtube.com/vi/5uXIPhxL5XA/0.jpg"
+             },
+             {
+                "title": "Binging with Babish: Ratatouille",
+                "url": "https://www.youtube.com/watch?v=iCMGPRiDXQg",
+                "thumb": "https://img.youtube.com/vi/iCMGPRiDXQg/0.jpg"
+             },
+             {
+                "title": "Jamie Oliver's Food Tube",
+                "url": "https://www.youtube.com/watch?v=J6Vb4T2LCiI",
+                "thumb": "https://img.youtube.com/vi/J6Vb4T2LCiI/0.jpg"
+             }
+        ]
+
+        for video in videos:
+            card = tk.Frame(scroll_frame, bg="white", bd=1, relief=tk.RIDGE)
+            card.pack(side=tk.LEFT, padx=10, pady=5)
+
+            try:
+                img_data = requests.get(video["thumb"], timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((120, 90))
+                photo = ImageTk.PhotoImage(img)
+
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=video["url"]: webbrowser.open(url))
+            except Exception as e:
+                print("Failed to load YouTube thumbnail:", e)
+                tk.Label(card, text="[Image not loaded]", bg="white").pack()
+
+            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=APP_FONT).pack()
+
+if __name__ == "__main__":
+#  root = tk.Tk()
+ #   root.geometry("1024x600")
+ #   root.title("Pantry Server")
+
+    # hide the main window until the splash is done
+    root.withdraw()
+
+    # show splash for 3.5s
+    splash = SplashScreen(root, "pics/IntroGIF.gif", delay=3500)
+
+    # after 3500ms, destroy the splash, show the main window, and launch the app exactly once
+    def start_app():
+        splash.destroy()
+        root.deiconify()
+        #ExpirationApp(root)
+        ExpirationApp(root, spotify_token)
+
+    root.after(3500, start_app)
+    root.mainloop()

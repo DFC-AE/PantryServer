@@ -1,0 +1,20 @@
+- Dark mode / Light mode PARTIALLY WORKING DOES NOT DISPLAY FOR BUTTONS BUT HOLDS CORRECT SETTING ON SCREEN CHANGE DOUBLE CLICK TO RESET
+- Edit buttons
+- Fix item boxes they don't display the expiration date
+- Light Mode for Keyboard
+- Transition Animations in between Page Changes
+- Fix Camera Display on Video Page
+- Improved Splash Screen to match timing of program launch and image background
+- Rearrange Icons and Pages into a grid for more personalized control and to fit more info on screen to much wasted space
+- Add Soon to be expiring items to home page
+-Click on Home Screen Calendar Date to Show Items Expiring that day
+-Add way for expired items to auto delete after set time period
+- Clear all Items Button
+- Create a Settings Page where portions of the ui or other elements can be changed on the fly
+- Display Recepies based on expiring ingredients
+- Show Sales on Expiring Items from local stores
+- Add detail view from list view
+- Currently out of key items indicator
+- Podcast app
+- calculator and convertion table
+- update weather background to correspond to actual weather conditions
