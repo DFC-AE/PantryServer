@@ -202,6 +202,7 @@ root.title("Pantry Server")
 APP_FONT = tkFont.nametofont("TkDefaultFont")
 APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
 APP_FONT.configure(size=12)
+CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
@@ -403,6 +404,8 @@ class ExpirationApp:
         self.init_camera()
         self.search_var = tk.StringVar()
         self.create_home_screen()
+        self.load_settings()
+        self.apply_settings()
 #        self.weather_ui()
 
     ## Create Background ##
@@ -410,6 +413,11 @@ class ExpirationApp:
         background = tk.Label(self.root, image=self.backgroundImg)
         background.place(x=0, y=0, relwidth=1, relheight=1)
         background.lower()
+
+    def apply_settings(self):
+        global APP_FONT
+        APP_FONT = (self.current_font, 12)
+        self.create_home_screen()
 
     def open_camera_ui(self):
         self.clear_screen()
@@ -914,7 +922,7 @@ class ExpirationApp:
         dark_mode_btn.pack(side=tk.LEFT)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
-        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.open_settings_page())
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
@@ -1346,6 +1354,131 @@ class ExpirationApp:
         # Back button
         back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
         back_btn.pack(pady=10)
+
+    def load_settings(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    config = json.load(f)
+                    self.current_font = config.get("font", "Arial")
+                    self.current_background = config.get("background", "white")
+                    self.current_icon = config.get("icon", "Icon1.png")
+                    self.dark_mode = config.get("dark_mode", False)
+            except Exception as e:
+                print("Failed to load config:", e)
+                self.set_default_settings()
+        else:
+            self.set_default_settings()
+
+    def save_settings_to_file(self):
+        config = {
+            "font": self.current_font,
+            "background": self.current_background,
+            "icon": self.current_icon,
+            "dark_mode": self.dark_mode
+        }
+        try:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print("Failed to save config:", e)
+
+    def set_default_settings(self):
+        self.current_font = "Arial"
+        self.current_background = "white"
+        self.current_icon = "Icon1.png"
+        self.dark_mode = False
+
+    def apply_settings(self):
+        global APP_FONT
+        APP_FONT = (self.current_font, 12)
+        self.create_home_screen()
+
+    def open_settings_page(self):
+        self.clear_screen()
+
+        # Title
+        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
+                 pady=10).pack()
+
+        frame = tk.Frame(self.root, padx=20, pady=20)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Font selection
+        tk.Label(frame, text="Select Font:", font=(self.current_font, 14)).grid(row=0, column=0, sticky="w")
+        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
+        self.font_var = tk.StringVar(value=self.current_font)
+        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
+        font_menu.grid(row=0, column=1, sticky="ew")
+
+        # Background selection
+        tk.Label(frame, text="Select Background Color:", font=(self.current_font, 14)).grid(row=1, column=0, sticky="w")
+        backgrounds = ["white", "lightgray", "lightblue", "lightgreen", "black"]
+        self.bg_var = tk.StringVar(value=self.current_background)
+        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
+        bg_menu.grid(row=1, column=1, sticky="ew")
+
+        # Icon selection
+        tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14)).grid(row=2, column=0, sticky="w")
+        icons = ["Icon1.png", "Icon2.png", "Icon3.png"]
+        self.icon_var = tk.StringVar(value=self.current_icon)
+        icon_menu = tk.OptionMenu(frame, self.icon_var, *icons, command=self.preview_settings)
+        icon_menu.grid(row=2, column=1, sticky="ew")
+
+        # Dark/Light mode toggle
+        tk.Label(frame, text="Dark Mode:", font=(self.current_font, 14)).grid(row=3, column=0, sticky="w")
+        self.dark_mode_var = tk.BooleanVar(value=self.dark_mode)
+        dark_toggle = tk.Checkbutton(frame, variable=self.dark_mode_var, command=self.preview_settings)
+        dark_toggle.grid(row=3, column=1, sticky="w")
+
+        # Live preview area
+        preview_frame = tk.Frame(self.root, bd=1, relief=tk.SUNKEN, padx=10, pady=10)
+        preview_frame.pack(pady=20, fill=tk.X, padx=20)
+
+        self.preview_label = tk.Label(preview_frame, text="Preview Text",
+                                      font=(self.current_font, 16),
+                                      bg=self.current_background,
+                                      fg="black" if not self.dark_mode else "white",
+                                      width=30, height=5)
+        self.preview_label.pack()
+
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(self.root)
+        btn_frame.pack(pady=10)
+
+        save_btn = tk.Button(btn_frame, text="Save Settings", command=self.save_settings)
+        save_btn.pack(side=tk.LEFT, padx=10)
+
+        cancel_btn = tk.Button(btn_frame, text="Cancel", command=self.create_home_screen)
+        cancel_btn.pack(side=tk.LEFT, padx=10)
+
+        # Initial preview update
+        self.preview_settings()
+
+    def preview_settings(self, *args):
+        font_choice = self.font_var.get()
+        bg_choice = self.bg_var.get()
+        dark = self.dark_mode_var.get()
+
+        fg_color = "white" if dark else "black"
+
+        self.preview_label.config(
+            font=(font_choice, 16),
+            bg=bg_choice,
+            fg=fg_color,
+            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}"
+        )
+
+    def save_settings(self):
+        self.current_font = self.font_var.get()
+        self.current_background = self.bg_var.get()
+        self.current_icon = self.icon_var.get()
+        self.dark_mode = self.dark_mode_var.get()
+
+        # Apply and save to config file
+        self.apply_settings()
+        self.save_settings_to_file()
+        self.create_home_screen()
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
