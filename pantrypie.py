@@ -239,6 +239,9 @@ homeImg = ImageTk.PhotoImage(img_home)
 img_item = Image.open("pics/item.png")
 img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
 itemImg = ImageTk.PhotoImage(img_item)
+## KLPI Button ##
+img_klpi = Image.open("pics/klpi.png").resize((50, 50), Image.LANCZOS)
+klpiImg = ImageTk.PhotoImage(img_klpi)
 ## List Image ##
 img_list = Image.open("pics/list.png")
 img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -2954,6 +2957,9 @@ class MusicApp:
         self.npr_player = None
         self.npr_playing = False
 
+        self.klpi_player = None
+        self.klpi_playing = False
+
         self.create_ui()
 
     def toggle_npr(self):
@@ -2963,6 +2969,19 @@ class MusicApp:
         else:
             self.stop_npr()
             self.npr_playing = False
+
+    def toggle_klpi(self):
+        #if not self.klpi_playing:
+        if self.klpi_player and self.klpi_player.is_playing():
+            self.klpi_player.stop()
+            self.klpi_player = None
+        else:
+            try:
+                #self.klpi_player = vlc.MediaPlayer("https://klpi.latech.edu/listen")
+                self.klpi_player = vlc.MediaPlayer("https://138.47.83.50:8080/stream")
+                self.klpi_player.play()
+            except Exception as e:
+                print(f"Error playing KLPI: {e}")
 
     def create_ui(self):
         #tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
@@ -2989,6 +3008,10 @@ class MusicApp:
         npr_btn = tk.Button(npr_controls, image=self.nprImg, command=self.toggle_npr, bd=0)
         npr_btn.pack(side=tk.LEFT, padx=10)
 
+        #klpi_btn = tk.Button(parent_frame, image=klpiImg, command=self.toggle_klpi)
+        klpi_btn = tk.Button(npr_controls, image=klpiImg, command=self.toggle_klpi)
+        klpi_btn.pack(side="left", padx=10)
+
         # Podcast button next to NPR
         podcast_btn = tk.Button(
             npr_controls,
@@ -2998,7 +3021,6 @@ class MusicApp:
             highlightthickness=0
         )
         podcast_btn.pack(side=tk.LEFT, padx=10)
-
 
         # Icons side by side
 #        icons_frame = tk.Frame(npr_controls, bg="white")
