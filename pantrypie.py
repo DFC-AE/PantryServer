@@ -291,6 +291,9 @@ backsmallImg = ImageTk.PhotoImage(img_back_small)
 ## Weather Back Button Image ##
 img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
 webImg = ImageTk.PhotoImage(img_web)
+## YouTube Button Image ##
+img_yt = Image.open("pics/youtube.png").resize((50, 50), Image.LANCZOS)
+ytImg = ImageTk.PhotoImage(img_yt)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -2610,7 +2613,12 @@ class CameraApp:
                     self.play_beep()
                     self.animate_check()
                     self.detected = True
-                    threading.Timer(2, self.reset_detection).start()
+                    #threading.Timer(2, self.reset_detection).start()
+                    self.frame.after(2000, self.reset_detection)
+
+                for barcode in barcodes:
+                    (x, y, w, h) = barcode.rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(cv2image)
@@ -2648,7 +2656,10 @@ class CameraApp:
     def play_beep(self):
         # macOS alternative: os.system('say beep') or use `playsound` with a beep .mp3
         try:
-            winsound.Beep(1000, 200)
+            #winsound.Beep(1000, 200)
+            #threading.Thread(target=lambda: playsound("audio/beep.wav")).start()
+            #threading.Thread(target=lambda: os.system('say "beep"')).start()
+            threading.Thread(target=lambda: os.system('say -v Bells "ding"')).start()
         except:
             pass
 
@@ -2656,8 +2667,10 @@ class CameraApp:
         # Flash background
         original_color = self.video_label["bg"]
         def flash():
-            self.video_label["bg"] = "yellow"
-            self.root.after(150, lambda: self.video_label.config(bg=original_color))
+            #self.video_label["bg"] = "yellow"
+            self.canvas["bg"] = "yellow"
+            #self.root.after(150, lambda: self.video_label.config(bg=original_color))
+            self.root.after(150, lambda: self.canvas.config(bg=original_color))
         flash()
 
         # Play sound in a thread to avoid freezing UI
