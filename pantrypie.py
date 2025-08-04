@@ -2936,6 +2936,28 @@ def play_npr_stream():
 def stop_npr_stream():
     pygame.mixer.music.stop()
 
+def open_in_app_browser(url):
+    webview.create_window("YouTube Video", url, width=960, height=540)
+    webview.start()
+
+def make_click_callback(url):
+    return lambda e: open_in_app_browser(url)
+
+def show_youtube_in_app(url, app_root):
+    app_root.withdraw()  # hide the main Tkinter window
+    try:
+        webview.create_window(
+            title="Now Playing on YouTube",
+            url=url,
+            width=960,
+            height=540,
+            resizable=True,
+            frameless=False
+        )
+        webview.start()
+    finally:
+        app_root.deiconify()
+
 ## Music Page ##
 class MusicApp:
     def __init__(self, root, backgroundImg, backImg, back_callback, token):
@@ -3404,7 +3426,11 @@ class MusicApp:
                 img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
                 img_label.image = photo
                 img_label.pack()
-                img_label.bind("<Button-1>", lambda e, url=video["url"]: webbrowser.open(url))
+                #img_label.bind("<Button-1>", lambda e, url=video["url"]: webbrowser.open(url))
+                #img_label.bind("<Button-1>", lambda e, url=video["url"]: open_in_app_browser(url))
+                #img_label.bind("<Button-1>", make_click_callback(video["url"]))
+                #img_label.bind("<Button-1>", lambda e, url=video["url"]: show_youtube_in_app(url))
+                img_label.bind("<Button-1>", lambda e, url=video["url"]: show_youtube_in_app(url, self.root))
             except Exception as e:
                 print("Failed to load YouTube thumbnail:", e)
                 tk.Label(card, text="[Image not loaded]", bg="white").pack()
