@@ -28,11 +28,15 @@ import base64
 import pygame
 import vlc
 import webbrowser
+from urllib.parse import quote
 ## MultiThreading ##
 import threading
 ## Web Browser ##
 from tkhtmlview import HTMLLabel
 import webview
+## For System Fonts ##
+import tkinter.font as tkFont
+#from playsound import playsound
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -197,6 +201,10 @@ root.geometry("1024x600")
 root.title("Pantry Server")
 
 ## Variables ##
+APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT.configure(size=12)
+CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
@@ -398,6 +406,8 @@ class ExpirationApp:
         self.init_camera()
         self.search_var = tk.StringVar()
         self.create_home_screen()
+        self.load_settings()
+        self.apply_settings()
 #        self.weather_ui()
 
     ## Create Background ##
@@ -405,6 +415,11 @@ class ExpirationApp:
         background = tk.Label(self.root, image=self.backgroundImg)
         background.place(x=0, y=0, relwidth=1, relheight=1)
         background.lower()
+
+    def apply_settings(self):
+        global APP_FONT
+        APP_FONT = (self.current_font, 12)
+        self.create_home_screen()
 
     def open_camera_ui(self):
         self.clear_screen()
@@ -460,34 +475,61 @@ class ExpirationApp:
         label.pack(padx=20, pady=20)
 
     def open_foodfacts(self):
-        self.root.withdraw()  # Hide the Tkinter app window
+        #self.root.withdraw()  # Hide the Tkinter app window
+        self.root.destroy()  # Destory the Tkinter app window
+ 
 
         def on_closed():
-            self.root.deiconify()
+            #self.root.deiconify()
+            import tkinter as tk
+            self.root = tk.Tk()
+            self.root.title("Pantry Server")
             self.create_home_screen()
+            #self.root.after(0, self.restore_home)
 
-        def run_webview():
-            window = webview.create_window(
-                "OpenFoodFacts",
-                "https://world.openfoodfacts.org/",
-                width=1024,
-                height=600
-            )
+        window = webview.create_window(
+            "OpenFoodFacts",
+            "https://world.openfoodfacts.org/",
+            width=1024,
+            height=600
+        )
 
-            # Try to attach an event handler to detect when the window is closed
-            try:
-                window.events.closed += on_closed
-            except AttributeError:
-                print("Warning: Your version of pywebview does not support 'events.closed'.")
-                # Fallback: just re-show the window after blocking start
-                webview.start()
-                self.root.deiconify()
-                self.create_home_screen()
-                return
+        try:
+           window.events.closed += on_closed
+        except AttributError:
+           pass
 
-            webview.start()
+        webview.start()
 
-        run_webview()
+        #def run_webview():
+        #    try:
+        #        window = webview.create_window(
+        #            "OpenFoodFacts",
+        #            "https://world.openfoodfacts.org/",
+        #            width=1024,
+        #            height=600
+        #        )
+        #        window.events.closed += on_closed
+        #        webview.start(gui='qt')
+        #    except Exception as e:
+        #    #except AttributeError:
+        #        print("Webview Error:", e)
+        #        #print("Warning: Your version of pywebview does not support 'events.closed'.")
+        #        # Fallback: just re-show the window after blocking start
+        #        #webview.start()
+        #        #self.root.deiconify()
+        #        #self.create_home_screen()
+        #        #return
+        #        self.root.after(0, self.restore_home)
+
+        #    #webview.start()
+
+        #threading.Thread(target=run_webview, daemon=True).start()
+        #run_webview()
+
+    def restore_home(self):
+        self.root.deiconify()
+        self.create_home_screen()
 
     def create_conversion_table_panel(self, parent):
             from_unit_var = StringVar(value="ounces")
@@ -510,7 +552,7 @@ class ExpirationApp:
             panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE)
             panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
-            tk.Label(panel, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+            tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
 
             inner = tk.Frame(panel, bg="white")
             inner.pack(padx=10, pady=10)
@@ -576,7 +618,7 @@ class ExpirationApp:
         panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
         panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
-        title = tk.Label(panel, text="Unit Conversion", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Unit Conversion", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         content = tk.Frame(panel, bg="white")
@@ -595,7 +637,7 @@ class ExpirationApp:
         ).grid(row=0, column=1, padx=5)
 
         tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
-        tk.Label(content, textvariable=self.result_var, bg="white", font=("Arial", 11)).grid(
+        tk.Label(content, textvariable=self.result_var, bg="white", font=APP_FONT).grid(
             row=1, column=0, columnspan=3, pady=10
         )
 
@@ -713,6 +755,11 @@ class ExpirationApp:
         self.set_background()
         self.current_view = 'home'
 
+        #def set_background(self):
+        #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #    self.bg_label.lower()
+
        # Create top-left frame for weather icon
         self.weather_icon_frame = tk.Frame(self.root, bg="orange")
         self.weather_icon_frame.place(x=10, y=10)
@@ -760,11 +807,11 @@ class ExpirationApp:
                 icon_img = Image.open(BytesIO(icon_response.content))
                 icon_photo = ImageTk.PhotoImage(icon_img)
 
-                if not hasattr(self, "weather_icon_label"):
+                if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
                     self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
                     self.weather_icon_label.pack()
 
-                if not hasattr(self, "weather_label"):
+                if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
                     self.weather_label = tk.Label(
                         self.root,
                         font=("calibri", 25),
@@ -782,10 +829,14 @@ class ExpirationApp:
                     text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
                 )
 
+            except tk.TclError:
+                print("Weather Widget Destroyed - Stopping Update.")
             except Exception as e:
                 print("Weather fetch error:", e)
                 if hasattr(self, "weather_label"):
                     self.weather_label.config(text="Weather: Unable to load")
+
+            self.root.after(600000, update_weather)
 
         update_weather()
 
@@ -800,7 +851,7 @@ class ExpirationApp:
 #            middle_frame,
 #            selectmode='day',
 #            date_pattern="yyyy-mm-dd",
-#            font=("Arial", 14),
+#            font=APP_FONT,
 #            background="orange",
 #            disabledbackground="orange",
 #            bordercolor="orange",
@@ -821,13 +872,13 @@ class ExpirationApp:
 #        recipe_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.RIDGE)
 #        recipe_frame.pack(pady=10, padx=20)
 
-#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=("Arial", 14, "bold"), bg="white")
+#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=APP_FONT, bg="white")
 #        recipe_title.pack(pady=(10, 5))
 
 #        self.recipe_img_label = tk.Label(recipe_frame, bg="white")
 #        self.recipe_img_label.pack(pady=5)
 
-#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=("Arial", 11), justify="left")
+#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=APP_FONT, justify="left")
 #        self.recipe_text.pack(padx=10, pady=5)
 
 #        def fetch_random_recipe():
@@ -904,7 +955,7 @@ class ExpirationApp:
         dark_mode_btn.pack(side=tk.LEFT)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
-        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, command=lambda: self.open_settings_page())
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
@@ -912,24 +963,24 @@ class ExpirationApp:
 #        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
 #        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
 
-#        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
+#        tk.Label(converter_frame, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=10)
 
         # Input field
-        self.convert_input = tk.Entry(converter_frame, font=("Arial", 12), justify="center")
-        self.convert_input.pack(pady=5)
-        self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
+        #self.convert_input = tk.Entry(converter_frame, font=APP_FONT, justify="center")
+        #self.convert_input.pack(pady=5)
+        #self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
 
         # From unit dropdown
-        self.from_unit = tk.StringVar(value="grams")
-        tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+        #self.from_unit = tk.StringVar(value="grams")
+        #tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
 
         # Result label
-        self.convert_result = tk.Label(converter_frame, text="", font=("Arial", 12), bg="white")
-        self.convert_result.pack(pady=5)
+        #self.convert_result = tk.Label(converter_frame, text="", font=APP_FONT, bg="white")
+        #self.convert_result.pack(pady=5)
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
-        tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
+        #tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
 
         # Conversion logic
         self.unit_factors = {
@@ -958,12 +1009,15 @@ class ExpirationApp:
 
         self.perform_conversion = perform_conversion
 
+        for widget in self.root.winfo_children():
+            widget.lift()
+
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
         panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Expiring Soon", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         list_frame = tk.Frame(panel, bg="white")
@@ -998,13 +1052,13 @@ class ExpirationApp:
 
         if not expiring_items:
             tk.Label(scrollable_frame, text="No items expiring soon.",
-                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in expiring_items:
                 name = getattr(item, "name", "Unknown")
                 expiry = getattr(item, "expiry", "Unknown")
                 label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
-                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
 
     def populate_expiring_items(self):
@@ -1019,11 +1073,11 @@ class ExpirationApp:
 
         if not dummy_items:
             tk.Label(self.expiring_frame, text="No items expiring soon.",
-                     font=("Arial", 11), bg="white", fg="gray").pack(pady=10)
+                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in dummy_items:
                 label = tk.Label(self.expiring_frame, text=item,
-                                 font=("Arial", 11), bg="white", anchor="w", justify="left")
+                                 font=APP_FONT, bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
 
     def create_random_recipe_panel(self, parent):
@@ -1031,7 +1085,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, padx=10, pady=10)
         panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Random Recipe", font=("Arial", 14, "bold"), bg="white")
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
 
         # Recipe image
@@ -1039,7 +1093,7 @@ class ExpirationApp:
         self.recipe_image_label.pack(pady=5)
 
         # Recipe name
-        self.recipe_name_label = tk.Label(panel, text="", font=("Arial", 12, "bold"),
+        self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
                                           bg="white", wraplength=250)
         self.recipe_name_label.pack(pady=5)
 
@@ -1053,7 +1107,7 @@ class ExpirationApp:
         refresh_btn = tk.Button(panel, text="New Recipe", command=self.load_random_recipe)
         refresh_btn.pack(pady=5)
 
-        # Load the first recipe
+            # Load the first recipe
         self.load_random_recipe()
         #self.load_random_recipe(self.current_recipe = meal)
 
@@ -1143,11 +1197,11 @@ class ExpirationApp:
         text_inner = tk.Frame(text_frame, bg="white")
         text_inner.pack(expand=True)
 
-        tk.Label(text_inner, text=meal["strMeal"], font=("Arial", 18, "bold"),
+        tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
                  bg="white", anchor="w").pack(anchor="w", pady=(0, 5))
 
         tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
-                 font=("Arial", 12), bg="white", anchor="w").pack(anchor="w")
+                 font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
 
         ## Side ##
         # Horizontal container for image and basic info
@@ -1171,8 +1225,8 @@ class ExpirationApp:
 #        text_frame = tk.Frame(content_frame, bg="white")
 #        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-#        tk.Label(text_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(anchor="w", pady=5)
-#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=("Arial", 12), bg="white").pack(anchor="w")
+#        tk.Label(text_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(anchor="w", pady=5)
+#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=APP_FONT, bg="white").pack(anchor="w")
 
          ## Above ##
 #        # Meal image
@@ -1189,26 +1243,26 @@ class ExpirationApp:
 #            print("Error loading image:", e)
 
         # Meal name
-        tk.Label(scrollable_frame, text=meal["strMeal"], font=("Arial", 18, "bold"), bg="white").pack(pady=10)
+        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
         # Category and rating (simulated rating)
         #rating = "4/5"
         rating = random.uniform(3.5, 5.0)
         tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=("Arial", 14), bg="white").pack(pady=5)
+                 font=APP_FONT, bg="white").pack(pady=5)
 
-        tk.Label(scrollable_frame, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
         for i in range(1, 21):
             ingredient = meal.get(f"strIngredient{i}")
             measure = meal.get(f"strMeasure{i}")
             if ingredient and ingredient.strip():
                 tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
-                         font=("Arial", 12), bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
 
         # Instructions
-        tk.Label(scrollable_frame, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
+        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
         tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
-                 font=("Arial", 12), bg="white").pack(padx=20, pady=5)
+                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
 
         # Print & PDF export buttons
         button_frame = tk.Frame(scrollable_frame, bg="white")
@@ -1227,7 +1281,12 @@ class ExpirationApp:
         bg_label.lower()
 
         # Recipe title
-        tk.Label(self.root, text=meal['strMeal'], font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+        label_rcp = tk.Label(self.root,
+                 text=meal['strMeal'],
+                 font=APP_FONT_BOLD,
+                 fg="black", bg="white")
+        label_rcp.pack(pady=10)
+        label_rcp.lift()
 
         # Recipe image
         img_data = requests.get(meal["strMealThumb"], timeout=5).content
@@ -1239,10 +1298,10 @@ class ExpirationApp:
 
         rating = "4/5"
         tk.Label(self.root, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=("Arial", 14), bg="white").pack(pady=5)
+                 font=APP_FONT, bg="white").pack(pady=5)
 
         # Ingredients
-        tk.Label(self.root, text="Ingredients:", font=("Arial", 14, "bold"), bg="white").pack(pady=5)
+        tk.Label(self.root, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
         ingredients_frame = tk.Frame(self.root, bg="white")
         ingredients_frame.pack()
 
@@ -1251,11 +1310,11 @@ class ExpirationApp:
             measure = meal.get(f"strMeasure{i}")
             if ing and ing.strip():
                 tk.Label(ingredients_frame, text=f"{ing} - {measure}",
-                         font=("Arial", 12), bg="white").pack(anchor="w")
+                         font=APP_FONT, bg="white").pack(anchor="w")
 
         # Instructions
-        tk.Label(self.root, text="Instructions:", font=("Arial", 14, "bold"), bg="white").pack(pady=(10, 5))
-        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=("Arial", 12), bg="white")
+        tk.Label(self.root, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=APP_FONT, bg="white")
         instructions.insert(tk.END, meal['strInstructions'])
         instructions.config(state=tk.DISABLED)
         instructions.pack(padx=20, pady=5)
@@ -1298,7 +1357,7 @@ class ExpirationApp:
         bg_label.lower()
 
         # Title
-        tk.Label(self.root, text=name, font=("Arial", 20, "bold"), bg="white").pack(pady=10)
+        tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
         # Image
         img_data = requests.get(image_url, timeout=5).content
@@ -1328,6 +1387,131 @@ class ExpirationApp:
         # Back button
         back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
         back_btn.pack(pady=10)
+
+    def load_settings(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    config = json.load(f)
+                    self.current_font = config.get("font", "Arial")
+                    self.current_background = config.get("background", "white")
+                    self.current_icon = config.get("icon", "Icon1.png")
+                    self.dark_mode = config.get("dark_mode", False)
+            except Exception as e:
+                print("Failed to load config:", e)
+                self.set_default_settings()
+        else:
+            self.set_default_settings()
+
+    def save_settings_to_file(self):
+        config = {
+            "font": self.current_font,
+            "background": self.current_background,
+            "icon": self.current_icon,
+            "dark_mode": self.dark_mode
+        }
+        try:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print("Failed to save config:", e)
+
+    def set_default_settings(self):
+        self.current_font = "Arial"
+        self.current_background = "white"
+        self.current_icon = "Icon1.png"
+        self.dark_mode = False
+
+    def apply_settings(self):
+        global APP_FONT
+        APP_FONT = (self.current_font, 12)
+        self.create_home_screen()
+
+    def open_settings_page(self):
+        self.clear_screen()
+
+        # Title
+        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
+                 pady=10).pack()
+
+        frame = tk.Frame(self.root, padx=20, pady=20)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Font selection
+        tk.Label(frame, text="Select Font:", font=(self.current_font, 14)).grid(row=0, column=0, sticky="w")
+        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
+        self.font_var = tk.StringVar(value=self.current_font)
+        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
+        font_menu.grid(row=0, column=1, sticky="ew")
+
+        # Background selection
+        tk.Label(frame, text="Select Background Color:", font=(self.current_font, 14)).grid(row=1, column=0, sticky="w")
+        backgrounds = ["white", "lightgray", "lightblue", "lightgreen", "black"]
+        self.bg_var = tk.StringVar(value=self.current_background)
+        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
+        bg_menu.grid(row=1, column=1, sticky="ew")
+
+        # Icon selection
+        tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14)).grid(row=2, column=0, sticky="w")
+        icons = ["Icon1.png", "Icon2.png", "Icon3.png"]
+        self.icon_var = tk.StringVar(value=self.current_icon)
+        icon_menu = tk.OptionMenu(frame, self.icon_var, *icons, command=self.preview_settings)
+        icon_menu.grid(row=2, column=1, sticky="ew")
+
+        # Dark/Light mode toggle
+        tk.Label(frame, text="Dark Mode:", font=(self.current_font, 14)).grid(row=3, column=0, sticky="w")
+        self.dark_mode_var = tk.BooleanVar(value=self.dark_mode)
+        dark_toggle = tk.Checkbutton(frame, variable=self.dark_mode_var, command=self.preview_settings)
+        dark_toggle.grid(row=3, column=1, sticky="w")
+
+        # Live preview area
+        preview_frame = tk.Frame(self.root, bd=1, relief=tk.SUNKEN, padx=10, pady=10)
+        preview_frame.pack(pady=20, fill=tk.X, padx=20)
+
+        self.preview_label = tk.Label(preview_frame, text="Preview Text",
+                                      font=(self.current_font, 16),
+                                      bg=self.current_background,
+                                      fg="black" if not self.dark_mode else "white",
+                                      width=30, height=5)
+        self.preview_label.pack()
+
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(self.root)
+        btn_frame.pack(pady=10)
+
+        save_btn = tk.Button(btn_frame, text="Save Settings", command=self.save_settings)
+        save_btn.pack(side=tk.LEFT, padx=10)
+
+        cancel_btn = tk.Button(btn_frame, text="Cancel", command=self.create_home_screen)
+        cancel_btn.pack(side=tk.LEFT, padx=10)
+
+        # Initial preview update
+        self.preview_settings()
+
+    def preview_settings(self, *args):
+        font_choice = self.font_var.get()
+        bg_choice = self.bg_var.get()
+        dark = self.dark_mode_var.get()
+
+        fg_color = "white" if dark else "black"
+
+        self.preview_label.config(
+            font=(font_choice, 16),
+            bg=bg_choice,
+            fg=fg_color,
+            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}"
+        )
+
+    def save_settings(self):
+        self.current_font = self.font_var.get()
+        self.current_background = self.bg_var.get()
+        self.current_icon = self.icon_var.get()
+        self.dark_mode = self.dark_mode_var.get()
+
+        # Apply and save to config file
+        self.apply_settings()
+        self.save_settings_to_file()
+        self.create_home_screen()
 
     ## Create Tracker Screen ##
     def create_tracker_ui(self, item):
@@ -1464,7 +1648,7 @@ class ExpirationApp:
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
 
             c_btn = tk.Button(
-               scroll_frame, text=text, bg=color, fg="black", font=("Arial", 16), wraplength=150,
+               scroll_frame, text=text, bg=color, fg="black", font=APP_FONT, wraplength=150,
                width=15, height=6, highlightthickness=0, bd=1,
                command=lambda i=item: self.show_detail_view(i)
             )
@@ -1530,7 +1714,7 @@ class ExpirationApp:
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
-            tk.Label(frame, text=text, bg=color, fg="black", font=("Arial", 14)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            tk.Label(frame, text=text, bg=color, fg="black", font=APP_FONT).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
 
         # Back button
@@ -1565,14 +1749,14 @@ class ExpirationApp:
             nutrition_frame = tk.Frame(self.root)
             nutrition_frame.place(x=30, y=150)  # Adjust position as needed
 
-            tk.Label(nutrition_frame, text="Nutrition Facts:", font=("Arial", 18, "underline"), anchor="w", justify="left").pack(anchor="w")
+            tk.Label(nutrition_frame, text="Nutrition Facts:", font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
 
             for key, value in item.nutrition_info.items():
                 fact = f"{key}: {value}"
-                tk.Label(nutrition_frame, text=fact, font=("Arial", 14), anchor="w", justify="left").pack(anchor="w")
+                tk.Label(nutrition_frame, text=fact, font=APP_FONT, anchor="w", justify="left").pack(anchor="w")
 
 
-        label = tk.Label(self.root, text=detail_text, font=("Arial", 20), justify="left")
+        label = tk.Label(self.root, text=detail_text, font=APP_FONT, justify="left")
         label.pack(pady=30)
 
         # Scanner and barcode buttons (only shown on item click)
@@ -1601,7 +1785,7 @@ class ExpirationApp:
         ToolTip(barcode_btn, "Click to Display Scanned Barcode")
 
               # Barcode Entry (auto‑pop OSK on focus)
-        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
         self.barcode_entry = tk.Entry(self.root)
@@ -1666,6 +1850,10 @@ class ExpirationApp:
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
             barcode_type = barcode.type
+            self.barcode_entry.delete(0, tk.END)
+            self.barcode_entry.insert(0, data)
+            self.barcode_label.config(text=f"Detected: {data}")
+            self.beep_and_flash()
             print(f"Detected Barcode: {barcode_type} - {data}")
 
             (x, y, w, h) = barcode.rect
@@ -1676,7 +1864,9 @@ class ExpirationApp:
         # Convert to ImageTk
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(frame_rgb)
-        imgtk = ImageTk.PhotoImage(image=img_pil)
+        #imgtk = ImageTk.PhotoImage(image=img_pil)
+        self.imgtk = ImageTk.PhotoImage(image=img_pil)
+        self.video_label.configure(image=self.imgtk)
 
 	## Only Update if Camera Label Still Exists ##
         if hasattr(self, 'camera_label') and self.camera_label.winfo_exists():
@@ -1742,7 +1932,7 @@ class ExpirationApp:
         info_window.title("Nutrition Information")
 
         for key, value in nutrition_info.items():
-            label = tk.Label(info_window, text=f"{key}: {value}", font=("Arial", 14), anchor="w")
+            label = tk.Label(info_window, text=f"{key}: {value}", font=APP_FONT, anchor="w")
             label.pack(fill=tk.X, padx=10, pady=2)
 
         close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
@@ -1783,8 +1973,11 @@ class ExpirationApp:
     def load_items(self):
         if os.path.exists(SAVE_FILE):
             with open(SAVE_FILE, 'r') as f:
+              try:  
                 data = json.load(f)
-                self.items = [Item.from_dict(d) for d in data]
+              except json.JSONDecodeError:
+                data = []
+            self.items = [Item.from_dict(d) for d in data]
 
     ## Saves items to file ##
     def save_items(self):
@@ -1814,7 +2007,7 @@ class ExpirationApp:
 
         tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
 
-        tk.Label(self.root, text="Enter Item Name:", font=("Arial", 15)).pack(pady=5)
+        tk.Label(self.root, text="Enter Item Name:", font=APP_FONT).pack(pady=5)
 
         # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
@@ -1826,12 +2019,12 @@ class ExpirationApp:
         )
 
         # — Expiration date picker (unchanged) —
-        tk.Label(self.root, text="Select Expiration Date:", font=("Arial", 15), justify="center").pack()
+        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
         # Barcode Entry (auto‑pop OSK on focus)
-        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=("Arial", 15), justify="center")
+        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
         self.barcode_entry = tk.Entry(self.root)
@@ -2025,9 +2218,10 @@ class ExpirationApp:
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
             img = Image.fromarray(frame)
-            imgtk = ImageTk.PhotoImage(image=img)
-            self.camera_label.imgtk = imgtk
-            self.camera_label.config(image=imgtk)
+            #imgtk = ImageTk.PhotoImage(image=img)
+            self.imgtk = ImageTk.PhotoImage(image=img)
+            #self.camera_label.imgtk = imgtk
+            self.camera_label.config(image=self.imgtk)
       self.camera_loop_id = self.root.after(10, self.update_camera)
 
     def stop_camera(self):
@@ -2041,7 +2235,8 @@ class ExpirationApp:
     def stop_camera_loop(self):
         if hasattr(self, "camera_loop_id"):
                self.root.after_cancel(self.camera_loop_id)
-        if self.cpt.isOpened():
+        #if self.cpt.isOpened():
+        if hasattr(self, "cpt") and self.cap.isOpened():
                self.cpt.release()
 
     def detect_barcode(self, image_path):
@@ -2064,6 +2259,10 @@ class ExpirationApp:
         for barcode in barcodes:
             data = barcode.data.decode("utf-8")
             barcode_type = barcode.type
+            self.barcode_entry.delete(0, tk.END)
+            self.barcode_entry.insert(0, data)
+            self.barcode_label.config(text=f"Detected: {data}")
+            self.beep_and_flash()
             print(f"Detected Barcode: {barcode_type} - {data}")
 
         (x, y, w, h) = barcode.rect
@@ -2136,17 +2335,8 @@ def get_weather(city="Shreveport, US"):
     except Exception as e:
         return f"Error: {e}"
 
-weather_label = tk.Label(root, text="Loading weather...", font=("Arial", 14))
+weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
 weather_label.pack(pady=20)
-
-def update_weather_old():
-    weather = get_weather("Shreveport, US")  # Change city as needed
-#    if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
-#       return
-    weather_label.config(text=weather)
-    root.after(600000, update_weather_old)  # Update every 10 minutes
-
-update_weather_old()
 
 class WeatherApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None):
@@ -2198,12 +2388,14 @@ class WeatherApp:
       try:
         if hasattr(self, "bg_label"):
            self.bg_label.destroy()
+
 #        if self.backgroundImg:
-        #self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
-        self.bg_label = bg_label
+        
+        #self.bg_label = bg_label
 #        try:
 #            self.background_label = tk.Label(self.root, image=backgroundImg)
 #            self.background_label.place(relwidth=1, relheight=1)
@@ -2234,9 +2426,9 @@ class WeatherApp:
 #        content_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         ## Current Weather Label ##
-        #self.weather_label = tk.Label(self.root, font=("Arial", 16))
-        #self.weather_label = tk.Label(content_frame, font=("Arial", 16), bg="white")
-        self.weather_label = tk.Label(content_frame, font=("Arial", 16))
+        #self.weather_label = tk.Label(self.root, font=APP_FONT)
+        #self.weather_label = tk.Label(content_frame, font=APP_FONT, bg="white")
+        self.weather_label = tk.Label(content_frame, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
@@ -2260,8 +2452,8 @@ class WeatherApp:
             icon_label = tk.Label(day_frame)
             icon_label.pack()
 
-            #text_label = tk.Label(day_frame, font=("Arial", 10), bg="white")
-            text_label = tk.Label(day_frame, font=("Arial", 10))
+            #text_label = tk.Label(day_frame, font=APP_FONT, bg="white")
+            text_label = tk.Label(day_frame, font=APP_FONT)
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
@@ -2368,6 +2560,16 @@ class CameraApp:
         self.back_callback = back_callback
         self.frame = tk.Frame(self.root)
         self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        self.detected = False  # Track detection
+        self.last_data = ""
+        self.entry_var = tk.StringVar()  # For autofill
+        self.detect_label = tk.Label(self.frame, text="", font=("Helvetica", 16), bg="white", fg="green")
+        self.detect_label.place(relx=0.5, rely=0.85, anchor="center")
+        self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=("Helvetica", 14))
+        self.entry_field.place(relx=0.5, rely=0.9, anchor="center")
+        self.animation_label = tk.Label(self.frame, text="✓", font=("Helvetica", 50), fg="green", bg="white")
+        self.animation_label.place(relx=0.5, rely=0.5, anchor="center")
+        self.animation_label.lower()
 
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
@@ -2382,8 +2584,11 @@ class CameraApp:
         self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-        self.video_label = tk.Label(self.frame, bg="black")
-        self.video_label.place(relx=0.5, rely=0.4, anchor="center")
+        #self.video_label = tk.Label(self.frame, bg="black")
+        #self.video_label.place(relx=0.5, rely=0.4, anchor="center")
+
+        self.canvas = tk.Canvas(self.frame, width=640, height=480, bg="black", highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.4, anchor="center")
 
         self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
         self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
@@ -2392,11 +2597,72 @@ class CameraApp:
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
+                frame = self.draw_overlay_rectangle(frame)
+                barcodes = decode(frame)
+                if barcodes and not self.detected:
+                    data = barcodes[0].data.decode("utf-8")
+                    self.last_data = data
+                    self.entry_var.set(data)
+                    self.detect_label.config(text=f"Detected: {data}")
+                    self.play_beep()
+                    self.animate_check()
+                    self.detected = True
+                    threading.Timer(2, self.reset_detection).start()
+
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(cv2image)
                 imgtk = ImageTk.PhotoImage(image=img)
-                self.video_label.configure(image=imgtk)
-                self.video_label.image = imgtk
+                #self.video_label.configure(image=imgtk)
+                #self.video_label.image = imgtk
+            
+                # Clear previous canvas image if it exists
+                if hasattr(self, 'canvas_img_id'):
+                    self.canvas.delete(self.canvas_img_id)
+
+                # Draw new frame image on canvas at top-left corner
+                self.canvas_img_id = self.canvas.create_image(0, 0, anchor='nw', image=imgtk)
+                self.canvas.imgtk = imgtk
+
+        self.frame.after(10, self.update_frame)
+
+    def draw_overlay_rectangle(self, frame):
+        h, w, _ = frame.shape
+        rect_w, rect_h = int(w * 0.6), int(h * 0.2)
+        start_x = w // 2 - rect_w // 2
+        start_y = h // 2 - rect_h // 2
+        end_x = start_x + rect_w
+        end_y = start_y + rect_h
+        color = (0, 255, 0)
+        thickness = 2
+        cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), color, thickness)
+        return frame
+
+    def reset_detection(self):
+        self.detected = False
+        self.detect_label.config(text="")
+        self.animation_label.lower()
+
+    def play_beep(self):
+        # macOS alternative: os.system('say beep') or use `playsound` with a beep .mp3
+        try:
+            winsound.Beep(1000, 200)
+        except:
+            pass
+
+    def beep_and_flash(self):
+        # Flash background
+        original_color = self.video_label["bg"]
+        def flash():
+            self.video_label["bg"] = "yellow"
+            self.root.after(150, lambda: self.video_label.config(bg=original_color))
+        flash()
+
+        # Play sound in a thread to avoid freezing UI
+        #threading.Thread(target=lambda: playsound("beep.wav")).start()
+
+    def animate_check(self):
+        self.animation_label.lift()
+        self.frame.after(500, self.animation_label.lower)
         self.frame.after(10, self.update_frame)
 
 ## Spotipy ##
@@ -2439,7 +2705,7 @@ class SpotifyApp:
         tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # Spotify info
-        self.track_label = tk.Label(self.frame, text="Loading...", font=("Arial", 16), bg="white")
+        self.track_label = tk.Label(self.frame, text="Loading...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=20)
 
         # Album art
@@ -2450,7 +2716,7 @@ class SpotifyApp:
         controls = tk.Frame(self.frame, bg="white")
         controls.pack(pady=20)
 
-        tk.Button(controls, text="Play", font=("Arial", 14), command=self.play).pack(side=tk.LEFT, padx=10)
+        tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
 
@@ -2462,7 +2728,7 @@ class SpotifyApp:
         tracks = self.fetch_top_tracks()
 
         for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
-            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+            label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
             label.pack()
 
             try:
@@ -2614,8 +2880,8 @@ class SpotifyApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image failed]", bg="white").pack()
 
-            tk.Label(card, text=name, font=("Arial", 10), bg="white", wraplength=100).pack()
-            tk.Label(card, text=artist, font=("Arial", 8), bg="white", wraplength=100).pack()
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
 
         # Update scroll region after populating
         inner_frame.update_idletasks()
@@ -2629,7 +2895,7 @@ class SpotifyApp:
            track_card = tk.Frame(track_frame, bg="white")
            track_card.pack(side=tk.LEFT, padx=10)
            #def render():
-           #     label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+           #     label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
            #     label.pack()
 
            try:
@@ -2651,8 +2917,8 @@ class SpotifyApp:
                     img_label.pack()
                     img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
 
-           tk.Label(track_card, text=name, font=("Arial", 10), bg="white").pack()
-           tk.Label(track_card, text=artist, font=("Arial", 8), bg="white").pack()
+           tk.Label(track_card, text=name, font=APP_FONT, bg="white").pack()
+           tk.Label(track_card, text=artist, font=APP_FONT, bg="white").pack()
 
             #self.frame.after(0, render)
 
@@ -2686,14 +2952,23 @@ class MusicApp:
         self.bg_label.lower()
 
         self.npr_player = None
+        self.npr_playing = False
 
         self.create_ui()
+
+    def toggle_npr(self):
+        if not self.npr_playing:
+            self.play_npr()
+            self.npr_playing = True
+        else:
+            self.stop_npr()
+            self.npr_playing = False
 
     def create_ui(self):
         #tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
 
         # --- Spotify Section ---
-        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=("Arial", 16), bg="white")
+        self.track_label = tk.Label(self.frame, text="Loading Spotify info...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=10)
 
         self.album_art_label = tk.Label(self.frame, bg="white")
@@ -2702,35 +2977,72 @@ class MusicApp:
         controls = tk.Frame(self.frame, bg="white")
         controls.pack(pady=10)
 
-        tk.Button(controls, text="Play",font=("Arial", 12), command=self.play_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Play",font=APP_FONT, command=self.play_spotify).pack(side=tk.LEFT, padx=5)
         tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
 
-        ## NPR Section ##
+        # NPR + Podcasts Side-by-Side
         npr_controls = tk.Frame(self.frame, bg="white")
         npr_controls.pack(pady=20)
 
-        tk.Label(npr_controls, image=self.nprImg, font=("Arial", 14)).pack()
+        # NPR button (acts as play/pause)
+        npr_btn = tk.Button(npr_controls, image=self.nprImg, command=self.toggle_npr, bd=0)
+        npr_btn.pack(side=tk.LEFT, padx=10)
 
-        tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
-        tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
-
-        ## Apple Podcasts Button ##
+        # Podcast button next to NPR
         podcast_btn = tk.Button(
-            self.frame,
-            image=podImg,
-            font=("Arial", 12),
+            npr_controls,
+            image=self.podImg,
             command=self.open_apple_podcast,
             bd=0,
             highlightthickness=0
         )
-        podcast_btn.pack(pady=5)
+        podcast_btn.pack(side=tk.LEFT, padx=10)
+
+
+        # Icons side by side
+#        icons_frame = tk.Frame(npr_controls, bg="white")
+#        icons_frame.pack()
+
+#        npr_btn = tk.Button(icons_frame, image=self.nprImg, command=self.play_npr, bd=0, highlightthickness=0)
+#        npr_btn = tk.Button(npr_controls, image=self.nprImg, command=self.toggle_npr)
+#        npr_btn.pack(side=tk.LEFT, padx=10)
+
+#        podcast_btn = tk.Button(icons_frame, image=self.podImg, command=self.open_apple_podcast, bd=0, highlightthickness=0)
+#        podcast_btn.pack(side=tk.LEFT, padx=10)
+
+        # NPR Controls under NPR icon
+#        npr_play_controls = tk.Frame(npr_controls, bg="white")
+#        npr_play_controls.pack(pady=5)
+
+#        tk.Button(npr_play_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=5)
+#        tk.Button(npr_play_controls, text="Stop NPR", command=self.stop_npr).pack(side=tk.LEFT, padx=5)
+
+        ## NPR Section ##
+        #npr_controls = tk.Frame(self.frame, bg="white")
+        #npr_controls.pack(pady=20)
+
+#        tk.Label(npr_controls, image=self.nprImg, font=APP_FONT).pack()
+
+#        tk.Button(npr_controls, text="Play NPR", command=self.play_npr).pack(side=tk.LEFT, padx=10)
+#        tk.Button(npr_controls, text="Stop", command=self.stop_npr).pack(side=tk.LEFT, padx=10)
+
+        ## Apple Podcasts Button ##
+#        podcast_btn = tk.Button(
+#            self.frame,
+#            image=podImg,
+#            font=APP_FONT,
+#            command=self.open_apple_podcast,
+#            bd=0,
+#            highlightthickness=0
+#        )
+#        podcast_btn.pack(pady=5)
 
         #podcast_frame = tk.Frame(self.frame, bg="white")
         #podcast_frame.pack(pady=(5, 0), anchor="w")
-        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=("Arial", 12), command=self.open_apple_podcast)
+        #podcast_btn = tk.Button(podcast_frame, image=podImg, font=APP_FONT, command=self.open_apple_podcast)
         #podcast_btn.pack(side=tk.LEFT, padx=10, pady=2)
-        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=("Arial", 12),
+        #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
         #podcast_btn.pack(pady=(2, 0))
 
         back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
@@ -2750,6 +3062,8 @@ class MusicApp:
 
         scroll_frame = tk.Frame(track_canvas, bg="white")
         track_window = track_canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        self.display_youtube_videos()
 
         def update_scrollregion(event):
             track_canvas.configure(scrollregion=track_canvas.bbox("all"))
@@ -2778,8 +3092,8 @@ class MusicApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image not loaded]", bg="white").pack()
 
-            tk.Label(card, text=name, bg="white", wraplength=100, font=("Arial", 9, "bold")).pack()
-            tk.Label(card, text=artist, bg="white", wraplength=100, font=("Arial", 8)).pack()
+            tk.Label(card, text=name, bg="white", wraplength=100, font=APP_FONT_BOLD).pack()
+            tk.Label(card, text=artist, bg="white", wraplength=100, font=APP_FONT).pack()
 
     def load_music_data(self):
         self.update_now_playing()  # fetch and update current song
@@ -2822,8 +3136,8 @@ class MusicApp:
                 print("Image load failed:", e)
                 tk.Label(card, text="[Image failed]", bg="white").pack()
 
-            tk.Label(card, text=name, font=("Arial", 10), bg="white", wraplength=100).pack()
-            tk.Label(card, text=artist, font=("Arial", 8), bg="white", wraplength=100).pack()
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
 
         inner_frame.update_idletasks()
         canvas.configure(scrollregion=canvas.bbox("all"))
@@ -2837,7 +3151,7 @@ class MusicApp:
     def display_tracks_vert(self, tracks):
         for name, artist, image_url, link in tracks[:5]:
             def render():
-                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=("Arial", 12))
+                label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
                 label.pack()
 
                 try:
@@ -2991,26 +3305,6 @@ class MusicApp:
         label = HTMLLabel(frame, html=html)
         label.pack(padx=20, pady=20)
 
-    def open_apple_podcast_old(self):
-            self.root.withdraw()
-
-            def on_closed():
-                self.root.deiconify()
-                self.back_callback()  # Go back to home or previous screen
-
-            # Open Apple Podcasts in a pywebview window
-            try:
-                webview.create_window(
-                    "Apple Podcasts",
-                    "https://podcasts.apple.com/us/podcast/the-daily/id1200361736",  # Replace with any podcast URL
-                    width=1024,
-                    height=600
-                )
-                webview.start(gui='gtk', debug=True)
-            except Exception as e:
-                print("Failed to launch Apple Podcasts:", e)
-                self.root.deiconify()
-
     def open_apple_podcast(self):
 
         def launch_podcast():
@@ -3033,9 +3327,9 @@ class MusicApp:
         launch_podcast()
 
     def display_youtube_videos(self):
-        import requests
-        from urllib.parse import quote
-        import webbrowser
+#        import requests
+#        from urllib.parse import quote
+#        import webbrowser
 
         # --- Horizontal Scrollable Canvas for YouTube ---
         yt_container = tk.Frame(self.frame, bg="white")
@@ -3058,7 +3352,7 @@ class MusicApp:
         scroll_frame.bind("<Configure>", update_scrollregion)
         yt_canvas.bind("<Configure>", update_scrollregion)
 
-        video = [
+        videos = [
              {
                 "title": "Gordon Ramsay's Ultimate Cookery Course",
                 "url": "https://www.youtube.com/watch?v=5uXIPhxL5XA",
@@ -3093,7 +3387,7 @@ class MusicApp:
                 print("Failed to load YouTube thumbnail:", e)
                 tk.Label(card, text="[Image not loaded]", bg="white").pack()
 
-            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=("Arial", 9)).pack()
+            tk.Label(card, text=video["title"], bg="white", wraplength=120, font=APP_FONT).pack()
 
 if __name__ == "__main__":
 #  root = tk.Tk()
