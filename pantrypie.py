@@ -202,8 +202,11 @@ root.title("Pantry Server")
 
 ## Variables ##
 APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
 APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
 APP_FONT.configure(size=12)
+APP_FONT_TITLE.configure(size=25)
 CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
@@ -740,12 +743,12 @@ class ExpirationApp:
         self.create_conversion_table_panel(main_wrapper)
 
         # Clock
-        self.clock_label = tk.Label(center_panel, font=('calibri', 30, 'bold'),
+        self.clock_label = tk.Label(center_panel, font=APP_FONT_BOLD,
                                     background='orange', foreground='white')
         self.clock_label.pack(pady=10)
 
         # Weather
-        self.weather_label = tk.Label(center_panel, font=('calibri', 25),
+        self.weather_label = tk.Label(center_panel, font=APP_FONT,
                                       bg='orange', fg='yellow')
         self.weather_label.pack(pady=(0, 2))
 
@@ -771,11 +774,11 @@ class ExpirationApp:
         self.weather_icon_frame.place(x=10, y=10)
 
         # Top area with clock and weather
-        self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'),
+        self.clock_label = tk.Label(self.root, font=APP_FONT_TITLE_BOLD,
                                     background='orange', foreground='yellow')
         self.clock_label.pack(pady=(10, 0))
 
-        self.weather_label = tk.Label(self.root, font=('calibri', 25),
+        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
                                       bg='orange', fg='yellow')
         self.weather_label.pack(pady=(0, 10))
 
@@ -814,13 +817,26 @@ class ExpirationApp:
                 icon_photo = ImageTk.PhotoImage(icon_img)
 
                 if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
-                    self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
-                    self.weather_icon_label.pack()
+                    #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
+                    #self.weather_icon_label.pack()
+                    self.weather_button = tk.Button(
+                         self.weather_icon_frame,
+                         image=icon_photo,
+                         bg="orange",
+                         bd=0,                 # no border
+                         highlightthickness=0, # no highlight border
+                         command=self.open_weather_ui
+                    )
+                    self.weather_button.image = icon_photo
+                    self.weather_button.pack()
+                else:
+                    self.weather_button.config(image=icon_photo)
+                    self.weather_button.image = icon_photo
 
                 if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
                     self.weather_label = tk.Label(
                         self.root,
-                        font=("calibri", 25),
+                        font=APP_FONT,
                         bg="orange",
                         fg="yellow"
                     )
@@ -828,8 +844,8 @@ class ExpirationApp:
                     self.weather_label.pack(pady=(0, 10))
                 #self.update_weather()
 
-                self.weather_icon_label.config(image=icon_photo)
-                self.weather_icon_label.image = icon_photo  # Prevent GC
+                #self.weather_icon_label.config(image=icon_photo)
+                #self.weather_icon_label.image = icon_photo  # Prevent GC
 
                 self.weather_label.config(
                     text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
@@ -1850,6 +1866,9 @@ class ExpirationApp:
             print("Failed to Grab Frame")
             self.cpt.release()
             return
+
+        upscale_factor = 2  # Try 2x or 3x
+        frame_upscaled = cv2.resize(frame, (0, 0), fx=upscale_factor, fy=upscale_factor)
 
         barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
