@@ -2456,7 +2456,8 @@ class WeatherApp:
 #                                  command=self.root.destroy)
                                   #command=lambda: self.create_home_screen(None))
         #self.back_btn.pack(pady=10)
-        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        #self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+        self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
         #self.back_btn.place(x=10, y=10, anchor="s")
         self.back_btn.image = self.backImg
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
