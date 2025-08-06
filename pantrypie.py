@@ -202,8 +202,16 @@ root.title("Pantry Server")
 
 ## Variables ##
 APP_FONT = tkFont.nametofont("TkDefaultFont")
+<<<<<<< HEAD
 APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
 APP_FONT.configure(size=12)
+=======
+APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
+APP_FONT.configure(size=12)
+APP_FONT_TITLE.configure(size=25)
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
@@ -291,6 +299,9 @@ backsmallImg = ImageTk.PhotoImage(img_back_small)
 ## Weather Back Button Image ##
 img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
 webImg = ImageTk.PhotoImage(img_web)
+## YouTube Button Image ##
+img_yt = Image.open("pics/youtube.png").resize((50, 50), Image.LANCZOS)
+ytImg = ImageTk.PhotoImage(img_yt)
 
 ### Import Barcode Image ###
 ## Scan ##
@@ -737,12 +748,12 @@ class ExpirationApp:
         self.create_conversion_table_panel(main_wrapper)
 
         # Clock
-        self.clock_label = tk.Label(center_panel, font=('calibri', 30, 'bold'),
+        self.clock_label = tk.Label(center_panel, font=APP_FONT_BOLD,
                                     background='orange', foreground='white')
         self.clock_label.pack(pady=10)
 
         # Weather
-        self.weather_label = tk.Label(center_panel, font=('calibri', 25),
+        self.weather_label = tk.Label(center_panel, font=APP_FONT,
                                       bg='orange', fg='yellow')
         self.weather_label.pack(pady=(0, 2))
 
@@ -768,11 +779,11 @@ class ExpirationApp:
         self.weather_icon_frame.place(x=10, y=10)
 
         # Top area with clock and weather
-        self.clock_label = tk.Label(self.root, font=('calibri', 30, 'bold'),
+        self.clock_label = tk.Label(self.root, font=APP_FONT_TITLE_BOLD,
                                     background='orange', foreground='yellow')
         self.clock_label.pack(pady=(10, 0))
 
-        self.weather_label = tk.Label(self.root, font=('calibri', 25),
+        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
                                       bg='orange', fg='yellow')
         self.weather_label.pack(pady=(0, 10))
 
@@ -811,13 +822,31 @@ class ExpirationApp:
                 icon_photo = ImageTk.PhotoImage(icon_img)
 
                 if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
+<<<<<<< HEAD
                     self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
                     self.weather_icon_label.pack()
+=======
+                    #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
+                    #self.weather_icon_label.pack()
+                    self.weather_button = tk.Button(
+                         self.weather_icon_frame,
+                         image=icon_photo,
+                         bg="orange",
+                         #bd=0,                 # no border
+                         #highlightthickness=0, # no highlight border
+                         command=self.open_weather_ui
+                    )
+                    self.weather_button.image = icon_photo
+                    self.weather_button.pack()
+                else:
+                    self.weather_button.config(image=icon_photo)
+                    self.weather_button.image = icon_photo
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
                 if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
                     self.weather_label = tk.Label(
                         self.root,
-                        font=("calibri", 25),
+                        font=APP_FONT,
                         bg="orange",
                         fg="yellow"
                     )
@@ -825,8 +854,8 @@ class ExpirationApp:
                     self.weather_label.pack(pady=(0, 10))
                 #self.update_weather()
 
-                self.weather_icon_label.config(image=icon_photo)
-                self.weather_icon_label.image = icon_photo  # Prevent GC
+                #self.weather_icon_label.config(image=icon_photo)
+                #self.weather_icon_label.image = icon_photo  # Prevent GC
 
                 self.weather_label.config(
                     text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
@@ -1848,6 +1877,9 @@ class ExpirationApp:
             self.cpt.release()
             return
 
+        upscale_factor = 2  # Try 2x or 3x
+        frame_upscaled = cv2.resize(frame, (0, 0), fx=upscale_factor, fy=upscale_factor)
+
         barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
         for barcode in barcodes:
@@ -2610,7 +2642,16 @@ class CameraApp:
                     self.play_beep()
                     self.animate_check()
                     self.detected = True
+<<<<<<< HEAD
                     threading.Timer(2, self.reset_detection).start()
+=======
+                    #threading.Timer(2, self.reset_detection).start()
+                    self.frame.after(2000, self.reset_detection)
+
+                for barcode in barcodes:
+                    (x, y, w, h) = barcode.rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(cv2image)
@@ -2648,7 +2689,14 @@ class CameraApp:
     def play_beep(self):
         # macOS alternative: os.system('say beep') or use `playsound` with a beep .mp3
         try:
+<<<<<<< HEAD
             winsound.Beep(1000, 200)
+=======
+            #winsound.Beep(1000, 200)
+            #threading.Thread(target=lambda: playsound("audio/beep.wav")).start()
+            #threading.Thread(target=lambda: os.system('say "beep"')).start()
+            threading.Thread(target=lambda: os.system('say -v Bells "ding"')).start()
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
         except:
             pass
 
@@ -2656,8 +2704,15 @@ class CameraApp:
         # Flash background
         original_color = self.video_label["bg"]
         def flash():
+<<<<<<< HEAD
             self.video_label["bg"] = "yellow"
             self.root.after(150, lambda: self.video_label.config(bg=original_color))
+=======
+            #self.video_label["bg"] = "yellow"
+            self.canvas["bg"] = "yellow"
+            #self.root.after(150, lambda: self.video_label.config(bg=original_color))
+            self.root.after(150, lambda: self.canvas.config(bg=original_color))
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
         flash()
 
         # Play sound in a thread to avoid freezing UI
@@ -2704,57 +2759,95 @@ class SpotifyApp:
         self.create_ui()
 
     def create_ui(self):
-        # Back button
-        tk.Button(self.frame, image=self.backImg, command=self.back_callback).place(relx=0.05, rely=0.9)
+        # Clear previous widgets if needed
+        for widget in self.frame.winfo_children():
+            widget.destroy()
 
+<<<<<<< HEAD
         # Spotify info
         self.track_label = tk.Label(self.frame, text="Loading...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=20)
+=======
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
-        # Album art
-        self.album_art_label = tk.Label(self.frame, bg="white")
-        self.album_art_label.pack(pady=10)
+        # --- Top bar frame for back button ---
+        top_bar = tk.Frame(self.frame, bg="", height=50)
+        top_bar.pack(side=tk.TOP, fill=tk.X)
 
-        # Control buttons
-        controls = tk.Frame(self.frame, bg="white")
-        controls.pack(pady=20)
+        back_btn = tk.Button(
+            top_bar,
+            image=self.backImg,
+            command=self.back_callback,
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2"
+        )
+        back_btn.pack(side=tk.RIGHT, padx=15, pady=10)
 
+<<<<<<< HEAD
         tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
+=======
+        #back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bg="SystemButtonFace", borderwidth=0, highlightthickness=0)
+        #back_btn.place(relx=0.95, rely=0.05, anchor="ne")
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
-        #self.update_now_playing()
-        #threading.Thread(target=self.load_music_data, daemon=True).start()
+        # --- Canvas and scrollbar for horizontal tracks ---
+        track_container = tk.Frame(self.frame, bg="")
+        track_container.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(20, 10))  # Note extra top padding (20) to push it down
 
-	## Requires Auth Token not Client ##
-        #tracks = self.fetch_playlist_tracks()
-        tracks = self.fetch_top_tracks()
+        canvas = tk.Canvas(track_container, height=220, bg="white", highlightthickness=0)
+        canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
 
+<<<<<<< HEAD
         for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
             label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
             label.pack()
+=======
+        scrollbar = tk.Scrollbar(track_container, orient=tk.HORIZONTAL, command=canvas.xview)
+        scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        canvas.configure(xscrollcommand=scrollbar.set)
+
+        scroll_frame = tk.Frame(canvas, bg="white")
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+
+        # Bind scroll region update
+        def update_scrollregion(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas.find_withtag("all")[0], width=max(canvas.winfo_width(), scroll_frame.winfo_reqwidth()))
+
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        canvas.bind('<Configure>', update_scrollregion)
+
+        # Load and display your tracks horizontally here
+        #tracks = self.fetch_top_tracks()  # Or fetch_playlist_tracks()
+        playlist_id = random.choice(COOKING_PLAYLIST_IDS)
+        tracks = self.fetch_playlist_tracks(playlist_id)
+
+        for name, artist, image_url, link in tracks[:5]:
+            card = tk.Frame(scroll_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
+            card.pack(side=tk.LEFT, padx=10, pady=10)
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
             try:
                 img_data = requests.get(image_url, timeout=5).content
                 img = Image.open(BytesIO(img_data)).resize((100, 100))
                 photo = ImageTk.PhotoImage(img)
-
-                img_label = tk.Label(self.frame, image=photo, cursor="hand2", bg="white")
-                img_label.image = photo  # prevent garbage collection
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo  # keep reference
                 img_label.pack()
                 img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
             except Exception as e:
-                print(f"Failed to Load Image: {e}")
-                tk.Label(self.frame, text="Image Failed to Load", bg="white").pack()
+                print("Image load failed:", e)
+                tk.Label(card, text="[Image not loaded]", bg="white").pack()
 
-        html_content = """
-        <h2>Spotify Web Player</h2>
-        <p><a href='https://open.spotify.com/'>Open Spotify</a></p>
-        <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
-        """
-
-        html_widget = HTMLLabel(self.frame, html=html_content)
-        html_widget.pack(pady=20)
+            tk.Label(card, text=name, bg="white", font=APP_FONT, wraplength=100).pack()
+            tk.Label(card, text=artist, bg="white", font=APP_FONT, wraplength=100).pack()
 
     def load_music_data(self):
         self.update_now_playing()
@@ -2855,7 +2948,7 @@ class SpotifyApp:
     def display_tracks(self, tracks):
         # Create a canvas and horizontal scrollbar
         canvas = tk.Canvas(self.frame, bg="white", height=220)
-        canvas.pack(fill=tk.X, padx=20)
+        canvas.pack(fill=tk.X, padx=20, pady=(40, 10))
 
         h_scrollbar = tk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=canvas.xview)
         h_scrollbar.pack(fill=tk.X)
@@ -2926,6 +3019,61 @@ class SpotifyApp:
             #self.frame.after(0, render)
 
            self.display_youtube_videos()
+
+    def display_tracks_horizontal(self, tracks):
+        # Clear previous content
+        for widget in self.frame.winfo_children():
+             if widget != self.bg_label:
+                 widget.destroy()
+
+        if hasattr(self, 'tracks_container'):
+             self.tracks_container.destroy()
+
+        self.tracks_container = tk.Frame(self.frame, bg="")
+        self.tracks_container.pack(fill=tk.X, padx=10, pady=10)
+
+        canvas = tk.Canvas(self.tracks_container, bg="white", height=240)
+        canvas.pack(fill=tk.X, padx=10, pady=10)
+        #canvas.pack(padx=10, pady=10)
+
+        # Canvas + Scrollbar setup
+        #canvas = tk.Canvas(self.frame, bg="white", height=240)
+        #canvas.pack(fill=tk.X, padx=10, pady=10)
+
+        scrollbar = tk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=canvas.xview)
+        scrollbar.pack(fill=tk.X)
+
+        canvas.configure(xscrollcommand=scrollbar.set)
+
+        # Frame inside canvas
+        inner_frame = tk.Frame(canvas, bg="white")
+        canvas.create_window((0, 0), window=inner_frame, anchor='nw')
+
+        # Populate cards horizontally
+        for name, artist, image_url, link in tracks:
+            card = tk.Frame(inner_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
+            card.pack(side=tk.LEFT, padx=10, pady=10)
+
+            photo = None
+            try:
+                img_data = requests.get(image_url, timeout=5).content
+                img = Image.open(BytesIO(img_data)).resize((100, 100))
+                photo = ImageTk.PhotoImage(img)
+            except Exception as e:
+                print("Image load failed:", e)
+
+            if photo:
+                img_label = tk.Label(card, image=photo, bg="white", cursor="hand2")
+                img_label.image = photo
+                img_label.pack()
+                img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
+
+            tk.Label(card, text=name, font=APP_FONT, bg="white", wraplength=100).pack()
+            tk.Label(card, text=artist, font=APP_FONT, bg="white", wraplength=100).pack()
+
+        # Ensure scrollable width is set
+        inner_frame.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
 ## NPR ##
 def play_npr_stream():
@@ -3138,6 +3286,11 @@ class MusicApp:
 
             tk.Label(card, text=name, bg="white", wraplength=100, font=APP_FONT_BOLD).pack()
             tk.Label(card, text=artist, bg="white", wraplength=100, font=APP_FONT).pack()
+<<<<<<< HEAD
+=======
+
+        self.display_youtube_videos()
+>>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
     def load_music_data(self):
         self.update_now_playing()  # fetch and update current song
@@ -3266,8 +3419,14 @@ class MusicApp:
            print("NPR Stream Stopped.")
 
     def fetch_playlist_tracks(self):
-        #playlist_id = "37i9dQZF1DX0XUsuxWHRQd"  # Replace with a real public playlist ID
-        playlist_id = "37i9dQZF1DX1lVhptIYRda"  # Replace with a real public playlist ID
+        COOKING_PLAYLIST_IDS = [
+            "41f2E73ciOG7QTKYmdGR9H",  # Recipe songs
+            "47Hj1ZIkQnyJInPIBjcw0B",  # Cooking Songs – Dinner at Home
+            "2GmVYyQ4fYpuh0V9c2Cm6f",  # Bitchin In The Kitchen
+            #"16a2whRq5tsJHORZvb8LIM",  # Cooking, Baking and Kitchen Fun – Songs for Kids
+            #"0wZWyIjYFQh7Ex06F3WCut",  # Feeding Picky Eaters
+        ]
+        playlist_id = random.choice(COOKING_PLAYLIST_IDS)
         url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
         headers = {
             "Authorization": f"Bearer {self.token}"
@@ -3282,18 +3441,26 @@ class MusicApp:
             data = resp.json()
             items = data.get("items", [])
             if not items:
-               print("Playlist is Empty:", data)
+                print("Playlist is Empty:", data)
+
             tracks = []
-            for item in data["items"]:
+            for item in items:
                 track = item.get("track")
                 if track:
-                    name = track["name"]
-                    artist = track["artists"][0]["name"]
-                    image_url = track["album"]["images"][0]["url"]
-                    external_url = track["external_urls"]["spotify"]
+                    name = track.get("name", "Unknown")
+                    artists = track.get("artists", [])
+                    artist = artists[0].get("name", "Unknown") if artists else "Unknown"
+
+                    images = track.get("album", {}).get("images", [])
+                    image_url = images[0]["url"] if images else ""
+
+                    external_urls = track.get("external_urls", {})
+                    external_url = external_urls.get("spotify", "")
+
                     tracks.append((name, artist, image_url, external_url))
 
             return tracks
+
         except Exception as e:
             print("Error fetching playlist:", e)
             return []
