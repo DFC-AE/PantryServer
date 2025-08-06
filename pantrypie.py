@@ -462,8 +462,8 @@ class ExpirationApp:
 
     def open_weather_ui(self):
         self.clear_screen()
-        #WeatherApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
-        WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+        WeatherApp(root, backImg, self.create_home_screen)
+        #WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
 
     def open_music_ui(self):
         self.clear_screen()
@@ -744,42 +744,6 @@ class ExpirationApp:
         #"""
         #label = HTMLLabel(frame, html=html)
         #label.pack(padx=20, pady=20)
-
-    def create_home_screen_mainframe(self, item=None):
-        for widget in self.root.winfo_children():
-            widget.destroy()
-
-        self.clear_screen()
-        self.set_background()
-        self.current_view = 'home'
-
-        ## Wrapper for left + center + right panels
-        main_wrapper = tk.Frame(self.root, bg="white")
-        main_wrapper.pack(fill=tk.BOTH, expand=True)
-
-        # LEFT: Expiring Soon Panel
-        self.create_expiring_soon_panel(main_wrapper)
-
-        # CENTER: Main Content Panel
-        center_panel = tk.Frame(main_wrapper, bg="white")
-        center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # RIGHT: Unit Conversion Table Panel
-        self.create_conversion_table_panel(main_wrapper)
-
-        # Clock
-        self.clock_label = tk.Label(center_panel, font=APP_FONT_BOLD,
-                                    background='orange', foreground='white')
-        self.clock_label.pack(pady=10)
-
-        # Weather
-        self.weather_label = tk.Label(center_panel, font=APP_FONT,
-                                      bg='orange', fg='yellow')
-        self.weather_label.pack(pady=(0, 2))
-
-        # Buttons and Main Features
-        frame = tk.Frame(center_panel, bg="white")
-        frame.pack(pady=10)
 
     def create_home_screen(self, item=None):
         for widget in self.root.winfo_children():
@@ -2339,39 +2303,39 @@ weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
 weather_label.pack(pady=20)
 
 class WeatherApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback=None):
-    #def __init__(self, root, backImg, back_callback=None):
+    #def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    def __init__(self, root, backImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
-        self.backgroundImg = backgroundImg
-        self.backImg = backsmallImg
+        #self.backgroundImg = backgroundImg
+        #self.backImg = backsmallImg
+        self.backImg = backImg
         #self.backImg = ImageTK.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 
 	## Frame For Weather App Content ##
         self.frame = tk.Frame(self.root)
         self.frame.place(x=0, y=0, relwidth=1, relheight=1)
-        self.weather_ui()
+
+        self.set_background()
+#        self.weather_ui()
 
 	## Background Image ##
         #self.backgroundImg = backgroundImg
         #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
-        pil_weather = Image.open("pics/weather.jpg").resize(
+        #pil_weather = Image.open("pics/weather.jpg").resize(
             #(self.root.winfo_screenwidth(), self.root.winfo_screenheight())
-            (self.frame.winfo_screenwidth(), self.frame.winfo_screenheight())
-        )
-        self.backgroundImg = ImageTk.PhotoImage(pil_weather)
+        #    (self.frame.winfo_screenwidth(), self.frame.winfo_screenheight())
+        #)
+        #self.backgroundImg = ImageTk.PhotoImage(pil_weather)
 #        self.backgroundImg = back_weatherImg
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.image = self.backgroundImg
+        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        #self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #self.bg_label.image = self.backgroundImg
 
 	## Back Button Image ##
-#        self.backImg = backImg
         self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
-#        self.clear_screen()
-#        self.root.geometry("500x400")
 
         self.city = "Shreveport, US"
         self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
@@ -2379,12 +2343,36 @@ class WeatherApp:
         self.weather_ui()
         #self.update_weather()
 
+    def set_background(self):
+        self.bg_image_original = Image.open("pics/weather.jpg")
+        self.bg_label = tk.Label(self.frame)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.root.update_idletasks()
+        self.update_background_image()
+        self.root.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        if event.widget == self.root:
+            self.update_background_image()
+
+    def update_background_image(self):
+        if hasattr(self, 'bg_image_original'):
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+            if width > 1 and height > 1:
+                resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+                self.backgroundImg = ImageTk.PhotoImage(resized_image)
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+
     def clear_screen(self):
         #for widget in self.root.winfo_children():
         for widget in self.frame.winfo_children():
             widget.destroy()
 
-    def set_background(self):
+    def set_background_old(self):
       try:
         if hasattr(self, "bg_label"):
            self.bg_label.destroy()
@@ -2394,7 +2382,7 @@ class WeatherApp:
         #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
-        
+
         #self.bg_label = bg_label
 #        try:
 #            self.background_label = tk.Label(self.root, image=backgroundImg)
