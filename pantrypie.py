@@ -202,16 +202,11 @@ root.title("Pantry Server")
 
 ## Variables ##
 APP_FONT = tkFont.nametofont("TkDefaultFont")
-<<<<<<< HEAD
-APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
-APP_FONT.configure(size=12)
-=======
 APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
 APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
 APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
 APP_FONT.configure(size=12)
 APP_FONT_TITLE.configure(size=25)
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
@@ -822,10 +817,6 @@ class ExpirationApp:
                 icon_photo = ImageTk.PhotoImage(icon_img)
 
                 if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
-<<<<<<< HEAD
-                    self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
-                    self.weather_icon_label.pack()
-=======
                     #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
                     #self.weather_icon_label.pack()
                     self.weather_button = tk.Button(
@@ -841,7 +832,6 @@ class ExpirationApp:
                 else:
                     self.weather_button.config(image=icon_photo)
                     self.weather_button.image = icon_photo
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
                 if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
                     self.weather_label = tk.Label(
@@ -2013,18 +2003,14 @@ class ExpirationApp:
             with open(SAVE_FILE, 'r') as f:
               try:  
                 data = json.load(f)
-<<<<<<< HEAD
               except json.JSONDecodeError:
                 data = []
-            self.items = [Item.from_dict(d) for d in data]
-=======
+                self.items = [Item.from_dict(d) for d in data]
                 self.items = [Item.from_dict(item) for item in data]
         except json.JSONDecodeError as e:
             print(f"Error loading items.json: {e}")
             messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
             self.items = []
-
->>>>>>> brents
 
     ## Saves items to file ##
     def save_items(self):
@@ -2654,16 +2640,12 @@ class CameraApp:
                     self.play_beep()
                     self.animate_check()
                     self.detected = True
-<<<<<<< HEAD
-                    threading.Timer(2, self.reset_detection).start()
-=======
                     #threading.Timer(2, self.reset_detection).start()
                     self.frame.after(2000, self.reset_detection)
 
                 for barcode in barcodes:
                     (x, y, w, h) = barcode.rect
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(cv2image)
@@ -2701,14 +2683,10 @@ class CameraApp:
     def play_beep(self):
         # macOS alternative: os.system('say beep') or use `playsound` with a beep .mp3
         try:
-<<<<<<< HEAD
-            winsound.Beep(1000, 200)
-=======
             #winsound.Beep(1000, 200)
             #threading.Thread(target=lambda: playsound("audio/beep.wav")).start()
             #threading.Thread(target=lambda: os.system('say "beep"')).start()
             threading.Thread(target=lambda: os.system('say -v Bells "ding"')).start()
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
         except:
             pass
 
@@ -2716,15 +2694,10 @@ class CameraApp:
         # Flash background
         original_color = self.video_label["bg"]
         def flash():
-<<<<<<< HEAD
-            self.video_label["bg"] = "yellow"
-            self.root.after(150, lambda: self.video_label.config(bg=original_color))
-=======
             #self.video_label["bg"] = "yellow"
             self.canvas["bg"] = "yellow"
             #self.root.after(150, lambda: self.video_label.config(bg=original_color))
             self.root.after(150, lambda: self.canvas.config(bg=original_color))
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
         flash()
 
         # Play sound in a thread to avoid freezing UI
@@ -2775,15 +2748,12 @@ class SpotifyApp:
         for widget in self.frame.winfo_children():
             widget.destroy()
 
-<<<<<<< HEAD
         # Spotify info
         self.track_label = tk.Label(self.frame, text="Loading...", font=APP_FONT, bg="white")
         self.track_label.pack(pady=20)
-=======
         self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
         # --- Top bar frame for back button ---
         top_bar = tk.Frame(self.frame, bg="", height=50)
@@ -2799,14 +2769,11 @@ class SpotifyApp:
         )
         back_btn.pack(side=tk.RIGHT, padx=15, pady=10)
 
-<<<<<<< HEAD
         tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Pause", command=self.pause).pack(side=tk.LEFT, padx=10)
         tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=10)
-=======
         #back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bg="SystemButtonFace", borderwidth=0, highlightthickness=0)
         #back_btn.place(relx=0.95, rely=0.05, anchor="ne")
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
         # --- Canvas and scrollbar for horizontal tracks ---
         track_container = tk.Frame(self.frame, bg="")
@@ -2815,11 +2782,9 @@ class SpotifyApp:
         canvas = tk.Canvas(track_container, height=220, bg="white", highlightthickness=0)
         canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
 
-<<<<<<< HEAD
         for name, artist, image_url, link in tracks[:5]:  # show 5 tracks
             label = tk.Label(self.frame, text=f"{name} - {artist}", bg="white", font=APP_FONT)
             label.pack()
-=======
         scrollbar = tk.Scrollbar(track_container, orient=tk.HORIZONTAL, command=canvas.xview)
         scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -2844,7 +2809,6 @@ class SpotifyApp:
         for name, artist, image_url, link in tracks[:5]:
             card = tk.Frame(scroll_frame, bg="white", bd=1, relief="solid", padx=5, pady=5)
             card.pack(side=tk.LEFT, padx=10, pady=10)
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
             try:
                 img_data = requests.get(image_url, timeout=5).content
@@ -3298,11 +3262,8 @@ class MusicApp:
 
             tk.Label(card, text=name, bg="white", wraplength=100, font=APP_FONT_BOLD).pack()
             tk.Label(card, text=artist, bg="white", wraplength=100, font=APP_FONT).pack()
-<<<<<<< HEAD
-=======
 
         self.display_youtube_videos()
->>>>>>> b6daa46d6e3874e04be7935239911ef726175d2b
 
     def load_music_data(self):
         self.update_now_playing()  # fetch and update current song
