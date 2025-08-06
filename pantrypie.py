@@ -253,6 +253,10 @@ listImg = ImageTk.PhotoImage(img_list)
 img_music = Image.open("pics/music.png")
 img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicImg = ImageTk.PhotoImage(img_music)
+## Music Background Image ##
+img_music_back = Image.open("pics/music.jpg")
+img_music_back = img_music_back.resize((img_wdt, img_hgt), Image.LANCZOS)
+musicbackImg = ImageTk.PhotoImage(img_music_back)
 ## NPR Image ##
 img_npr = Image.open("pics/npr.png")
 img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -2350,12 +2354,18 @@ class WeatherApp:
         self.bg_label.lower()
 
         self.root.update_idletasks()
-        self.update_background_image()
+        self.root.after(100, self.update_background_image)
         self.root.bind("<Configure>", self.on_resize)
+        self.frame.bind("<Configure>", self.on_resize)
 
     def on_resize(self, event):
-        if event.widget == self.root:
-            self.update_background_image()
+        if hasattr(self, "last_width") and hasattr(self, "last_height"):
+        #if event.widget == self.root:
+            if event.width == self.last_width and event.height == self.last_height:
+                return
+        self.last_width = event.width
+        self.last_height = event.height
+        self.update_background_image()
 
     def update_background_image(self):
         if hasattr(self, 'bg_image_original'):
@@ -2371,27 +2381,6 @@ class WeatherApp:
         #for widget in self.root.winfo_children():
         for widget in self.frame.winfo_children():
             widget.destroy()
-
-    def set_background_old(self):
-      try:
-        if hasattr(self, "bg_label"):
-           self.bg_label.destroy()
-
-#        if self.backgroundImg:
-        self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
-
-        #self.bg_label = bg_label
-#        try:
-#            self.background_label = tk.Label(self.root, image=backgroundImg)
-#            self.background_label.place(relwidth=1, relheight=1)
-#        except Exception as e:
-#        else:
-#           print("No Background Image Set.")
-      except Exception as e:
-        print("Error setting background:", e)
 
     def weather_ui(self):
         self.clear_screen()
