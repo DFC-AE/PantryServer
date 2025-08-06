@@ -909,8 +909,8 @@ class ExpirationApp:
         ToolTip(set_btn, "Click to Configure Application")
 
         # Unit Converter Panel
-#        converter_frame = tk.Frame(self.root, bd=2, relief="groove")
-#        converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
+        #converter_frame = tk.Frame(self.root, bd=2, relief="groove")
+        #converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
 
 #        tk.Label(converter_frame, text="Unit Converter", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
 
@@ -1781,10 +1781,18 @@ class ExpirationApp:
 
     ## Loads items from file
     def load_items(self):
-        if os.path.exists(SAVE_FILE):
+        if not os.path.exists(SAVE_FILE) or os.path.getsize(SAVE_FILE) == 0:
+            self.items = []
+            return
+        try:
             with open(SAVE_FILE, 'r') as f:
                 data = json.load(f)
-                self.items = [Item.from_dict(d) for d in data]
+                self.items = [Item.from_dict(item) for item in data]
+        except json.JSONDecodeError as e:
+            print(f"Error loading items.json: {e}")
+            messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
+            self.items = []
+
 
     ## Saves items to file ##
     def save_items(self):
