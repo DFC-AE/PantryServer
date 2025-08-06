@@ -1319,64 +1319,6 @@ class ExpirationApp:
         tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
 
-    def show_full_recipe_view_olde(self, meal):
-        self.clear_screen()
-
-        # Set background if needed
-        bg_label = tk.Label(self.root, image=self.backgroundImg)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.lower()
-
-        # Recipe title
-        label_rcp = tk.Label(self.root,
-                 text=meal['strMeal'],
-                 font=APP_FONT_BOLD,
-                 fg="black", bg="white")
-        label_rcp.pack(pady=10)
-        label_rcp.lift()
-
-        # Recipe image
-        img_data = requests.get(meal["strMealThumb"], timeout=5).content
-        img = Image.open(BytesIO(img_data)).resize((300, 300))
-        photo = ImageTk.PhotoImage(img)
-        img_label = tk.Label(self.root, image=photo, bg="white")
-        img_label.image = photo
-        img_label.pack(pady=5)
-
-        rating = "4/5"
-        tk.Label(self.root, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=APP_FONT, bg="white").pack(pady=5)
-
-        # Ingredients
-        tk.Label(self.root, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
-        ingredients_frame = tk.Frame(self.root, bg="white")
-        ingredients_frame.pack()
-
-        for i in range(1, 21):
-            ing = meal.get(f"strIngredient{i}")
-            measure = meal.get(f"strMeasure{i}")
-            if ing and ing.strip():
-                tk.Label(ingredients_frame, text=f"{ing} - {measure}",
-                         font=APP_FONT, bg="white").pack(anchor="w")
-
-        # Instructions
-        tk.Label(self.root, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
-        instructions = tk.Text(self.root, wrap=tk.WORD, height=10, font=APP_FONT, bg="white")
-        instructions.insert(tk.END, meal['strInstructions'])
-        instructions.config(state=tk.DISABLED)
-        instructions.pack(padx=20, pady=5)
-
-        # Buttons (Save, Print, Export PDF)
-        btn_frame = tk.Frame(self.root, bg="white")
-        btn_frame.pack(pady=10)
-
-        tk.Button(btn_frame, text="Save to Favorites", command=lambda: self.save_to_favorites(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(btn_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(btn_frame, text="Export to PDF", command=lambda: self.export_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
-
-        # Back Button
-        tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2").pack(pady=20)
-
     def save_to_favorites(self, meal):
         # Save logic (e.g., append to a JSON file)
         print("Saved:", meal["strMeal"])
@@ -2465,7 +2407,7 @@ class WeatherApp:
 
     def weather_ui(self):
         self.clear_screen()
-#        self.set_background()
+        self.set_background()
 
         ## Set Background Image and Place in the Background ##
         self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
@@ -3121,9 +3063,11 @@ class MusicApp:
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
+        self.set_background()
+
+#        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+#        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+#        self.bg_label.lower()
 
         self.npr_player = None
         self.npr_playing = False
@@ -3132,6 +3076,30 @@ class MusicApp:
         self.klpi_playing = False
 
         self.create_ui()
+
+    def set_background(self):
+        self.bg_image_original = Image.open("pics/back.jpg")  # Or whichever image applies
+        self.bg_label = tk.Label(self.frame)  # Assuming self.frame is your container
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.update_background_image()
+        self.root.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        self.update_background_image()
+
+    def update_background_image(self):
+        if hasattr(self, 'bg_image_original'):
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            if hasattr(self, 'bg_label'):
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
 
     def toggle_npr(self):
         if not self.npr_playing:
