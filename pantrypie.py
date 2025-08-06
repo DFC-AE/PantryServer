@@ -420,10 +420,36 @@ class ExpirationApp:
 #        self.weather_ui()
 
     ## Create Background ##
+#    def set_background(self):
+#        background = tk.Label(self.root, image=self.backgroundImg)
+#        background.place(x=0, y=0, relwidth=1, relheight=1)
+#        background.lower()
+
     def set_background(self):
-        background = tk.Label(self.root, image=self.backgroundImg)
-        background.place(x=0, y=0, relwidth=1, relheight=1)
-        background.lower()
+        self.bg_image_original = Image.open("pics/back.jpg")
+        self.bg_label = tk.Label(self.root)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+        self.update_background_image()
+
+        # Bind to resize event
+        self.root.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        self.update_background_image()
+
+    def update_background_image(self):
+        if hasattr(self, 'bg_image_original') and self.bg_image_original:
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            if hasattr(self, 'bg_label') and self.bg_label.winfo_exists():
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
 
     def apply_settings(self):
         global APP_FONT
@@ -486,7 +512,6 @@ class ExpirationApp:
     def open_foodfacts(self):
         #self.root.withdraw()  # Hide the Tkinter app window
         self.root.destroy()  # Destory the Tkinter app window
- 
 
         def on_closed():
             #self.root.deiconify()
