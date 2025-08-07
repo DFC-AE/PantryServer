@@ -295,29 +295,47 @@ img_back_weather = Image.open("pics/backgrounds/weather.jpg")
 img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 ## Clear Weather Background Image ##
-img_back_clear = Image.open("pics/backgrounds/clear.jpg")
-img_back_clear = img_back_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_clearImg = ImageTk.PhotoImage(img_back_clear)
+img_back_day_clear = Image.open("pics/backgrounds/day_clear.jpg")
+img_back_day_clear = img_back_day_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_cleardayImg = ImageTk.PhotoImage(img_back_day_clear)
+img_back_night_clear = Image.open("pics/backgrounds/night_clear.jpg")
+img_back_night_clear = img_back_night_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_clearnightImg = ImageTk.PhotoImage(img_back_night_clear)
 ## Cloudy Weather Background Image ##
-img_back_cloudy = Image.open("pics/backgrounds/cloudy.jpg")
-img_back_cloudy = img_back_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_cloudyImg = ImageTk.PhotoImage(img_back_cloudy)
+img_back_day_cloudy = Image.open("pics/backgrounds/day_cloudy.jpg")
+img_back_day_cloudy = img_back_day_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_cloudydayImg = ImageTk.PhotoImage(img_back_day_cloudy)
+img_back_night_cloudy = Image.open("pics/backgrounds/night_cloudy.jpg")
+img_back_night_cloudy = img_back_night_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_cloudynightImg = ImageTk.PhotoImage(img_back_night_cloudy)
 ## Rainy Weather Background Image ##
-img_back_rainy = Image.open("pics/backgrounds/rainy.jpg")
-img_back_rainy = img_back_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_rainyImg = ImageTk.PhotoImage(img_back_rainy)
+img_back_day_rainy = Image.open("pics/backgrounds/day_rainy.jpg")
+img_back_day_rainy = img_back_day_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_rainydayImg = ImageTk.PhotoImage(img_back_day_rainy)
+img_back_night_rainy = Image.open("pics/backgrounds/night_rainy.jpg")
+img_back_night_rainy = img_back_night_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_rainynightImg = ImageTk.PhotoImage(img_back_night_rainy)
 ## Stormy Weather Background Image ##
-img_back_stormy = Image.open("pics/backgrounds/stormy.jpg")
-img_back_stormy = img_back_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_stormyImg = ImageTk.PhotoImage(img_back_stormy)
+img_back_day_stormy = Image.open("pics/backgrounds/day_stormy.jpg")
+img_back_day_stormy = img_back_day_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_stormydayImg = ImageTk.PhotoImage(img_back_day_stormy)
+img_back_night_stormy = Image.open("pics/backgrounds/night_stormy.jpg")
+img_back_night_stormy = img_back_night_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_stormynightImg = ImageTk.PhotoImage(img_back_night_stormy)
 ## Snowy Weather Background Image ##
-img_back_snowy = Image.open("pics/backgrounds/snowy.jpg")
-img_back_snowy = img_back_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_snowyImg = ImageTk.PhotoImage(img_back_snowy)
+img_back_day_snowy = Image.open("pics/backgrounds/day_snowy.jpg")
+img_back_day_snowy = img_back_day_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_snowydayImg = ImageTk.PhotoImage(img_back_day_snowy)
+img_back_night_snowy = Image.open("pics/backgrounds/night_snowy.jpg")
+img_back_night_snowy = img_back_night_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_snowynightImg = ImageTk.PhotoImage(img_back_night_snowy)
 ## Misty Weather Background Image ##
-img_back_misty = Image.open("pics/backgrounds/misty.jpg")
-img_back_misty = img_back_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
-back_mistyImg = ImageTk.PhotoImage(img_back_misty)
+img_back_day_misty = Image.open("pics/backgrounds/day_misty.jpg")
+img_back_day_misty = img_back_day_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_mistydayImg = ImageTk.PhotoImage(img_back_day_misty)
+img_back_night_misty = Image.open("pics/backgrounds/night_misty.jpg")
+img_back_night_misty = img_back_night_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_mistynightImg = ImageTk.PhotoImage(img_back_night_misty)
 ## Weather Back Button Image ##
 img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
 backsmallImg = ImageTk.PhotoImage(img_back_small)
@@ -2343,11 +2361,11 @@ class WeatherApp:
         self.root.title("Weather Forecast")
         self.backImg = backImg
         self.back_callback = back_callback
-
 	## Frame For Weather App Content ##
         self.frame = tk.Frame(self.root)
         #self.frame.place(x=0, y=0, relwidth=1, relheight=1)
         self.frame.pack(fill="both", expand=True)
+        self.frame.bind("<Configure>", lambda event: self.update_background_image())
 
         self.set_background()
 
@@ -2365,21 +2383,65 @@ class WeatherApp:
 
     def set_background(self):
         default_path = "pics/backgrounds/weather.jpg"
+        background_path = default_path
+
         try:
-           self.bg_image_original = Image.open(default_path)
+            # Get current weather condition and icon code
+            #condition, icon_code = self.get_current_weather_condition()
+            #background_path = self.get_background_path_for_condition(condition, icon_code)
+            condition, icon_code = self.get_current_weather_condition()
+            background_path = self.get_background_path_for_condition(condition, icon_code)
+
+            print(f"Detected weather condition: {condition}")
+            print(f"Icon Code: {icon_code}")
+
+            # Normalize condition and day/night
+            is_night = icon_code.endswith("n")
+            condition = condition.lower()
+
+            # Mapping for day conditions
+            condition_map = {
+                "clear": "clear",
+                "clouds": "cloudy",
+                "rain": "rain",
+                "drizzle": "rain",
+                "thunderstorm": "stormy",
+                "snow": "snowy",
+                "mist": "foggy",
+                "fog": "foggy",
+                "haze": "foggy",
+                "smoke": "foggy",
+                "dust": "foggy",
+                "sand": "foggy",
+                "ash": "foggy",
+                "squall": "stormy",
+                "tornado": "stormy"
+            }
+
+            condition_key = condition_map.get(condition, icon_code, "weather")
+            if is_night:
+                # Apply your preferred naming pattern
+                if condition_key == "cloudy":
+                    condition_key = "night_cloudy"
+                elif condition_key == "snowy":
+                    condition_key = "night_snowy"
+                else:
+                    condition_key = f"night_{condition_key}"
+
+            background_path = f"pics/backgrounds/{condition_key}.jpg"
+
+            print(f"Using Background: {background_path}")
+
+            # Load the image
+            self.bg_image_original = Image.open(background_path)
+            self.update_background_image()
+            return
+
         except Exception as e:
-           print(f"Failed to Load Default Background: {e}")
-           self.bg_image_original = None
-
-#        self.bg_image_original = Image.open("pics/backgrounds/weather.jpg")
-        self.bg_label = tk.Label(self.frame)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
-
-        self.root.update_idletasks()
-        self.root.after(100, self.update_background_image)
-        self.root.bind("<Configure>", self.on_resize)
-        #self.frame.bind("<Configure>", self.on_resize)
+            print(f"Error setting background image: {e}")
+            print(f"Falling back to default background: {default_path}")
+            self.bg_image_original = Image.open(default_path)
+            self.update_background_image()
 
     def on_resize(self, event):
         #if hasattr(self, "last_width") and hasattr(self, "last_height"):
@@ -2392,44 +2454,51 @@ class WeatherApp:
 
     def update_background_image(self):
         if not hasattr(self, 'bg_image_original'):
+            print("No original background image loaded.")
             return
 
-        width = self.frame.winfo_width()
-        height = self.frame.winfo_height()
+        try:
+            window_width = self.frame.winfo_width()
+            window_height = self.frame.winfo_height()
 
-        if width > 1 and height > 1:
-            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            if window_width < 10 or window_height < 10:
+                return  # Don't resize to invalid dimensions
+
+            resized_image = self.bg_image_original.resize((window_width, window_height), Image.LANCZOS)
             self.backgroundImg = ImageTk.PhotoImage(resized_image)
 
-            if hasattr(self, 'bg_label') and self.bg_label.winfo_exists():
-                self.bg_label.config(image=self.backgroundImg)
-            else:
-                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
+            if not hasattr(self, 'bg_label') or not self.bg_label.winfo_exists():
+                self.bg_label = tk.Label(self.frame)
+                self.bg_label.place(relwidth=1, relheight=1)
 
-            self.bg_label.image = self.backgroundImg
+            self.bg_label.configure(image=self.backgroundImg)
+            self.bg_label.image = self.backgroundImg  # Keep reference
 
-    def get_background_path_for_condition(self, condition):
-        condition = condition.lower()
+        except Exception as e:
+            print("Error updating background image:", e)
 
-        if "clear" in condition:
-            path = "pics/backgrounds/clear.jpg"
-        elif "cloud" in condition:
-            path = "pics/backgrounds/cloudy.jpg"
-        elif "rain" in condition:
-            path = "pics/background/rainy.jpg"
-        elif "thunderstorm" in condition or "storm" in condition:
-            path = "pics/backgrounds/stormy.jpg"
-        elif "snow" in condition:
-            path = "pics/backgrounds/snowy.jpg"
-        elif "mist" in condition or "fog" in condition:
-            path = "pics/backgrounds/misty.jpg"
+    def get_background_path_for_condition(self, condition, icon_code):
+        condition = condition.lower().replace(" ", "_")
+        time_of_day = "night" if icon_code.endswith("n") else "day"
+
+        ## Adjust condition naming
+        condition = condition.replace("clouds", "cloudy")
+        condition = condition.replace("snow", "snowy")
+
+        base_path = "pics/backgrounds"
+        preferred = f"{base_path}/{time_of_day}_{condition}.jpg"
+        fallback = f"{base_path}/{time_of_day}_clear.jpg"
+        default = f"{base_path}/weather.jpg"
+
+        if os.path.exists(preferred):
+            print(f"Using Background: {preferred}")
+            return preferred
+        elif os.path.exists(fallback):
+            print(f"Falling back to: {fallback}")
+            return fallback
         else:
-            path = "pics/backgrounds/weather.jpg"
-
-        print(f"Using Background: {path}")
-        return path
+            print(f"Falling back to default: {default}")
+            return default
 
     def set_background_from_path(self, image_path):
         print(f"Loading background image from: {image_path}")
@@ -2442,24 +2511,87 @@ class WeatherApp:
             self.update_background_image()
 
     def get_current_weather_condition(self):
+        if not hasattr(self, 'city'):
+            self.city = CITY
+        if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        condition = data['weather'][0]['main']
+        icon_code = data['weather'][0]['icon']
+        return condition, icon_code
+
+    def load_background_image(self, primary_path, condition=None, is_night=False):
+        """
+        Try to load the primary background image.
+        If it fails, try the day_[condition].jpg fallback.
+        If that fails, fall back to day_clear.jpg as final resort.
+        """
+        def try_load(path):
+            try:
+                print(f"Attempting to load background: {path}")
+                return Image.open(path)
+            except Exception as e:
+                print(f"Failed to load image: {path}")
+                print(e)
+                return None
+
+        # 1. Try the intended background image
+        image = try_load(primary_path)
+
+        # 2. If failed, try day_[condition].jpg
+        if image is None and condition:
+            fallback_day_path = f"pics/backgrounds/day_{condition.lower()}.jpg"
+            image = try_load(fallback_day_path)
+
+        # 3. If still failed, use day_clear.jpg
+        if image is None:
+            fallback_clear = "pics/backgrounds/day_clear.jpg"
+            image = try_load(fallback_clear)
+
+        # 4. Final fallback: gray image
+        if image is None:
+            print("All fallbacks failed. Using solid gray background.")
+            image = Image.new("RGB", (800, 600), color="gray")
+
+        # Store original image and update display
+        self.bg_image_original = image
+        self.update_background_image()
+
+    def update_background_image(self):
+        """
+        Resize the loaded background image to the window size and apply it to the background label.
+        """
+        if not hasattr(self, 'bg_image_original'):
+            print("No original background image loaded.")
+            return
+
         try:
-            if not hasattr(self, 'city'):
-                self.city = "Shreveport, US"
-            if not hasattr(self, 'api_key'):
-                self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            window_width = self.frame.winfo_width()
+            window_height = self.frame.winfo_height()
 
-            url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
-            response = requests.get(url)
-            response.raise_for_status()
-            data = response.json()
+            # Fallback to default size if dimensions aren't ready yet
+            if window_width < 10 or window_height < 10:
+                window_width, window_height = 800, 600
 
-            condition = data['weather'][0]['main'].lower()
-            print(f"Detected weather condition: {condition}")
-            return condition
+            resized_image = self.bg_image_original.resize((window_width, window_height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            if hasattr(self, 'bg_label'):
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+            else:
+                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+                self.bg_label.place(relwidth=1, relheight=1)
+                self.bg_label.image = self.backgroundImg
 
         except Exception as e:
-            print("Failed to get weather condition for background:", e)
-            return "default"
+            print("Error updating background image:", e)
+
 
     def clear_screen(self):
         #for widget in self.root.winfo_children():
@@ -2471,8 +2603,8 @@ class WeatherApp:
 #        self.set_background()
 
         # Load weather condition-based background BEFORE creating bg_label
-        condition = self.get_current_weather_condition()
-        background_path = self.get_background_path_for_condition(condition)
+        condition, icon_code = self.get_current_weather_condition()
+        background_path = self.get_background_path_for_condition(condition, icon_code)
         self.set_background_from_path(background_path)
 
         ## Set Background Image and Place in the Background ##
@@ -2577,7 +2709,7 @@ class WeatherApp:
             icon_img = self.get_icon(icon_code)
 
             # Set background based on condition
-            background_path = self.get_background_path_for_condition(condition)
+            background_path = self.get_background_path_for_condition(condition, icon_code)
             self.set_background_from_path(background_path)
 
             if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
