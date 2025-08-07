@@ -474,9 +474,9 @@ class ExpirationApp:
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
         self.init_camera()
         self.search_var = tk.StringVar()
-        self.create_home_screen()
         self.load_settings()
         self.apply_settings()
+        self.create_home_screen()
 #        self.weather_ui()
 
     ## Create Background ##
@@ -485,28 +485,81 @@ class ExpirationApp:
 #        background.place(x=0, y=0, relwidth=1, relheight=1)
 #        background.lower()
 
-    def set_background(self):
-        default_path = "pics/backgrounds/back.jpg"
-        background_path = default_path
+    def set_background(self, path=None):
+        # Fallback to saved setting
+        if not path:
+            path = getattr(self, "current_background", "back")
 
-        try:
-            self.bg_image_original = Image.open(background_path)
-        except Exception as e:
-            print(f"Error loading background image: {e}")
-            return
+        # Use default image for keyword "back"
+        if path == "back":
+            path = "pics/backgrounds/back.jpg"
 
-        # Safely destroy old label if it exists
-        if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+        # Remove existing background label if needed
+        if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
             self.bg_label.destroy()
 
-        # Always create a new background label
-        self.bg_label = tk.Label(self.root)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
+        # Handle color backgrounds
+        if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
+            self.root.configure(bg=path)
+            self.bg_label = None
+        else:
+            try:
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Background image not found: {path}")
 
-        self.root.bind("<Configure>", self.on_resize)
+                self.bg_image_original = Image.open(path)
+                self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
 
-        self.update_background_image()
+                # Only bind resize once (optional guard)
+                if not hasattr(self, "_resize_bound") or not self._resize_bound:
+                    self.root.bind("<Configure>", self.on_resize)
+                    self._resize_bound = True
+
+            except Exception as e:
+                print(f"Error loading background image: {e}")
+                self.root.configure(bg="white")
+
+    def set_background_old(self, path=None):
+        # Fallback to saved setting
+        if not path:
+            path = getattr(self, "current_background", "back")
+
+        # Use default image for keyword "back"
+        if path == "back":
+            path = "pics/backgrounds/back.jpg"
+
+        # Remove existing background label if needed
+        if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
+            self.bg_label.destroy()
+
+        # Handle color backgrounds
+        if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
+            self.root.configure(bg=path)
+            self.bg_label = None
+        else:
+            try:
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Background image not found: {path}")
+
+                self.bg_image_original = Image.open(path)
+                self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+                # Only bind resize once (optional guard)
+                if not hasattr(self, "_resize_bound") or not self._resize_bound:
+                    self.root.bind("<Configure>", self.on_resize)
+                    self._resize_bound = True
+
+            except Exception as e:
+                print(f"Error loading background image: {e}")
+                self.root.configure(bg="white")
 
     def on_resize(self, event):
         self.update_background_image()
@@ -519,9 +572,13 @@ class ExpirationApp:
             resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
             self.backgroundImg = ImageTk.PhotoImage(resized_image)
 
-            if hasattr(self, 'bg_label') and self.bg_label.winfo_exists():
-                self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
+            if hasattr(self, 'bg_label') and self.bg_label is not None:
+                try:
+                    if self.bg_label.winfo_exists():
+                        self.bg_label.config(image=self.backgroundImg)
+                        self.bg_label.image = self.backgroundImg
+                except tk.TclError:
+                    pass
 
     def apply_settings(self):
         global APP_FONT
@@ -1330,9 +1387,108 @@ class ExpirationApp:
     def open_settings_page(self):
         self.clear_screen()
 
+        # Apply dynamic background based on current setting or default
+        background_path = self.current_background
+        if background_path == "back":
+            background_path = "pics/backgrounds/settings.jpg"
+        elif not os.path.exists(background_path) and not background_path.endswith(".jpg"):
+            background_path = f"pics/backgrounds/{background_path}.jpg"
+
+        self.set_background(background_path)
+
         # Title
         tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
-                 pady=10).pack()
+                 bg="white", pady=10).pack()
+
+        frame = tk.Frame(self.root, padx=20, pady=20, bg="white")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Font selection
+        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg="white").grid(row=0, column=0, sticky="w")
+        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
+        self.font_var = tk.StringVar(value=self.current_font)
+        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
+        font_menu.grid(row=0, column=1, sticky="ew")
+
+        # Background selection
+        tk.Label(frame, text="Select Background Theme:", font=(self.current_font, 14), bg="white").grid(row=1, column=0, sticky="w")
+        backgrounds = ["back.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "black"]
+        self.bg_var = tk.StringVar(value=self.current_background)
+        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
+        bg_menu.grid(row=1, column=1, sticky="ew")
+
+        # Icon selection
+        tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14), bg="white").grid(row=2, column=0, sticky="w")
+        icons = ["Icon1.png", "Icon2.png", "Icon3.png"]
+        self.icon_var = tk.StringVar(value=self.current_icon)
+        icon_menu = tk.OptionMenu(frame, self.icon_var, *icons, command=self.preview_settings)
+        icon_menu.grid(row=2, column=1, sticky="ew")
+
+        # Dark/Light mode toggle
+        tk.Label(frame, text="Dark Mode:", font=(self.current_font, 14), bg="white").grid(row=3, column=0, sticky="w")
+        self.dark_mode_var = tk.BooleanVar(value=self.dark_mode)
+        dark_toggle = tk.Checkbutton(frame, variable=self.dark_mode_var, command=self.preview_settings, bg="white")
+        dark_toggle.grid(row=3, column=1, sticky="w")
+
+        # Live preview label
+        self.preview_label = tk.Label(frame, text="Sample Text", font=(self.font_var.get(), 14),
+                                      bg=self.bg_var.get() if self.bg_var.get() in ["white", "black", "lightgray"] else "white")
+        self.preview_label.grid(row=4, column=0, columnspan=2, pady=20)
+
+        # Buttons
+        button_frame = tk.Frame(frame, bg="white")
+        button_frame.grid(row=5, column=0, columnspan=2, pady=10)
+
+        save_btn = tk.Button(button_frame, text="Save", command=self.save_settings_and_apply)
+        save_btn.pack(side=tk.LEFT, padx=10)
+
+        cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen)
+        cancel_btn.pack(side=tk.LEFT, padx=10)
+
+    def preview_settings(self, *_):
+        font = self.font_var.get()
+        bg = self.bg_var.get()
+        icon = self.icon_var.get()
+        dark = self.dark_mode_var.get()
+
+        # Update label preview
+        self.preview_label.config(font=(font, 14))
+
+        if bg in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
+            self.preview_label.config(bg=bg)
+
+        # Live background update if theme was changed
+        bg_path = bg
+        if bg == "settings":
+            bg_path = "pics/backgrounds/settings.jpg"
+        elif not os.path.exists(bg_path) and not bg_path.endswith(".jpg"):
+            bg_path = f"pics/backgrounds/{bg}.jpg"
+
+        if os.path.exists(bg_path):
+            self.set_background(bg_path)
+
+    def save_settings_and_apply(self):
+        self.current_font = self.font_var.get()
+        self.current_background = self.bg_var.get()
+        self.current_icon = self.icon_var.get()
+        self.dark_mode = self.dark_mode_var.get()
+
+        self.save_settings_to_file()
+        self.apply_settings()
+
+    def open_settings_page_old(self):
+        self.clear_screen()
+
+        # Apply dynamic background based on current setting or default
+        background_path = self.current_background
+        if background_path == "back":
+            background_path = "pics/backgrounds/settings.jpg"
+
+        self.set_background(background_path)
+
+        # Title
+        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
+             bg="white", pady=10).pack()
 
         frame = tk.Frame(self.root, padx=20, pady=20)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -1897,13 +2053,28 @@ class ExpirationApp:
                         name = item.get("name")
                         expiry_str = item.get("expiration_date")
                         if expiry_str:
-                            expiry = datetime.strptime(expiry_str, "%Y-%m-%d")
-                            # You may have a custom Item class
+                            # Ensure expiry_str is a string before parsing
+                            if isinstance(expiry_str, datetime):
+                                expiry = expiry_str
+                            else:
+                                expiry = datetime.strptime(expiry_str, "%Y-%m-%d")
                             self.items.append(Item(name, expiry))
             except Exception as e:
                 print(f"[Error] Failed to load items.json: {e}")
         else:
             print("[Info] items.json does not exist.")
+
+    def save_items(self):
+        try:
+            with open("items.json", "w") as f:
+                json.dump(
+                    [{"name": item.name, "expiration_date": item.expiration_date.strftime("%Y-%m-%d")}
+                     for item in self.items],
+                    f,
+                    indent=2
+                )
+        except Exception as e:
+            print(f"[Error] Failed to save items.json: {e}")
 
     ## Loads items from file
     def load_items_old(self):
@@ -1922,20 +2093,6 @@ class ExpirationApp:
             print(f"Error loading items.json: {e}")
             messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
             self.items = []
-
-    def save_items(self):
-        try:
-            with open("items.json", "w") as f:
-                json.dump([
-                    {
-                        "name": item.name,
-                        "expiration_date": item.expiration_date.strftime("%Y-%m-%d")
-                    }
-                    for item in self.items
-                ], f, indent=2)
-            print("[Save] items.json saved successfully.")
-        except Exception as e:
-            print(f"[Error] Failed to save items.json: {e}")
 
     ## Saves items to file ##
     def save_items_old(self):
@@ -2324,6 +2481,9 @@ class WeatherApp:
         #self.update_weather()
 
     def set_background(self):
+#    def set_background(self, path=None):
+#        if path is None:
+#            path = self.current_background or "pics/backgrounds/back.jpg"
         default_path = "pics/backgrounds/weather.jpg"
         background_path = default_path
 
@@ -2375,7 +2535,7 @@ class WeatherApp:
             print(f"Using Background: {background_path}")
 
             # Load the image
-            self.bg_image_original = Image.open(background_path)
+            self.bg_image_original = Image.open(path)
             self.update_background_image()
             return
 
@@ -3249,8 +3409,28 @@ class MusicApp:
 
         self.create_ui()
 
+    def set_background_new(self, path=None):
+        try:
+            if path is None:
+                path = self.current_background or "pics/backgrounds/back.jpg"
+
+            # Fix: If user picked a named theme like 'black', turn it into a real path
+            if not os.path.exists(path) and not path.endswith(".jpg"):
+                path = f"pics/backgrounds/{path}.jpg"
+
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Background image not found: {path}")
+
+            self.bg_image_original = Image.open(path)
+            self.current_background = path  # persist path
+
+            # ... continue with bg_label logic ...
+            # create bg_label, resize, bind etc.
+        except Exception as e:
+            print(f"Error loading background image: {e}")
+
     def set_background(self):
-        self.bg_image_original = Image.open("pics/icons/back.jpg")  # Or whichever image applies
+        self.bg_image_original = Image.open("pics/backgrounds/back.jpg")  # Or whichever image applies
         self.bg_label = tk.Label(self.frame)  # Assuming self.frame is your container
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
