@@ -426,6 +426,11 @@ class ExpirationApp:
 #        background.lower()
 
     def set_background(self):
+        # Destroy any existing background labels
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Label) and widget.winfo_y() == 0 and widget.winfo_x() == 0:
+                widget.destroy()
+
         self.bg_image_original = Image.open("pics/back.jpg")
         self.bg_label = tk.Label(self.root)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -1093,8 +1098,7 @@ class ExpirationApp:
 
         expiring_items = [
             item for item in self.items
-            if hasattr(item, "expiry") and item.expiry
-            and datetime.strptime(item["expiry"], "%Y-%m-%d") <= soon
+            if item.expiration_date <= soon
         ]
 
         if not expiring_items:
@@ -1102,8 +1106,8 @@ class ExpirationApp:
                      font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in expiring_items:
-                name = getattr(item, "name", "Unknown")
-                expiry = getattr(item, "expiry", "Unknown")
+                name = item.name
+                expiry = item.expiration_date.strftime("%Y-%m-%d")
                 label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
                                  font=APP_FONT, bg="white", anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
