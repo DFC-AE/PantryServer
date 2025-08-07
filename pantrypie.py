@@ -292,11 +292,11 @@ nprImg = ImageTk.PhotoImage(img_npr)
 img_pod = Image.open("pics/icons/podcast.png").resize((100, 100), Image.LANCZOS)
 podImg = ImageTk.PhotoImage(img_pod)
 ## Save Image ##
-img_save = Image.open("pics/icons/save.jpg")
+img_save = Image.open("pics/icons/save.png")
 img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
 saveImg = ImageTk.PhotoImage(img_save)
 ## Scan Image ##
-img_scan = Image.open("pics/icons/scan.jpg")
+img_scan = Image.open("pics/icons/scan.png")
 img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
 scanImg = ImageTk.PhotoImage(img_scan)
 ## Settings Image ##
@@ -606,6 +606,41 @@ class ExpirationApp:
         global APP_FONT
         APP_FONT = (self.current_font, 12)
         self.create_home_screen()
+
+    def resize_background(self, event):
+        if hasattr(self, "bg_image_original") and self.bg_image_original:
+            new_width = event.width
+            new_height = event.height
+            resized = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized)
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
+            self.bg_canvas.coords(self.bg_bg_label, 0, 0)
+            # Keep content frame at top left
+            self.bg_canvas.coords(self.content_window, 0, 0)
+
+    def resize_background_old(self, event):
+        if not hasattr(self, "bg_image_original"):
+            return
+
+        canvas_width = event.width
+        canvas_height = event.height
+
+        # Maintain aspect ratio while filling the whole area
+        img_width, img_height = self.bg_image_original.size
+        scale = max(canvas_width / img_width, canvas_height / img_height)
+        new_width = int(img_width * scale)
+        new_height = int(img_height * scale)
+
+        resized_img = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+        self.bg_image = ImageTk.PhotoImage(resized_img)
+
+        # Center image inside canvas
+        self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
+        self.bg_canvas.coords(
+            self.bg_bg_label,
+            (canvas_width - new_width) // 2,
+            (canvas_height - new_height) // 2
+        )
 
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
@@ -2201,58 +2236,50 @@ class ExpirationApp:
                 pass
 
     def add_item_popup(self):
-        self.clear_screen()
-        self.set_background()
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        tk.Label(self.root, text="Add New Item", font=APP_FONT_TITLE).pack(pady=10)
+        # --- BACKGROUND SETUP ---
+        self.bg_image_original = Image.open("pics/backgrounds/jars.jpg")
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
 
-        tk.Label(self.root, text="Enter Item Name:", font=APP_FONT).pack(pady=5)
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        self.name_entry = tk.Entry(self.root)
-        self.name_entry.pack(pady=5)
-        self.name_entry.bind(
-            "<Button-1>",
-            lambda e: OnScreenKeyboard(self.root, self.name_entry)
-        )
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+        self.bg_canvas.bind("<Configure>", self.resize_background)
 
-        label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
-        label_code.pack(pady=5)
+        # Transparent container over background
+        self.content_frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+        self.content_window = self.bg_canvas.create_window(0, 0, anchor="nw", window=self.content_frame)
 
-        self.barcode_entry = tk.Entry(self.root)
-        self.barcode_entry.pack(pady=5)
-        self.barcode_entry.bind(
-            "<Button-1>",
-            lambda e: OnScreenKeyboard(self.root, self.barcode_entry)
-        )
+        # --- HEADER ---
+        tk.Label(self.content_frame, text="Add New Item", font=APP_FONT_TITLE_BOLD,
+                 bg="black", fg="white").pack(pady=10)
 
-        # Allow barcode to pre-fill name
-        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry())
-        #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
-        #barcode_btn.pack(pady=10)
-
-        # Main layout frame to hold left, center, and right sections
-        main_frame = tk.Frame(self.root)
+        # --- MAIN LAYOUT ---
+        main_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-        # Left panel: Expiring Soon
-        left_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        # LEFT PANEL: Expiring Soon
+        left_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10)
 
-        tk.Label(left_frame, text="Expiring Soon", font=APP_FONT_TITLE).pack(pady=5)
-        self.expiring_listbox = tk.Listbox(left_frame, font=APP_FONT, height=10)
+        tk.Label(left_frame, text="Expiring Soon", font=APP_FONT_TITLE,
+                 bg="black", fg="white").pack(pady=5)
+        self.expiring_listbox = tk.Listbox(left_frame, font=APP_FONT, height=20)
         self.expiring_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
 
-        # Populate listbox with dummy data for now
         for item in self.get_expiring_items():
             self.expiring_listbox.insert(tk.END, item)
 
-        center_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
-        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # CENTER PANEL: Calendar
+        center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
+        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
-        # Expiration date picker (unchanged)
-        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
-#        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
-#        self.date_picker.pack(pady=5)
+        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT,
+                 bg="black", fg="white").pack(pady=5)
 
         self.cal = Calendar(
             center_frame,
@@ -2268,79 +2295,64 @@ class ExpirationApp:
             othermonthwebackground="lightgray",
             othermonthbackground="white"
         )
-        #self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
         self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20)
 
-        #self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
-        #            background="orange", disabledbackground="orange",
-        #            bordercolor="gray", headersbackground="orange", normalbackground="white")
-        #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
-
-        # Right panel: Item details
-        right_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
+        # RIGHT PANEL: Item Details
+        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
-        tk.Label(right_frame, text="Item Name:", font=APP_FONT).pack(pady=5)
+        tk.Label(right_frame, text="Enter Item Name:", font=APP_FONT,
+                 bg="black", fg="white").pack(pady=5)
         self.name_entry = tk.Entry(right_frame)
         self.name_entry.pack(pady=5)
-        self.name_entry.bind(
-            "<Button-1>",
-            lambda e: OnScreenKeyboard(self.root, self.name_entry)
-        )
+        self.name_entry.bind("<Button-1>",
+                             lambda e: OnScreenKeyboard(self.content_frame, self.name_entry))
 
-        tk.Label(right_frame, text="Enter Barcode Number:", font=APP_FONT).pack(pady=5)
+        tk.Label(right_frame, text="Enter Barcode Number:", font=APP_FONT,
+                 bg="black", fg="white").pack(pady=5)
         self.barcode_entry = tk.Entry(right_frame)
         self.barcode_entry.pack(pady=5)
+        self.barcode_entry.bind("<Button-1>",
+                                lambda e: OnScreenKeyboard(self.content_frame, self.barcode_entry))
 
-        scan_btn = tk.Button(self.root,
-		#text="Scan",
-		cursor="hand2",
-		image=scanImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		#command=lambda: self.detect_barcode("codes/barcode.png"))
-		#command=lambda: self.detect_barcode_from_camera())
-		command=lambda: self.show_camera())
+        # Submit button
+        submit_btn = tk.Button(
+            right_frame, image=saveImg, cursor="hand2",
+            bg="black", fg="white", command=self.save_items
+        )
+        submit_btn.pack(pady=10)
+        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
 
-        scan_btn.pack(pady=5)
-        ToolTip(scan_btn, "Click to Show Scanned Barcode")
-
-        save_btn = tk.Button(self.root,
-		#text="Save",
-		cursor="hand2",
-		image=saveImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.save_new_item)
-        save_btn.pack(pady=5)
-        ToolTip(save_btn, "Click to Save Data")
-
-        mode_btn = tk.Button(self.root,
-		#text="Save",
-		cursor="hand2",
-		image=lightImg,
-		#command=lambda: self.save_new_item).pack(pady=5)
-		command=self.toggle_dark_mode)
-        mode_btn.pack(pady=5)
-        ToolTip(mode_btn, "Click to Toggle Light/Dark Mode")
-
-        back_btn = tk.Button(self.root,
-		#text="Back",
-		cursor="hand2",
-		image=backImg,
-		#command=self.create_tracker_ui(None)).pack(pady=5)
-		#command=lambda: self.create_tracker_ui(None))
-		#command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
-		command=lambda: [self.stop_camera(), self.create_home_screen(None)])
-        #back_btn.pack(pady=5)
-        back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
+        # Back button
+        backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
+        back_btn = tk.Button(
+            self.content_frame,
+            image=backImg,
+            bg="orange",
+            bd=0,
+            highlightthickness=0,
+            command=lambda: self.create_home_screen(None)
+        )
+        back_btn.image = backImg
+        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
-        # Weather Button Frame (Top-left)
-        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
-        self.weather_icon_frame.place(x=10, y=10)
-        self.update_weather()
-        self.weather_icon_frame.lift()
+        if not hasattr(self, "current_weather_icon"):
+             self.update_weather()
         if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
-             self.weather_button.lift()
+             weather_btn = self.weather_button
+        else:
+             weather_btn = tk.Button(
+                  self.content_frame,
+                  image=self.current_weather_icon,  # assuming you store the icon here
+                  command=self.open_weather_ui,
+                  bg="black",
+                  borderwidth=0
+                  )
+             self.weather_button = weather_btn
+
+        weather_btn.place(relx=0.5, y=10, anchor="n")
+        ToolTip(weather_btn, "Click to Open the Weather App")
 
     def get_expiring_items(self):
         # Placeholder logic, replace with actual item expiration check
@@ -2393,6 +2405,9 @@ class ExpirationApp:
 #        self.camera_label.pack(pady=10)
 #        self.camera_label.pack(pady=10, side="right")
 #        self.camera_label.grid(row=0, column=0, columnspan=2, pady=10)
+
+        self.container_frame = tk.Frame(self.root)
+        self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
     def save_new_item(self):
