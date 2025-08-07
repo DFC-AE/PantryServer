@@ -236,6 +236,9 @@ cardImg = ImageTk.PhotoImage(img_card)
 img_light = Image.open("pics/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
+## Food Button Image ##
+img_food = Image.open("pics/food.jpg").resize((100, 100), Image.LANCZOS)
+foodImg = ImageTk.PhotoImage(img_food)
 ## Home Image ##
 img_home = Image.open("pics/home.png")
 img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -932,56 +935,6 @@ class ExpirationApp:
         #            bordercolor="gray", headersbackground="orange", normalbackground="white")
         #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
 
-        # --- Random Recipe Section ---
-#        recipe_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.RIDGE)
-#        recipe_frame.pack(pady=10, padx=20)
-
-#        recipe_title = tk.Label(recipe_frame, text="Random Recipe Idea", font=APP_FONT, bg="white")
-#        recipe_title.pack(pady=(10, 5))
-
-#        self.recipe_img_label = tk.Label(recipe_frame, bg="white")
-#        self.recipe_img_label.pack(pady=5)
-
-#        self.recipe_text = tk.Label(recipe_frame, text="Loading recipe...", wraplength=400, bg="white", font=APP_FONT, justify="left")
-#        self.recipe_text.pack(padx=10, pady=5)
-
-#        def fetch_random_recipe():
-#            try:
-#                url = "https://www.themealdb.com/api/json/v1/1/random.php"
-#                response = requests.get(url)
-#                data = response.json()
-
-#                meal = data['meals'][0]
-#                name = meal['strMeal']
-#                category = meal['strCategory']
-#                instructions = meal['strInstructions'][:200] + "..."
-#                image_url = meal['strMealThumb']
-#                link = meal['strSource'] or meal['strYoutube'] or "https://www.themealdb.com"
-
-#                recipe_text = f"{name} ({category})\n\n{instructions}"
-#                self.recipe_text.config(text=recipe_text)
-
-                # Load and display image
-#                img_data = requests.get(image_url, timeout=5).content
-#                img = Image.open(BytesIO(img_data)).resize((200, 200))
-#                photo = ImageTk.PhotoImage(img)
-#                self.recipe_img_label.config(image=photo)
-#                self.recipe_img_label.image = photo  # Prevent GC
-
-                # Clickable image opens recipe link
-#                self.recipe_img_label.bind("<Button-1>", lambda e, url=link: webbrowser.open(url))
-#                self.recipe_img_label.config(cursor="hand2")
-
-#            except Exception as e:
-#                self.recipe_text.config(text="Unable to load recipe.")
-#                self.recipe_img_label.config(image='', text="[No image]", fg="gray")
-
-        # Refresh button
-#        refresh_btn = tk.Button(recipe_frame, text="New Recipe", command=fetch_random_recipe, bg="#f0f0f0", relief=tk.RAISED)
-#        refresh_btn.pack(pady=5)
-
-#        fetch_random_recipe()
-
         # Buttons side by side
         button_frame = tk.Frame(self.root)
         button_frame.pack(pady=20)
@@ -1023,24 +976,10 @@ class ExpirationApp:
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
-        # Unit Converter Panel
-        #converter_frame = tk.Frame(self.root, bd=2, relief="groove")
-        #converter_frame.place(relx=0.75, rely=0.2, relwidth=0.22, relheight=0.5)
-
-#        tk.Label(converter_frame, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=10)
-
-        # Input field
-        #self.convert_input = tk.Entry(converter_frame, font=APP_FONT, justify="center")
-        #self.convert_input.pack(pady=5)
-        #self.convert_input.bind("<KeyRelease>", lambda e: self.perform_conversion())
-
-        # From unit dropdown
-        #self.from_unit = tk.StringVar(value="grams")
-        #tk.OptionMenu(converter_frame, self.from_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
-
-        # Result label
-        #self.convert_result = tk.Label(converter_frame, text="", font=APP_FONT, bg="white")
-        #self.convert_result.pack(pady=5)
+        refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        refresh_btn.image = foodImg
+        refresh_btn.pack(side=tk.LEFT)
+        ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
@@ -1266,53 +1205,14 @@ class ExpirationApp:
         tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
                  font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
 
-        ## Side ##
-        # Horizontal container for image and basic info
-#        content_frame = tk.Frame(scrollable_frame, bg="white")
-#        content_frame.pack(fill=tk.X, padx=10, pady=10)
+        ## Meal name
+#        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
-        # Meal image (LEFT)
-#        try:
-#            image_url = meal["strMealThumb"]
-#            img_data = requests.get(image_url, timeout=5).content
-#            img = Image.open(BytesIO(img_data)).resize((200, 200))
-#            photo = ImageTk.PhotoImage(img)
-
-#            self.recipe_full_image_label = tk.Label(content_frame, image=photo, bg="white")
-#            self.recipe_full_image_label.image = photo  # Prevent GC
-#            self.recipe_full_image_label.pack(side=tk.LEFT, padx=10)
-#        except Exception as e:
-#            print("Error loading image:", e)
-
-        # Meal name and category + rating (RIGHT)
-#        text_frame = tk.Frame(content_frame, bg="white")
-#        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-#        tk.Label(text_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(anchor="w", pady=5)
-#        tk.Label(text_frame, text=f"Category: {meal['strCategory']}   {rating}", font=APP_FONT, bg="white").pack(anchor="w")
-
-         ## Above ##
-#        # Meal image
-#        try:
-#            image_url = meal["strMealThumb"]
-#            img_data = requests.get(image_url, timeout=5).content
-#            img = Image.open(BytesIO(img_data)).resize((250, 250))
-#            photo = ImageTk.PhotoImage(img)
-
-#            self.recipe_full_image_label = tk.Label(scrollable_frame, image=photo, bg="white")
-#            self.recipe_full_image_label.image = photo  # Prevent garbage collection
-#            self.recipe_full_image_label.pack(pady=10)
-#        except Exception as e:
-#            print("Error loading image:", e)
-
-        # Meal name
-        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
-
-        # Category and rating (simulated rating)
+        ## Category and rating (simulated rating)
         #rating = "4/5"
-        rating = random.uniform(3.5, 5.0)
-        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
-                 font=APP_FONT, bg="white").pack(pady=5)
+#        rating = random.uniform(3.5, 5.0)
+#        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
+#                 font=APP_FONT, bg="white").pack(pady=5)
 
         tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
         for i in range(1, 21):
