@@ -374,6 +374,14 @@ def restart_program():
 #root.bind('<Prior>', lambda e: restart_program())
 root.bind('<Home>', lambda e: restart_program())
 
+# Start the webview event loop in a separate thread
+#def start_webview_loop():
+#    webview.create_window("Browser Placeholder", "https://example.com", hidden=True)
+#    webview.start(debug=True)
+
+#webview_thread = threading.Thread(target=start_webview_loop, daemon=True)
+#webview_thread.start()
+
 ######################## ------- Item Model ------- ################################
 class Item:
     def __init__(self, name, expiration_date, nutrition_info=None):
@@ -519,6 +527,30 @@ class ExpirationApp:
         global APP_FONT
         APP_FONT = (self.current_font, 12)
         self.create_home_screen()
+
+    def open_in_app_browser(self, url):
+        # Hide the main window
+        self.root.withdraw()
+
+        # Create the browser window first
+        window = webview.create_window("Recipe", url, width=960, height=600)
+
+        # Define a function that will run after the webview window is closed
+        def after_browser():
+            self.root.deiconify()
+            self.clear_screen()
+            self.create_home_screen()
+
+        # Start the webview, blocking until the user closes it
+        webview.start(func=after_browser, gui='gtk', debug=False)
+
+    def open_in_app_browser_old(self, url):
+        if webview.windows:
+            def create_browser_window():
+                webview.create_window("Recipe", url, width=960, height=540)
+
+            # Start pywebview on the main thread and only once
+            webview.start(create_browser_window)
 
     def open_camera_ui(self):
         self.clear_screen()
@@ -941,10 +973,10 @@ class ExpirationApp:
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
-        refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
-        refresh_btn.image = foodImg
-        refresh_btn.pack(side=tk.LEFT)
-        ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
+        #refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        #refresh_btn.image = foodImg
+        #refresh_btn.pack(side=tk.LEFT)
+        #ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
@@ -1064,11 +1096,14 @@ class ExpirationApp:
         self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
                                           cursor="hand2", bg="white")
         self.recipe_link_label.pack(pady=5)
-        self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
+        #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
+        self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
 
         # Refresh button
-        refresh_btn = tk.Button(panel, text="New Recipe", command=self.load_random_recipe)
+        #refresh_btn = tk.Button(panel, cursor="hand2", image="refreshImg", command=self.load_random_recipe)
+        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
         refresh_btn.pack(pady=5)
+        ToolTip(refresh_btn, "Click to Load a New Recipe")
 
             # Load the first recipe
         self.load_random_recipe()
@@ -1094,7 +1129,9 @@ class ExpirationApp:
             self.recipe_image_label.config(cursor="hand2")
 
             self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
-            self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
+            #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
+            #self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
+            self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(instructions))
 
             img_data = requests.get(image_url, timeout=5).content
             img = Image.open(BytesIO(img_data)).resize((200, 200))
