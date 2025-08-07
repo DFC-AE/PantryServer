@@ -529,28 +529,25 @@ class ExpirationApp:
         self.create_home_screen()
 
     def open_in_app_browser(self, url):
-        # Hide the main window
+        # Get the current size of the Tkinter window
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+
+        # Hide the main Tkinter window
         self.root.withdraw()
 
-        # Create the browser window first
-        window = webview.create_window("Recipe", url, width=960, height=600)
+        # Create the webview window with same size
+        window = webview.create_window("Recipe", url, width=width, height=height)
 
-        # Define a function that will run after the webview window is closed
+        # When the browser closes, restore the main app
         def after_browser():
             self.root.deiconify()
             self.clear_screen()
-            self.create_home_screen()
+            #self.create_home_screen()
+            self.root.after(0, self.create_home_screen)
 
-        # Start the webview, blocking until the user closes it
+        # Start pywebview (must be on main thread)
         webview.start(func=after_browser, gui='gtk', debug=False)
-
-    def open_in_app_browser_old(self, url):
-        if webview.windows:
-            def create_browser_window():
-                webview.create_window("Recipe", url, width=960, height=540)
-
-            # Start pywebview on the main thread and only once
-            webview.start(create_browser_window)
 
     def open_camera_ui(self):
         self.clear_screen()
