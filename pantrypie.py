@@ -1400,7 +1400,7 @@ class ExpirationApp:
         tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
                  bg="white", pady=10).pack()
 
-        frame = tk.Frame(self.root, padx=20, pady=20, bg="white")
+        frame = tk.Frame(self.root, padx=20, pady=20, bg="")
         frame.pack(fill=tk.BOTH, expand=True)
 
         # Font selection
