@@ -134,11 +134,8 @@ class OnScreenKeyboard:
 #        self.window.lift()
 
         self.window = tk.Frame(parent, bg="#1a1a1a")
+#        self.window = tk.Toplevel(parent, bg="#1a1a1a")
         self.window.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)  # Bottom half overlay
-
-        self.frame = tk.Frame(self.window, bg="#1a1a1a")
-        #self.frame.pack(expand=True, fill="both")
-        self.frame.pack(expand=False, fill="both", anchor="s")
 
         # A container for all buttons
         self.frame = tk.Frame(self.window, bg="#1a1a1a")
@@ -2218,11 +2215,6 @@ class ExpirationApp:
             lambda e: OnScreenKeyboard(self.root, self.name_entry)
         )
 
-        # Expiration date picker (unchanged)
-        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
-        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
-        self.date_picker.pack(pady=5)
-
         label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
@@ -2237,6 +2229,33 @@ class ExpirationApp:
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry())
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
         #barcode_btn.pack(pady=10)
+
+        # Expiration date picker (unchanged)
+        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
+#        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
+#        self.date_picker.pack(pady=5)
+
+        self.cal = Calendar(
+            self.root,
+            selectmode='day',
+            date_pattern="yyyy-mm-dd",
+            font=APP_FONT,
+            background="orange",
+            disabledbackground="orange",
+            bordercolor="orange",
+            headersbackground="orange",
+            normalbackground="white",
+            weekendbackground="lightyellow",
+            othermonthwebackground="lightgray",
+            othermonthbackground="white"
+        )
+        #self.cal.pack(side=tk.LEFT, padx=10, pady=10, ipadx=20, ipady=20)
+        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20)
+
+        #self.cal = Calendar(calendar_frame, selectmode='day', date_pattern="yyyy-mm-dd",
+        #            background="orange", disabledbackground="orange",
+        #            bordercolor="gray", headersbackground="orange", normalbackground="white")
+        #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
 
         scan_btn = tk.Button(self.root,
 		#text="Scan",
