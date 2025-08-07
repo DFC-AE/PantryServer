@@ -207,6 +207,8 @@ APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
 APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
 APP_FONT.configure(size=12)
 APP_FONT_TITLE.configure(size=25)
+CITY = "Shreveport, US"
+KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 CONFIG_FILE = "config.json"
 SAVE_FILE = "items.json"
 
@@ -289,13 +291,37 @@ img_weather = Image.open("pics/weather.png")
 img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 weatherImg = ImageTk.PhotoImage(img_weather)
 ## Weather Background Image ##
-img_back_weather = Image.open("pics/weather.jpg")
+img_back_weather = Image.open("pics/backgrounds/weather.jpg")
 img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_weatherImg = ImageTk.PhotoImage(img_back_weather)
+## Clear Weather Background Image ##
+img_back_clear = Image.open("pics/backgrounds/clear.jpg")
+img_back_clear = img_back_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_clearImg = ImageTk.PhotoImage(img_back_clear)
+## Cloudy Weather Background Image ##
+img_back_cloudy = Image.open("pics/backgrounds/cloudy.jpg")
+img_back_cloudy = img_back_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_cloudyImg = ImageTk.PhotoImage(img_back_cloudy)
+## Rainy Weather Background Image ##
+img_back_rainy = Image.open("pics/backgrounds/rainy.jpg")
+img_back_rainy = img_back_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_rainyImg = ImageTk.PhotoImage(img_back_rainy)
+## Stormy Weather Background Image ##
+img_back_stormy = Image.open("pics/backgrounds/stormy.jpg")
+img_back_stormy = img_back_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_stormyImg = ImageTk.PhotoImage(img_back_stormy)
+## Snowy Weather Background Image ##
+img_back_snowy = Image.open("pics/backgrounds/snowy.jpg")
+img_back_snowy = img_back_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_snowyImg = ImageTk.PhotoImage(img_back_snowy)
+## Misty Weather Background Image ##
+img_back_misty = Image.open("pics/backgrounds/misty.jpg")
+img_back_misty = img_back_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_mistyImg = ImageTk.PhotoImage(img_back_misty)
 ## Weather Back Button Image ##
 img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
 backsmallImg = ImageTk.PhotoImage(img_back_small)
-## Weather Back Button Image ##
+## Web Button Image ##
 img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
 webImg = ImageTk.PhotoImage(img_web)
 ## YouTube Button Image ##
@@ -2311,44 +2337,37 @@ class WeatherApp:
     def __init__(self, root, backImg, back_callback=None):
         self.root = root
         self.root.title("Weather Forecast")
-        #self.backgroundImg = backgroundImg
-        #self.backImg = backsmallImg
         self.backImg = backImg
-        #self.backImg = ImageTK.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 
 	## Frame For Weather App Content ##
         self.frame = tk.Frame(self.root)
-        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        #self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        self.frame.pack(fill="both", expand=True)
 
         self.set_background()
-#        self.weather_ui()
-
-	## Background Image ##
-        #self.backgroundImg = backgroundImg
-        #back_weatherImg = tk.PhotoImage(file="pics/weather.jpg")
-        #pil_weather = Image.open("pics/weather.jpg").resize(
-            #(self.root.winfo_screenwidth(), self.root.winfo_screenheight())
-        #    (self.frame.winfo_screenwidth(), self.frame.winfo_screenheight())
-        #)
-        #self.backgroundImg = ImageTk.PhotoImage(pil_weather)
-#        self.backgroundImg = back_weatherImg
-        #self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        #self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        #self.bg_label.image = self.backgroundImg
 
 	## Back Button Image ##
         self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
         self.back_callback = back_callback
 
-        self.city = "Shreveport, US"
-        self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+        self.city = CITY
+        self.api_key = KEY_WEATHER
+        #self.city = "Shreveport, US"
+        #self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 
         self.weather_ui()
         #self.update_weather()
 
     def set_background(self):
-        self.bg_image_original = Image.open("pics/weather.jpg")
+        default_path = "pics/backgrounds/weather.jpg"
+        try:
+           self.bg_image_original = Image.open(default_path)
+        except Exception as e:
+           print(f"Failed to Load Default Background: {e}")
+           self.bg_image_original = None
+
+#        self.bg_image_original = Image.open("pics/backgrounds/weather.jpg")
         self.bg_label = tk.Label(self.frame)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
@@ -2356,26 +2375,53 @@ class WeatherApp:
         self.root.update_idletasks()
         self.root.after(100, self.update_background_image)
         self.root.bind("<Configure>", self.on_resize)
-        self.frame.bind("<Configure>", self.on_resize)
+        #self.frame.bind("<Configure>", self.on_resize)
 
     def on_resize(self, event):
-        if hasattr(self, "last_width") and hasattr(self, "last_height"):
+        #if hasattr(self, "last_width") and hasattr(self, "last_height"):
         #if event.widget == self.root:
-            if event.width == self.last_width and event.height == self.last_height:
-                return
-        self.last_width = event.width
-        self.last_height = event.height
+        #    if event.width == self.last_width and event.height == self.last_height:
+        #        return
+        #self.last_width = event.width
+        #self.last_height = event.height
         self.update_background_image()
 
     def update_background_image(self):
         if hasattr(self, 'bg_image_original'):
-            width = self.root.winfo_width()
-            height = self.root.winfo_height()
+            #width = self.root.winfo_width()
+            #height = self.root.winfo_height()
+            width = self.frame.winfo_width()
+            height = self.frame.winfo_height()
             if width > 1 and height > 1:
                 resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
                 self.backgroundImg = ImageTk.PhotoImage(resized_image)
                 self.bg_label.config(image=self.backgroundImg)
                 self.bg_label.image = self.backgroundImg
+
+    def get_background_path_for_condition(self, condition):
+        condition = condition.lower()
+
+        if "clear" in condition:
+            return "pics/backgrounds/clear.jpg"
+        elif "cloud" in condition:
+            return "pics/backgrounds/clouds.jpg"
+        elif "rain" in condition:
+            return "pics/background/rain.jpg"
+        elif "thunderstorm" in condition or "storm" in condition:
+            return "pics/backgrounds/storm.jpg"
+        elif "snow" in condition:
+            return "pics/backgrounds/snow.jpg"
+        elif "mist" in condition or "fog" in condition:
+            return "pics/backgrounds/mist.jpg"
+        else:
+            return "pics/backgrounds/weather.jpg"
+
+    def set_background_from_path(self, image_path):
+        try:
+            self.bg_image_original = Image.open(image_path)
+            self.update_background_image()
+        except Exception as e:
+            print(f"Failed to load background image: {image_path}\n{e}")
 
     def clear_screen(self):
         #for widget in self.root.winfo_children():
@@ -2485,6 +2531,10 @@ class WeatherApp:
             condition = current['weather'][0]['description'].capitalize()
             icon_code = current['weather'][0]['icon']
             icon_img = self.get_icon(icon_code)
+
+            # Set background based on condition
+            background_path = self.get_background_path_for_condition(condition)
+            self.set_background_from_path(background_path)
 
             if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
                return
