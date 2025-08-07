@@ -998,7 +998,8 @@ class ExpirationApp:
         scan_btn.pack(side=tk.RIGHT)
         ToolTip(scan_btn, "Click to Scan New Barcodes")
 
-        track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        #track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, command=lambda: self.create_tracker_ui(item))
+        track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, command=lambda: self.add_item_popup())
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
@@ -2253,9 +2254,10 @@ class ExpirationApp:
 		image=backImg,
 		#command=self.create_tracker_ui(None)).pack(pady=5)
 		#command=lambda: self.create_tracker_ui(None))
-		command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
-        back_btn.pack(pady=5)
-#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
+		#command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+		command=lambda: [self.stop_camera(), self.create_home_screen(None)])
+        #back_btn.pack(pady=5)
+        back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
 	## Create Side View of Camera ##
