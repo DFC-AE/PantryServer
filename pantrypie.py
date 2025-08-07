@@ -2295,14 +2295,13 @@ class ExpirationApp:
         except Exception as e:
             print(f"[Weather Error] {e}")
 
-    def open_weather_page(self):
+    def open_weather_page(self, return_callback=None):
         try:
             self.clear_screen()
             WeatherApp(
                 root=self.root,
                 backImg=self.backImg,
-                back_callback=self.add_item_popup  # Return to this popup
-            )
+                back_callback=return_callback)
         except Exception as e:
             print(f"[Error] Failed to open WeatherApp: {e}")
 
