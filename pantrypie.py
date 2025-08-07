@@ -217,45 +217,45 @@ SAVE_FILE = "items.json"
 img_wdt = 75
 img_hgt = 75
 ## Add Image ##
-img_add = Image.open("pics/add.png")
+img_add = Image.open("pics/icons/add.png")
 img_add = img_add.resize((img_wdt, img_hgt), Image.LANCZOS)
 addImg = ImageTk.PhotoImage(img_add)
 ## Back Image ##
-img_back = Image.open("pics/back.png")
+img_back = Image.open("pics/icons/back.png")
 img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
 ## Camera Image ##
-img_cam = Image.open("pics/cam.jpg")
+img_cam = Image.open("pics/icons/cam.jpg")
 img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
 camImg = ImageTk.PhotoImage(img_cam)
 ## Card Image ##
-img_card = Image.open("pics/card4.png")
+img_card = Image.open("pics/icons/card4.png")
 img_card = img_card.resize((img_wdt, img_hgt), Image.LANCZOS)
 cardImg = ImageTk.PhotoImage(img_card)
 ## Light Image ##
-img_light = Image.open("pics/light.png")
+img_light = Image.open("pics/icons/light.png")
 img_light = img_light.resize((img_wdt, img_hgt), Image.LANCZOS)
 lightImg = ImageTk.PhotoImage(img_light)
 ## Food Button Image ##
-img_food = Image.open("pics/food.jpg").resize((100, 100), Image.LANCZOS)
+img_food = Image.open("pics/icons/food.jpg").resize((100, 100), Image.LANCZOS)
 foodImg = ImageTk.PhotoImage(img_food)
 ## Home Image ##
-img_home = Image.open("pics/home.png")
+img_home = Image.open("pics/icons/home.png")
 img_home = img_home.resize((img_wdt, img_hgt), Image.LANCZOS)
 homeImg = ImageTk.PhotoImage(img_home)
 ## Item Image ##
-img_item = Image.open("pics/item.png")
+img_item = Image.open("pics/icons/item.png")
 img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
 itemImg = ImageTk.PhotoImage(img_item)
 ## KLPI Button ##
-img_klpi = Image.open("pics/klpi.png").resize((50, 50), Image.LANCZOS)
+img_klpi = Image.open("pics/icons/klpi.png").resize((50, 50), Image.LANCZOS)
 klpiImg = ImageTk.PhotoImage(img_klpi)
 ## List Image ##
-img_list = Image.open("pics/list.png")
+img_list = Image.open("pics/icons/list.png")
 img_list = img_list.resize((img_wdt, img_hgt), Image.LANCZOS)
 listImg = ImageTk.PhotoImage(img_list)
 ## Music Image ##
-img_music = Image.open("pics/music.png")
+img_music = Image.open("pics/icons/music.png")
 img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicImg = ImageTk.PhotoImage(img_music)
 ## Music Background Image ##
@@ -263,34 +263,34 @@ img_music_back = Image.open("pics/backgrounds/music.jpg")
 img_music_back = img_music_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicbackImg = ImageTk.PhotoImage(img_music_back)
 ## NPR Image ##
-img_npr = Image.open("pics/npr.png")
+img_npr = Image.open("pics/icons/npr.png")
 img_npr = img_npr.resize((img_wdt, img_hgt), Image.LANCZOS)
 nprImg = ImageTk.PhotoImage(img_npr)
 ## Podcast Image ##
-img_pod = Image.open("pics/podcast.png").resize((100, 100), Image.LANCZOS)
+img_pod = Image.open("pics/icons/podcast.png").resize((100, 100), Image.LANCZOS)
 podImg = ImageTk.PhotoImage(img_pod)
 ## Save Image ##
-img_save = Image.open("pics/save.jpg")
+img_save = Image.open("pics/icons/save.jpg")
 img_save = img_save.resize((img_wdt, img_hgt), Image.LANCZOS)
 saveImg = ImageTk.PhotoImage(img_save)
 ## Scan Image ##
-img_scan = Image.open("pics/scan.jpg")
+img_scan = Image.open("pics/icons/scan.jpg")
 img_scan = img_scan.resize((img_wdt, img_hgt), Image.LANCZOS)
 scanImg = ImageTk.PhotoImage(img_scan)
 ## Settings Image ##
-img_set = Image.open("pics/settings.png")
+img_set = Image.open("pics/icons/settings.png")
 img_set = img_set.resize((img_wdt, img_hgt), Image.LANCZOS)
 setImg = ImageTk.PhotoImage(img_set)
 ## Spotify Image ##
-img_spot = Image.open("pics/spot.png")
+img_spot = Image.open("pics/icons/spot.png")
 img_spot = img_spot.resize((img_wdt, img_hgt), Image.LANCZOS)
 spotImg = ImageTk.PhotoImage(img_spot)
 ## View Image ##
-img_view = Image.open("pics/view.png")
+img_view = Image.open("pics/icons/view.png")
 img_view = img_view.resize((img_wdt, img_hgt), Image.LANCZOS)
 viewImg = ImageTk.PhotoImage(img_view)
 ## Weather Image ##
-img_weather = Image.open("pics/weather.png")
+img_weather = Image.open("pics/icons/weather.png")
 img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 weatherImg = ImageTk.PhotoImage(img_weather)
 ## Weather Background Image ##
@@ -340,13 +340,13 @@ img_back_night_misty = Image.open("pics/backgrounds/night_misty.jpg")
 img_back_night_misty = img_back_night_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_mistynightImg = ImageTk.PhotoImage(img_back_night_misty)
 ## Weather Back Button Image ##
-img_back_small = Image.open("pics/back.png").resize((50, 50), Image.LANCZOS)
+img_back_small = Image.open("pics/icons/back.png").resize((50, 50), Image.LANCZOS)
 backsmallImg = ImageTk.PhotoImage(img_back_small)
 ## Web Button Image ##
-img_web = Image.open("pics/web.png").resize((50, 50), Image.LANCZOS)
+img_web = Image.open("pics/icons/web.png").resize((50, 50), Image.LANCZOS)
 webImg = ImageTk.PhotoImage(img_web)
 ## YouTube Button Image ##
-img_yt = Image.open("pics/youtube.png").resize((50, 50), Image.LANCZOS)
+img_yt = Image.open("pics/icons/youtube.png").resize((50, 50), Image.LANCZOS)
 ytImg = ImageTk.PhotoImage(img_yt)
 
 ### Import Barcode Image ###
@@ -462,7 +462,7 @@ class ExpirationApp:
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
-        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png").resize((50,50), Image.LANCZOS))
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
         self.load_items()
         self.init_camera()
         self.search_var = tk.StringVar()
@@ -496,7 +496,7 @@ class ExpirationApp:
             if isinstance(widget, tk.Label) and widget.winfo_y() == 0 and widget.winfo_x() == 0:
                 widget.destroy()
 
-        self.bg_image_original = Image.open("pics/back.jpg")
+        self.bg_image_original = Image.open("pics/icons/back.jpg")
         self.bg_label = tk.Label(self.root)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
@@ -2237,7 +2237,7 @@ class WeatherApp:
         self.set_background()
 
 	## Back Button Image ##
-        self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png"))
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
         self.back_callback = back_callback
 
         self.city = CITY
@@ -3152,8 +3152,8 @@ class MusicApp:
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
-        self.nprImg = ImageTk.PhotoImage(Image.open("pics/npr.png").resize((100, 100)))
-        self.podImg = ImageTk.PhotoImage(Image.open("pics/podcast.png").resize((100, 100)))
+        self.nprImg = ImageTk.PhotoImage(Image.open("pics/icons/npr.png").resize((100, 100)))
+        self.podImg = ImageTk.PhotoImage(Image.open("pics/icons/podcast.png").resize((100, 100)))
         self.bg_label_music = None
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
@@ -3175,7 +3175,7 @@ class MusicApp:
         self.create_ui()
 
     def set_background(self):
-        self.bg_image_original = Image.open("pics/back.jpg")  # Or whichever image applies
+        self.bg_image_original = Image.open("pics/icons/back.jpg")  # Or whichever image applies
         self.bg_label = tk.Label(self.frame)  # Assuming self.frame is your container
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
