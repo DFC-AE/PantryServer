@@ -1412,10 +1412,52 @@ class ExpirationApp:
 
         # Background selection
         tk.Label(frame, text="Select Background Theme:", font=(self.current_font, 14), bg="white").grid(row=1, column=0, sticky="w")
-        backgrounds = ["back.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "black"]
+        backgrounds = ["back.jpg", "back_pastel.jpg", "back_toon.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "black"]
         self.bg_var = tk.StringVar(value=self.current_background)
         bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
         bg_menu.grid(row=1, column=1, sticky="ew")
+
+        # Background image previews
+        tk.Label(frame, text="Choose Background Image:", font=(self.current_font, 14)).grid(row=4, column=0, sticky="w", pady=10)
+
+        bg_preview_frame = tk.Frame(frame)
+        bg_preview_frame.grid(row=4, column=1, sticky="ew")
+
+        canvas = tk.Canvas(bg_preview_frame, height=100)
+        scrollbar = tk.Scrollbar(bg_preview_frame, orient="horizontal", command=canvas.xview)
+        scrollable_frame = tk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(xscrollcommand=scrollbar.set)
+
+        canvas.pack(side="top", fill="x", expand=True)
+        scrollbar.pack(side="bottom", fill="x")
+
+        self.bg_thumbnails = []  # Keep references so images don't get garbage collected
+        backgrounds_dir = "pics/backgrounds"
+        image_files = [f for f in os.listdir(backgrounds_dir) if f.lower().endswith((".jpg", ".png"))]
+
+        def on_select_background(img_path):
+            self.bg_var.set(img_path)
+            self.preview_settings()
+
+        for img_file in image_files:
+            img_path = os.path.join(backgrounds_dir, img_file)
+            try:
+                pil_img = Image.open(img_path).resize((100, 60), Image.LANCZOS)
+                tk_img = ImageTk.PhotoImage(pil_img)
+                self.bg_thumbnails.append(tk_img)  # prevent GC
+                btn = tk.Button(scrollable_frame, image=tk_img, command=lambda p=img_path: on_select_background(p))
+                btn.pack(side="left", padx=5)
+            except Exception as e:
+                print(f"Failed to load thumbnail for {img_file}: {e}")
 
         # Icon selection
         tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14), bg="white").grid(row=2, column=0, sticky="w")
