@@ -835,6 +835,8 @@ class ExpirationApp:
         self.create_random_recipe_panel(middle_frame)      # MIDDLE
         self.create_conversion_table_panel(middle_frame)  # RIGHT
 
+        self.populate_expiring_items()
+
         def update_clock():
             string = strftime("%A, %B %d %Y %H:%M:%S")
             if hasattr(self,'clock_label') and self.clock_label.winfo_exists():
@@ -1042,44 +1044,39 @@ class ExpirationApp:
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Sample expiration logic (you can replace this with real pantry data)
+    def populate_expiring_items(self):
+        for widget in self.expiring_frame.winfo_children():
+            widget.destroy()
+
         from datetime import datetime, timedelta
         today = datetime.today()
         soon = today + timedelta(days=3)
 
         expiring_items = [
             item for item in self.items
-            if item.expiration_date <= soon
+            if item.expiration_date and item.expiration_date <= soon
         ]
 
         if not expiring_items:
-            tk.Label(scrollable_frame, text="No items expiring soon.",
+            tk.Label(self.expiring_frame, text="No items expiring soon.",
                      font=APP_FONT, bg="white", fg="gray").pack(pady=10)
         else:
             for item in expiring_items:
                 name = item.name
                 expiry = item.expiration_date.strftime("%Y-%m-%d")
-                label = tk.Label(scrollable_frame, text=f"{name}\n({expiry})",
-                                 font=APP_FONT, bg="white", anchor="w", justify="left")
-                label.pack(fill=tk.X, padx=10, pady=5)
+                days_left = (item.expiration_date - today).days
 
-    def populate_expiring_items(self):
-        for widget in self.expiring_frame.winfo_children():
-            widget.destroy()
+                # Color code
+                if days_left <= 0:
+                    color = "red"
+                elif days_left == 1:
+                    color = "orange"
+                else:
+                    color = "green"
 
-        dummy_items = [
-            "Milk - expires in 2 days",
-            "Bread - expires tomorrow",
-            "Yogurt - expires in 3 days"
-        ]
-
-        if not dummy_items:
-            tk.Label(self.expiring_frame, text="No items expiring soon.",
-                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
-        else:
-            for item in dummy_items:
-                label = tk.Label(self.expiring_frame, text=item,
-                                 font=APP_FONT, bg="white", anchor="w", justify="left")
+                label = tk.Label(self.expiring_frame,
+                                 text=f"{name} (expires in {days_left} day{'s' if days_left != 1 else ''})",
+                                 font=APP_FONT, bg="white", fg=color, anchor="w", justify="left")
                 label.pack(fill=tk.X, padx=10, pady=5)
 
     def create_random_recipe_panel(self, parent):
@@ -1625,7 +1622,7 @@ class ExpirationApp:
         # Back button
         back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10)
-        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     def refresh_list(self):
         self.create_list_view()
