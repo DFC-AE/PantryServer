@@ -1620,7 +1620,8 @@ class ExpirationApp:
 	## Background Greeting ##
         welcome = Label(root,
                         text = " Expiration Tracker:",
-                        font=("Comic Sans MS", 33)).pack()
+                        #font=("Comic Sans MS", 33)).pack()
+                        font=APP_FONT_TITLE.pack())
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
@@ -2181,25 +2182,22 @@ class ExpirationApp:
         self.clear_screen()
         self.set_background()
 
-        tk.Label(self.root, text="Add New Item", font=("Comic Sans MS", 30)).pack(pady=10)
+        tk.Label(self.root, text="Add New Item", font=APP_FONT_TITLE).pack(pady=10)
 
         tk.Label(self.root, text="Enter Item Name:", font=APP_FONT).pack(pady=5)
 
-        # Item Name Entry (auto‑pop OSK on focus)
         self.name_entry = tk.Entry(self.root)
         self.name_entry.pack(pady=5)
-        # bind focus‑in to launch OSK
         self.name_entry.bind(
             "<Button-1>",
             lambda e: OnScreenKeyboard(self.root, self.name_entry)
         )
 
-        # — Expiration date picker (unchanged) —
+        # Expiration date picker (unchanged)
         tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
         self.date_picker.pack(pady=5)
 
-        # Barcode Entry (auto‑pop OSK on focus)
         label_code = tk.Label(self.root, text="Enter Barcode Number:", font=APP_FONT, justify="center")
         label_code.pack(pady=5)
 
@@ -2225,7 +2223,6 @@ class ExpirationApp:
 		command=lambda: self.show_camera())
 
         scan_btn.pack(pady=5)
-#        Hovertip(scan_btn, "Click to Show Scanned Barcode", hover_delay=500)
         ToolTip(scan_btn, "Click to Show Scanned Barcode")
 
         save_btn = tk.Button(self.root,
@@ -2235,7 +2232,6 @@ class ExpirationApp:
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=self.save_new_item)
         save_btn.pack(pady=5)
-#        Hovertip(save_btn, "Click to Save Data", hover_delay=500)
         ToolTip(save_btn, "Click to Save Data")
 
         mode_btn = tk.Button(self.root,
@@ -2245,7 +2241,6 @@ class ExpirationApp:
 		#command=lambda: self.save_new_item).pack(pady=5)
 		command=self.toggle_dark_mode)
         mode_btn.pack(pady=5)
-#        Hovertip(mode_btn, "Click to Toggle Between Light/Dark Mode", hover_delay=500)
         ToolTip(mode_btn, "Click to Toggle Light/Dark Mode")
 
         back_btn = tk.Button(self.root,
@@ -2259,6 +2254,57 @@ class ExpirationApp:
         #back_btn.pack(pady=5)
         back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
         ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+        # Weather Button Frame (Top-left)
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather()
+        self.weather_icon_frame.lift()
+        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
+             self.weather_button.lift()
+
+    def update_weather(self):
+        try:
+            city = "Shreveport,US"
+            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            ## Create button with weather icon
+            self.weather_button = tk.Button(
+                self.weather_icon_frame,
+                image=icon_photo,
+                bg="orange",
+                #bd=0,
+                #highlightthickness=0,
+                cursor="hand2",
+                command=lambda: self.open_weather_page(return_callback=self.add_item_popup)
+            )
+            self.weather_button.image = icon_photo
+            self.weather_button.pack()
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def open_weather_page(self):
+        try:
+            self.clear_screen()
+            WeatherApp(
+                root=self.root,
+                backImg=self.backImg,
+                back_callback=self.add_item_popup  # Return to this popup
+            )
+        except Exception as e:
+            print(f"[Error] Failed to open WeatherApp: {e}")
 
 	## Create Side View of Camera ##
 #        self.camera_label = tk.Label(self.root)
