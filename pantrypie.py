@@ -3415,9 +3415,9 @@ class MusicApp:
         controls = tk.Frame(self.frame, bg="white")
         controls.pack(pady=10)
 
-        tk.Button(controls, text="Play",font=APP_FONT, command=self.play_spotify).pack(side=tk.LEFT, padx=5)
-        tk.Button(controls, text="Pause", command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
-        tk.Button(controls, text="Next", command=self.next_track).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Play", font=APP_FONT, command=self.play_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Pause", font=APP_FONT, command=self.pause_spotify).pack(side=tk.LEFT, padx=5)
+        tk.Button(controls, text="Next", font=APP_FONT, command=self.next_track).pack(side=tk.LEFT, padx=5)
 
         # NPR + Podcasts Side-by-Side
         npr_controls = tk.Frame(self.frame, bg="white")
@@ -3586,10 +3586,10 @@ class MusicApp:
         canvas.configure(scrollregion=canvas.bbox("all"))
 
         # Keep back button visible on top
-        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
-        #back_btn.place(x=20, y=20)
-        back_btn.place(relx=0.98, y=20, anchor="ne")
-        back_btn.lift()
+        #back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
+        ##back_btn.place(x=20, y=20)
+        #back_btn.place(relx=0.98, y=20, anchor="ne")
+        #back_btn.lift()
 
     def display_tracks_vert(self, tracks):
         for name, artist, image_url, link in tracks[:5]:
