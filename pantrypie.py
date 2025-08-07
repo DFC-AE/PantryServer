@@ -194,7 +194,7 @@ class OnScreenKeyboard:
 
 ## Create Root ##
 root = tk.Tk()
-root.geometry("1024x600")
+root.geometry("1280x720")
 #root.geometry("1920x1080")
 #root.geometry("3180x2160")
 #root.title("Expiration Tracker")
