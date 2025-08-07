@@ -458,6 +458,7 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+        self.load_items()
         self.clear_screen()
         self.items = []  # List to hold all items
         self.barcode = barcode = None
@@ -471,7 +472,6 @@ class ExpirationApp:
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
-        self.load_items()
         self.init_camera()
         self.search_var = tk.StringVar()
         self.create_home_screen()
@@ -1498,10 +1498,17 @@ class ExpirationApp:
     def create_card_view(self):
         self.clear_screen()
 
+        self.bg_image_original = Image.open("pics/backgrounds/back_pastel.jpg")
+        self.bg_label = tk.Label(self.root)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.update_background_image()
+        self.bg_label.lower()
+        self.root.bind("<Configure>", self.on_resize)
+
         # Set specific background for card view
-        bg_label = tk.Label(self.root, image=self.card_backgroundImg)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.lower()
+        #bg_label = tk.Label(self.root, image=self.card_backgroundImg)
+        #bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #bg_label.lower()
 
         self.current_view = "card"
 
@@ -1570,10 +1577,17 @@ class ExpirationApp:
         self.clear_screen()
         self.current_view = "list"
 
+        self.bg_image_original = Image.open("pics/backgrounds/back_toon.jpg")
+        self.bg_label = tk.Label(self.root)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.update_background_image()
+        self.bg_label.lower()
+        self.root.bind("<Configure>", self.on_resize)
+
         # Background image
-        bg_label = tk.Label(self.root, image=self.list_backgroundImg)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.lower()
+        #bg_label = tk.Label(self.root, image=self.list_backgroundImg)
+        #bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        #bg_label.lower()
 
         # Sort menu
         sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)")
@@ -1872,14 +1886,33 @@ class ExpirationApp:
 
         self.refresh_views()
 
-    ## Loads items from file
     def load_items(self):
+        self.items = []
+        if os.path.exists("items.json"):
+            try:
+                with open("items.json", "r") as f:
+                    data = json.load(f)
+                    for item in data:
+                        # Adjust field names to match your JSON structure
+                        name = item.get("name")
+                        expiry_str = item.get("expiration_date")
+                        if expiry_str:
+                            expiry = datetime.strptime(expiry_str, "%Y-%m-%d")
+                            # You may have a custom Item class
+                            self.items.append(Item(name, expiry))
+            except Exception as e:
+                print(f"[Error] Failed to load items.json: {e}")
+        else:
+            print("[Info] items.json does not exist.")
+
+    ## Loads items from file
+    def load_items_old(self):
         if not os.path.exists(SAVE_FILE) or os.path.getsize(SAVE_FILE) == 0:
             self.items = []
             return
         try:
             with open(SAVE_FILE, 'r') as f:
-              try:  
+              try:
                 data = json.load(f)
               except json.JSONDecodeError:
                 data = []
@@ -1890,8 +1923,22 @@ class ExpirationApp:
             messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
             self.items = []
 
-    ## Saves items to file ##
     def save_items(self):
+        try:
+            with open("items.json", "w") as f:
+                json.dump([
+                    {
+                        "name": item.name,
+                        "expiration_date": item.expiration_date.strftime("%Y-%m-%d")
+                    }
+                    for item in self.items
+                ], f, indent=2)
+            print("[Save] items.json saved successfully.")
+        except Exception as e:
+            print(f"[Error] Failed to save items.json: {e}")
+
+    ## Saves items to file ##
+    def save_items_old(self):
         with open(SAVE_FILE, 'w') as f:
             json.dump([item.to_dict() for item in self.items], f)
 
