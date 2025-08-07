@@ -1015,9 +1015,9 @@ class ExpirationApp:
         web_btn.pack(side=tk.RIGHT)
         ToolTip(web_btn, "Click to Open Web Browser")
 
-        spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui())
-        spot_btn.pack(side=tk.RIGHT)
-        ToolTip(spot_btn, "Click to Open Spotify")
+        #spot_btn = tk.Button(button_frame, cursor="hand2", image=spotImg, width=100, height=100, command=lambda: self.open_spotify_ui())
+        #spot_btn.pack(side=tk.RIGHT)
+        #ToolTip(spot_btn, "Click to Open Spotify")
 
         dark_mode_btn = tk.Button(button_frame, cursor="hand2", image=lightImg, width=100, height=100, command=self.toggle_dark_mode)
         dark_mode_btn.pack(side=tk.LEFT)
