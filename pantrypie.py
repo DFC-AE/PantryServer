@@ -1693,7 +1693,7 @@ class ExpirationApp:
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
     ## Create Card view ##
-    def create_card_view(self):
+    def create_card_view(self, item=None):
         self.clear_screen()
 
         self.bg_image_original = Image.open("pics/backgrounds/back_pastel.jpg")
@@ -1763,15 +1763,24 @@ class ExpirationApp:
                col = 0
                row += 1
 
-        card_back_btn = tk.Button(self.root,
-                                  cursor="hand2",
-                                  image=backImg,
-                                  #command=self.create_home_screen)
-                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
-        card_back_btn.pack(pady=10)
-        ToolTip(card_back_btn, "Click to Return to the Previous Screen")
+#        card_back_btn = tk.Button(self.root,
+#                                  cursor="hand2",
+#                                  image=backImg,
+#                                  #command=self.create_home_screen)
+#                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+#        card_back_btn.pack(pady=10)
+        card_back_btn = tk.Button(self.root, image=backImg,
+                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_tracker_ui(item))
+        card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
+        ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
-    def create_list_view(self):
+        # Card View Button
+        list_btn = tk.Button(self.root, image=listImg,
+                             cursor="hand2", bg="#dddddd", command=self.create_list_view)
+        list_btn.place(x=10, y=10)
+        ToolTip(list_btn, "Click to View Items in a List")
+
+    def create_list_view(self, item=None):
         self.clear_screen()
         self.current_view = "list"
 
@@ -1830,9 +1839,18 @@ class ExpirationApp:
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
 
         # Back button
-        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
-        back_btn.pack(pady=10)
-        ToolTip(back_btn, "Click to Return to the Previous Screen")
+#        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
+#        back_btn.pack(pady=10)
+        card_back_btn = tk.Button(self.root, image=backImg,
+                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_tracker_ui(item))
+        card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
+        ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
+
+        # Card View Button
+        card_btn = tk.Button(self.root, image=cardImg,
+                             cursor="hand2", bg="#dddddd", command=self.create_card_view)
+        card_btn.place(x=10, y=10)
+        ToolTip(card_btn, "Click to View Items in Cards")
 
     def refresh_list(self):
         self.create_list_view()
@@ -1917,7 +1935,7 @@ class ExpirationApp:
 			#text="Back",
 			image=cardImg,
 			#command=lambda: self.create_card_view)
-			command=lambda: [self.stop_camera(), self.create_card_view])
+			command=lambda: [self.stop_camera(), self.create_card_view()])
         back_btn.pack(pady=10)
         ToolTip(back_btn, "Click to Return to Card View")
 
