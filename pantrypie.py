@@ -256,7 +256,7 @@ img_music = Image.open("pics/music.png")
 img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicImg = ImageTk.PhotoImage(img_music)
 ## Music Background Image ##
-img_music_back = Image.open("pics/music.jpg")
+img_music_back = Image.open("pics/backgrounds/music.jpg")
 img_music_back = img_music_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicbackImg = ImageTk.PhotoImage(img_music_back)
 ## NPR Image ##
@@ -2879,6 +2879,17 @@ class CameraApp:
         self.frame.after(500, self.animation_label.lower)
         self.frame.after(10, self.update_frame)
 
+    def set_background_image(self, image_path):
+        if hasattr(self, "bg_label") and self.bg_label:
+            self.bg_label.destroy()
+
+        self.bg_image_original = Image.open(image_path)
+        self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
 ## Spotipy ##
 #sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 #    client_id="YOUR_CLIENT_ID",
@@ -3263,11 +3274,13 @@ class MusicApp:
         self.token = token
         self.nprImg = ImageTk.PhotoImage(Image.open("pics/npr.png").resize((100, 100)))
         self.podImg = ImageTk.PhotoImage(Image.open("pics/podcast.png").resize((100, 100)))
-
+        self.bg_label_music = None
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
 
-        self.set_background()
+#        self.set_background()
+        self.set_background_image("pics/backgrounds/music.jpg")
+        self.create_music_screen()
 
 #        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
 #        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -3294,16 +3307,79 @@ class MusicApp:
         self.update_background_image()
 
     def update_background_image(self):
-        if hasattr(self, 'bg_image_original'):
-            width = self.root.winfo_width()
-            height = self.root.winfo_height()
+        if not hasattr(self, 'bg_image_original') or not self.bg_image_original:
+            return  # No image to use
 
-            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+        if not hasattr(self, 'bg_label') or not self.bg_label or not self.bg_label.winfo_exists():
+            return  # bg_label was destroyed
 
-            if hasattr(self, 'bg_label'):
-                self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+
+        resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+        self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+        self.bg_label.config(image=self.backgroundImg)
+        self.bg_label.image = self.backgroundImg
+
+    def set_background_image(self, image_path):
+        if hasattr(self, 'bg_label') and self.bg_label:
+            self.bg_label.destroy()
+            self.bg_label = None
+
+        self.bg_image_original = Image.open(image_path)
+        self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+
+        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label.lower()
+
+    def create_music_screen(self):
+        self.clear_screen()
+        self.set_background_image("pics/backgrounds/music.jpg")
+
+        # Remove home screen background if still visible
+        if hasattr(self, "bg_label") and self.bg_label:
+            self.bg_label.destroy()
+            self.bg_label = None
+
+        self.frame = tk.Frame(self.root, bg="white")
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        # Custom music background
+        music_bg_path = "pics/backgrounds/music.jpg"
+        if not os.path.exists(music_bg_path):
+            music_bg_path = "pics/backgrounds/day_clear.jpg"  # fallback
+
+        try:
+            image = Image.open(music_bg_path)
+            self.bg_music_img_raw = image
+            self.bg_music_img = ImageTk.PhotoImage(image)
+
+            if self.bg_label_music:
+                self.bg_label_music.destroy()
+
+            self.bg_label_music = tk.Label(self.frame, image=self.bg_music_img)
+            self.bg_label_music.place(relwidth=1, relheight=1)
+            self.bg_label_music.lower()
+
+            self.frame.bind("<Configure>", self._resize_music_bg)
+        except Exception as e:
+            print("Failed to load music background:", e)
+
+    def _resize_music_bg(self, event):
+        if not hasattr(self, "bg_music_img_raw") or not self.bg_music_img_raw:
+            return
+
+        resized = self.bg_music_img_raw.resize((event.width, event.height), Image.Resampling.LANCZOS)
+        self.bg_music_img = ImageTk.PhotoImage(resized)
+
+        if self.bg_label_music:
+            self.bg_label_music.config(image=self.bg_music_img)
+
+    def clear_screen(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
 
     def toggle_npr(self):
         if not self.npr_playing:
