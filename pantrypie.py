@@ -2391,41 +2391,75 @@ class WeatherApp:
         self.update_background_image()
 
     def update_background_image(self):
-        if hasattr(self, 'bg_image_original'):
-            #width = self.root.winfo_width()
-            #height = self.root.winfo_height()
-            width = self.frame.winfo_width()
-            height = self.frame.winfo_height()
-            if width > 1 and height > 1:
-                resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
-                self.backgroundImg = ImageTk.PhotoImage(resized_image)
+        if not hasattr(self, 'bg_image_original'):
+            return
+
+        width = self.frame.winfo_width()
+        height = self.frame.winfo_height()
+
+        if width > 1 and height > 1:
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            if hasattr(self, 'bg_label') and self.bg_label.winfo_exists():
                 self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
+            else:
+                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+            self.bg_label.image = self.backgroundImg
 
     def get_background_path_for_condition(self, condition):
         condition = condition.lower()
 
         if "clear" in condition:
-            return "pics/backgrounds/clear.jpg"
+            path = "pics/backgrounds/clear.jpg"
         elif "cloud" in condition:
-            return "pics/backgrounds/clouds.jpg"
+            path = "pics/backgrounds/cloudy.jpg"
         elif "rain" in condition:
-            return "pics/background/rain.jpg"
+            path = "pics/background/rainy.jpg"
         elif "thunderstorm" in condition or "storm" in condition:
-            return "pics/backgrounds/storm.jpg"
+            path = "pics/backgrounds/stormy.jpg"
         elif "snow" in condition:
-            return "pics/backgrounds/snow.jpg"
+            path = "pics/backgrounds/snowy.jpg"
         elif "mist" in condition or "fog" in condition:
-            return "pics/backgrounds/mist.jpg"
+            path = "pics/backgrounds/misty.jpg"
         else:
-            return "pics/backgrounds/weather.jpg"
+            path = "pics/backgrounds/weather.jpg"
+
+        print(f"Using Background: {path}")
+        return path
 
     def set_background_from_path(self, image_path):
+        print(f"Loading background image from: {image_path}")
         try:
             self.bg_image_original = Image.open(image_path)
             self.update_background_image()
         except Exception as e:
             print(f"Failed to load background image: {image_path}\n{e}")
+            self.bg_image_original = Image.open("pics/backgrounds/weather.jpg")
+            self.update_background_image()
+
+    def get_current_weather_condition(self):
+        try:
+            if not hasattr(self, 'city'):
+                self.city = "Shreveport, US"
+            if not hasattr(self, 'api_key'):
+                self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            condition = data['weather'][0]['main'].lower()
+            print(f"Detected weather condition: {condition}")
+            return condition
+
+        except Exception as e:
+            print("Failed to get weather condition for background:", e)
+            return "default"
 
     def clear_screen(self):
         #for widget in self.root.winfo_children():
@@ -2434,7 +2468,12 @@ class WeatherApp:
 
     def weather_ui(self):
         self.clear_screen()
-        self.set_background()
+#        self.set_background()
+
+        # Load weather condition-based background BEFORE creating bg_label
+        condition = self.get_current_weather_condition()
+        background_path = self.get_background_path_for_condition(condition)
+        self.set_background_from_path(background_path)
 
         ## Set Background Image and Place in the Background ##
         self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
@@ -2533,6 +2572,7 @@ class WeatherApp:
             current = data['list'][0]
             temp = current['main']['temp']
             condition = current['weather'][0]['description'].capitalize()
+            print(f"Detected weather condition: {condition}")
             icon_code = current['weather'][0]['icon']
             icon_img = self.get_icon(icon_code)
 
