@@ -2230,13 +2230,32 @@ class ExpirationApp:
         #barcode_btn = tk.Button(self.root, text="Enter Barcode to Autofill Name", command=self.barcode_entry)
         #barcode_btn.pack(pady=10)
 
+        # Main layout frame to hold left, center, and right sections
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        # Left panel: Expiring Soon
+        left_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+
+        tk.Label(left_frame, text="Expiring Soon", font=APP_FONT_TITLE).pack(pady=5)
+        self.expiring_listbox = tk.Listbox(left_frame, font=APP_FONT, height=10)
+        self.expiring_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+
+        # Populate listbox with dummy data for now
+        for item in self.get_expiring_items():
+            self.expiring_listbox.insert(tk.END, item)
+
+        center_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
+        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
         # Expiration date picker (unchanged)
-        tk.Label(self.root, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
+        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
 #        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
 #        self.date_picker.pack(pady=5)
 
         self.cal = Calendar(
-            self.root,
+            center_frame,
             selectmode='day',
             date_pattern="yyyy-mm-dd",
             font=APP_FONT,
@@ -2256,6 +2275,22 @@ class ExpirationApp:
         #            background="orange", disabledbackground="orange",
         #            bordercolor="gray", headersbackground="orange", normalbackground="white")
         #self.cal.pack(padx=10, pady=10, ipadx=5, ipady=5)
+
+        # Right panel: Item details
+        right_frame = tk.Frame(main_frame, bg="", bd=2, relief=tk.GROOVE)
+        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+
+        tk.Label(right_frame, text="Item Name:", font=APP_FONT).pack(pady=5)
+        self.name_entry = tk.Entry(right_frame)
+        self.name_entry.pack(pady=5)
+        self.name_entry.bind(
+            "<Button-1>",
+            lambda e: OnScreenKeyboard(self.root, self.name_entry)
+        )
+
+        tk.Label(right_frame, text="Enter Barcode Number:", font=APP_FONT).pack(pady=5)
+        self.barcode_entry = tk.Entry(right_frame)
+        self.barcode_entry.pack(pady=5)
 
         scan_btn = tk.Button(self.root,
 		#text="Scan",
@@ -2306,6 +2341,10 @@ class ExpirationApp:
         self.weather_icon_frame.lift()
         if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
              self.weather_button.lift()
+
+    def get_expiring_items(self):
+        # Placeholder logic, replace with actual item expiration check
+        return ["Milk - 2025-08-10", "Eggs - 2025-08-12", "Yogurt - 2025-08-13"]
 
     def update_weather(self):
         try:
