@@ -94,7 +94,7 @@ class SplashScreen(tk.Toplevel):
         self.after(100, self._animate)
 # ================= On-Screen Keyboard Integration =================
 OSK_WIDTH = 800
-OSK_HEIGHT = 300
+OSK_HEIGHT = 200
 ACCENT_COL = "#C62145"
 
 class OnScreenKeyboard:
@@ -124,18 +124,27 @@ class OnScreenKeyboard:
         ok_x = px
         ok_y = py + ph - ok_h
 
-        self.window = tk.Toplevel(parent)
-        self.window.title("On‑Screen Keyboard")
+        #self.window = tk.Toplevel(parent)
+#        self.window.title("On‑Screen Keyboard")
         # size & position
-        self.window.geometry(f"{ok_w}x{ok_h}+{ok_x}+{ok_y}")
-        self.window.configure(bg="#1a1a1a")
-        self.window.resizable(False, False)
-        self.window.transient(parent)
-        self.window.lift()
+#        self.window.geometry(f"{ok_w}x{ok_h}+{ok_x}+{ok_y}")
+#        self.window.configure(bg="#1a1a1a")
+#        self.window.resizable(False, False)
+#        self.window.transient(parent)
+#        self.window.lift()
+
+        self.window = tk.Frame(parent, bg="#1a1a1a")
+        self.window.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)  # Bottom half overlay
+
+        self.frame = tk.Frame(self.window, bg="#1a1a1a")
+        #self.frame.pack(expand=True, fill="both")
+        self.frame.pack(expand=False, fill="both", anchor="s")
 
         # A container for all buttons
         self.frame = tk.Frame(self.window, bg="#1a1a1a")
-        self.frame.pack(expand=True, fill="both")
+        #self.frame.pack(expand=True, fill="both")
+        #self.frame.pack(expand=False, fill="x", anchor="n")
+        self.frame.pack(side="bottom", fill="x")
 
         self._build_keys()
         self.window.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -163,11 +172,23 @@ class OnScreenKeyboard:
                     relief='flat',
                     command=lambda k=key: self._on_key_press(k)
                 )
-                btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+                #btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+                btn.grid(row=r, column=c, padx=2, pady=0, sticky="ew")
 
         # Make columns expand evenly
         for c in range(max_cols):
             self.frame.grid_columnconfigure(c, weight=1)
+
+        self.close_btn = tk.Button(
+            self.window,
+            text="x",
+            font=font(size=10, weight="bold"),
+            bg=ACCENT_COL,
+            fg="white",
+            relief="flat",
+            command=self._on_close
+        )
+        self.close_btn.place(relx=0.98, rely=0.01, anchor="ne")
 
     def _on_key_press(self, key):
         if key == 'Backspace':
@@ -247,6 +268,10 @@ homeImg = ImageTk.PhotoImage(img_home)
 img_item = Image.open("pics/icons/item.png")
 img_item = img_item.resize((img_wdt, img_hgt), Image.LANCZOS)
 itemImg = ImageTk.PhotoImage(img_item)
+## Jar Background Image ##
+img_back_jar = Image.open("pics/backgrounds/jars.jpg")
+img_back_jarr = img_back_jar.resize((img_wdt, img_hgt), Image.LANCZOS)
+back_jarImg = ImageTk.PhotoImage(img_back_jar)
 ## KLPI Button ##
 img_klpi = Image.open("pics/icons/klpi.png").resize((50, 50), Image.LANCZOS)
 klpiImg = ImageTk.PhotoImage(img_klpi)
