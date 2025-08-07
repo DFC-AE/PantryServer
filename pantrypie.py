@@ -480,31 +480,25 @@ class ExpirationApp:
     def set_background(self):
         default_path = "pics/backgrounds/back.jpg"
         background_path = default_path
-        self.bg_image_original = Image.open(background_path)
 
-        if not hasattr(self, "bg_label"):
-            self.bg_label = tk.Label(self.root)
-            self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-            self.root.bind("<Configure>", self.on_resize)
+        try:
+            self.bg_image_original = Image.open(background_path)
+        except Exception as e:
+            print(f"Error loading background image: {e}")
+            return
 
-        self.update_background_image()
-        self.bg_label.lower()
+        # Safely destroy old label if it exists
+        if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+            self.bg_label.destroy()
 
-    def set_background_old(self):
-        # Destroy any existing background labels
-        for widget in self.root.winfo_children():
-            if isinstance(widget, tk.Label) and widget.winfo_y() == 0 and widget.winfo_x() == 0:
-                widget.destroy()
-
-        self.bg_image_original = Image.open("pics/icons/back.jpg")
+        # Always create a new background label
         self.bg_label = tk.Label(self.root)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
-        self.update_background_image()
-
-        # Bind to resize event
         self.root.bind("<Configure>", self.on_resize)
+
+        self.update_background_image()
 
     def on_resize(self, event):
         self.update_background_image()
@@ -772,7 +766,7 @@ class ExpirationApp:
     #    for widget in self.root.winfo_children():
     #        widget.destroy()
 
-    #    self.clear_screen()
+        self.clear_screen()
 
         #def set_background(self):
      #   bg_label = tk.Label(self.root, image=self.backgroundImg)
