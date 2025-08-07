@@ -450,15 +450,16 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+        self.clear_screen()
         self.items = []  # List to hold all items
         self.barcode = barcode = None
         self.current_view = 'home'
         self.dark_mode = False  # Track dark mode state
         self.sort_option = StringVar()
         self.sort_option.set("Sort By")
-        self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/back.jpg").resize((1024, 600), Image.LANCZOS))
-        self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
-        self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
+        self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back.jpg").resize((1024, 600), Image.LANCZOS))
+        self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
+        self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/back.png").resize((50,50), Image.LANCZOS))
@@ -477,6 +478,19 @@ class ExpirationApp:
 #        background.lower()
 
     def set_background(self):
+        default_path = "pics/backgrounds/back.jpg"
+        background_path = default_path
+        self.bg_image_original = Image.open(background_path)
+
+        if not hasattr(self, "bg_label"):
+            self.bg_label = tk.Label(self.root)
+            self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+            self.root.bind("<Configure>", self.on_resize)
+
+        self.update_background_image()
+        self.bg_label.lower()
+
+    def set_background_old(self):
         # Destroy any existing background labels
         for widget in self.root.winfo_children():
             if isinstance(widget, tk.Label) and widget.winfo_y() == 0 and widget.winfo_x() == 0:
@@ -640,7 +654,8 @@ class ExpirationApp:
             }
 
             panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE)
-            panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+            #panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+            panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
             tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
 
@@ -753,66 +768,19 @@ class ExpirationApp:
         except ValueError:
             self.result_var.set("Enter a valid number")
 
-    def trash(self):
-        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
-        #webview.start()
-        #self.clear_screen()
-        self.root.withdraw()
-
-        ## Callback to Run After Closing Browser Window ##
-        def on_browser_closed():
-            self.root.deiconify()
-            self.create_home_screen()
-
-            def on_browser_closed():
-                self.root.after(0, lambda: [
-                    self.root.deiconify(),
-                    self.create_home_screen()
-                ])
-
-        def launch_webview():
-            if not webview.windows:
-                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
-                webview.start(gui='gtk')  # Call start only ONCE per app run
-            else:
-                webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
-
-        threading.Thread(target=launch_webview, daemon=True).start()
-
-        #frame = tk.Frame(self.root)
-        #frame.pack(fill=tk.BOTH, expand=True)
-
-        #back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
-        #back_btn.pack(anchor="nw", padx=10, pady=10)
-
-        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/")
-        #webview.start()
-
-	## Make Same Dimentions as Main Window set in Variable Later ##
-        #webview.create_window("OpenFoodFacts", "https://world.openfoodfacts.org/", width=1024, height=600)
-
-        #webview.start()
-        #self.root.deiconify()
-
-        #html = """
-        #<h2>OpenFoodFacts</h2>
-        #<a href='https://world.openfoodfacts.org/' target="_blank">Visit OpenFoodFacts</a>
-        #"""
-        #label = HTMLLabel(frame, html=html)
-        #label.pack(padx=20, pady=20)
-
     def create_home_screen(self, item=None):
-        for widget in self.root.winfo_children():
-            widget.destroy()
+    #    for widget in self.root.winfo_children():
+    #        widget.destroy()
 
-        self.clear_screen()
-        self.set_background()
-        self.current_view = 'home'
+    #    self.clear_screen()
 
         #def set_background(self):
-        #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-        #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        #    self.bg_label.lower()
+     #   bg_label = tk.Label(self.root, image=self.backgroundImg)
+     #   bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+     #   bg_label.lower()
+
+        self.set_background()
+        self.current_view = 'home'
 
        # Create top-left frame for weather icon
         self.weather_icon_frame = tk.Frame(self.root, bg="orange")
@@ -829,7 +797,8 @@ class ExpirationApp:
 
         # Middle frame for side panels (Expiring Soon and Conversion)
         middle_frame = tk.Frame(self.root, bg="")
-        middle_frame.pack(fill=tk.X, padx=10)
+        #middle_frame.pack(fill=tk.X, padx=10)
+        middle_frame.pack(fill=tk.BOTH, expand=True)
 
         self.create_expiring_soon_panel(middle_frame)   # LEFT
         self.create_random_recipe_panel(middle_frame)      # MIDDLE
@@ -985,7 +954,6 @@ class ExpirationApp:
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
-        #tk.OptionMenu(converter_frame, self.to_unit, "grams", "ounces", "sugar", "flour", "butter").pack(pady=5)
 
         # Conversion logic
         self.unit_factors = {
@@ -1019,8 +987,9 @@ class ExpirationApp:
 
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
-        panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
-        panel.pack_propagate(False)
+        #panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        #panel.pack_propagate(False)
 
         title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
@@ -1081,8 +1050,9 @@ class ExpirationApp:
 
     def create_random_recipe_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300, height=300)
-        panel.pack(side=tk.LEFT, padx=10, pady=10)
-        panel.pack_propagate(False)
+        #panel.pack(side=tk.LEFT, padx=10, pady=10)
+        panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        #panel.pack_propagate(False)
 
         title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
         title.pack(pady=(10, 5))
@@ -2341,15 +2311,28 @@ class WeatherApp:
             self.update_background_image()
 
     def on_resize(self, event):
-        #if hasattr(self, "last_width") and hasattr(self, "last_height"):
-        #if event.widget == self.root:
-        #    if event.width == self.last_width and event.height == self.last_height:
-        #        return
-        #self.last_width = event.width
-        #self.last_height = event.height
-        self.update_background_image()
+        if hasattr(self, "bg_image_original"):
+            resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized)
+            if hasattr(self, "bg_label"):
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+                self.bg_label.lower()
 
     def update_background_image(self):
+        if hasattr(self, 'bg_image_original'):
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            if hasattr(self, 'bg_label'):
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
+                self.bg_label.lower()
+
+    def update_background_image_old(self):
         if not hasattr(self, 'bg_image_original'):
             print("No original background image loaded.")
             return
