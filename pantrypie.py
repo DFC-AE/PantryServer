@@ -1760,6 +1760,7 @@ class ExpirationApp:
     ## Create Card view ##
     def create_card_view(self, item=None):
         self.clear_screen()
+        self.load_items()
 
         self.bg_image_original = Image.open("pics/backgrounds/back_pastel.jpg")
         self.bg_label = tk.Label(self.root)
@@ -1848,6 +1849,7 @@ class ExpirationApp:
     def create_list_view(self, item=None):
         self.clear_screen()
         self.current_view = "list"
+        self.load_items()
 
         self.bg_image_original = Image.open("pics/backgrounds/back_toon.jpg")
         self.bg_label = tk.Label(self.root)
@@ -2126,6 +2128,7 @@ class ExpirationApp:
 
     def show_nutrition_info(self, nutrition_info):
         # Show nutrition information in a popup window
+        self.clear_screen()
         info_window = tk.Toplevel(self.root)
         info_window.title("Nutrition Information")
 
@@ -2171,11 +2174,14 @@ class ExpirationApp:
         if os.path.exists(SAVE_FILE):
             try:
                 with open(SAVE_FILE, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    self.items = [Item.from_dict(d) for d in data]
             except Exception as e:
                 print("Failed to load items:", e)
-                return []
-        return []
+                self.items = []
+        else:
+            self.items = []
+
 
     def save_items(self):
         try:
@@ -2272,16 +2278,10 @@ class ExpirationApp:
         center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
-<<<<<<< HEAD
         # Expiration date picker (unchanged)
         tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
         self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
 #        self.date_picker.pack(pady=5)
-=======
-        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-
->>>>>>> main
         self.cal = Calendar(
             center_frame,
             selectmode='day',
@@ -2319,7 +2319,7 @@ class ExpirationApp:
         # Submit button
         submit_btn = tk.Button(
             right_frame, image=saveImg, cursor="hand2",
-            bg="black", fg="white", command=self.save_items
+            bg="black", fg="white", command=self.save_new_item
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
@@ -3593,6 +3593,7 @@ def make_click_callback(url):
     return lambda e: open_in_app_browser(url)
 
 def show_youtube_in_app(url, app_root):
+    self.clear_screen()
     app_root.withdraw()  # hide the main Tkinter window
     try:
         webview.create_window(
