@@ -494,7 +494,7 @@ class ExpirationApp:
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
-        self.init_camera()
+        #self.init_camera()
         self.search_var = tk.StringVar()
         self.load_settings()
         self.apply_settings()
@@ -663,9 +663,26 @@ class ExpirationApp:
         # Start pywebview (must be on main thread)
         webview.start(func=after_browser, gui='gtk', debug=False)
 
-    def open_camera_ui(self):
+    def open_camera_ui_old(self):
         self.clear_screen()
         CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+
+    def open_camera_ui(self):
+        # Make sure no other cv2 capture is still open
+        try:
+            if hasattr(self, 'cap') and self.cap.isOpened():
+                self.cap.release()
+        except:
+            pass
+
+        # Close any previous CameraApp instance if it exists
+        try:
+            if hasattr(self, 'camera_app_instance'):
+                self.camera_app_instance.close_camera()
+        except:
+            pass
+
+        self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
 
     def open_weather_ui(self):
         self.clear_screen()
@@ -3151,7 +3168,7 @@ class CameraApp_old:
         self.backgroundImg_original = Image.open("pics/backgrounds/cam.jpg")
 
         # Open camera
-        self.cap = cv2.VideoCapture(0)
+        #self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             print("Failed to Open Camera")
         else:
@@ -3282,9 +3299,14 @@ class CameraApp:
         self.bg_canvas.bind("<Configure>", self.resize_background)
 
         # ===== Camera =====
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # Use V4L2 driver for Linux
         if not self.cap.isOpened():
-            print("Failed to Open Camera")
+            print("Failed to open camera, retrying...")
+            self.cap.release()
+            self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+        if not self.cap.isOpened():
+            print("Camera is busy or unavailable")
         else:
             print("Camera Opened Successfully")
 
@@ -3326,6 +3348,11 @@ class CameraApp:
             self.cap.release()
         self.frame.destroy()
         self.create_home_screen()
+
+    def close_camera(self):
+        if hasattr(self, 'cap') and self.cap.isOpened():
+            self.cap.release()
+        cv2.destroyAllWindows()
 
     def create_home_screen(self):
         """Fallback main menu method if not provided."""
