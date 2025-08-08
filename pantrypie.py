@@ -508,99 +508,86 @@ class ExpirationApp:
 #        background.lower()
 
     def set_background(self, path=None):
-        # Fallback to saved setting
         if not path:
             path = getattr(self, "current_background", "back")
-
-        # Use default image for keyword "back"
         if path == "back":
             path = "pics/backgrounds/back.jpg"
 
-        # Remove existing background label if needed
-        if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
+        # Destroy existing background label if any
+        if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
             self.bg_label.destroy()
 
-        # Handle color backgrounds
-        if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
-            self.root.configure(bg=path)
-            self.bg_label = None
-        else:
-            try:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"Background image not found: {path}")
+        # Load and resize image
+        try:
+            self.bg_image_original = Image.open(path)
+            resized = self.bg_image_original.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized)
 
-                self.bg_image_original = Image.open(path)
-                self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
-                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
+            self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+            self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+            self.bg_label.lower()
+        except Exception as e:
+            print("Background error:", e)
+            self.root.configure(bg="white")
 
-                # Only bind resize once (optional guard)
-                if not hasattr(self, "_resize_bound") or not self._resize_bound:
-                    self.root.bind("<Configure>", self.on_resize)
-                    self._resize_bound = True
+        # Bind resize only once
+        if not hasattr(self, "_resize_bound") or not self._resize_bound:
+            self.root.bind("<Configure>", self.on_resize)
+            self._resize_bound = True
 
-            except Exception as e:
-                print(f"Error loading background image: {e}")
-                self.root.configure(bg="white")
 
-    def set_background_old(self, path=None):
-        # Fallback to saved setting
-        if not path:
-            path = getattr(self, "current_background", "back")
+    # def set_background_old(self, path=None):
+    #     # Fallback to saved setting
+    #     if not path:
+    #         path = getattr(self, "current_background", "back")
 
-        # Use default image for keyword "back"
-        if path == "back":
-            path = "pics/backgrounds/back.jpg"
+    #     # Use default image for keyword "back"
+    #     if path == "back":
+    #         path = "pics/backgrounds/back.jpg"
 
-        # Remove existing background label if needed
-        if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
-            self.bg_label.destroy()
+    #     # Remove existing background label if needed
+    #     if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
+    #         self.bg_label.destroy()
 
-        # Handle color backgrounds
-        if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
-            self.root.configure(bg=path)
-            self.bg_label = None
-        else:
-            try:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"Background image not found: {path}")
+    #     # Handle color backgrounds
+    #     if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
+    #         self.root.configure(bg=path)
+    #         self.bg_label = None
+    #     else:
+    #         try:
+    #             if not os.path.exists(path):
+    #                 raise FileNotFoundError(f"Background image not found: {path}")
 
-                self.bg_image_original = Image.open(path)
-                self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
-                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
+    #             self.bg_image_original = Image.open(path)
+    #             self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+    #             self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+    #             self.bg_label.image = self.backgroundImg
+    #             self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+    #             self.bg_label.lower()
 
-                # Only bind resize once (optional guard)
-                if not hasattr(self, "_resize_bound") or not self._resize_bound:
-                    self.root.bind("<Configure>", self.on_resize)
-                    self._resize_bound = True
+    #             # Only bind resize once (optional guard)
+    #             if not hasattr(self, "_resize_bound") or not self._resize_bound:
+    #                 self.root.bind("<Configure>", self.on_resize)
+    #                 self._resize_bound = True
 
-            except Exception as e:
-                print(f"Error loading background image: {e}")
-                self.root.configure(bg="white")
+    #         except Exception as e:
+    #             print(f"Error loading background image: {e}")
+    #             self.root.configure(bg="white")
 
     def on_resize(self, event):
         self.update_background_image()
 
     def update_background_image(self):
-        if hasattr(self, 'bg_image_original') and self.bg_image_original:
+        if hasattr(self, 'bg_image_original'):
             width = self.root.winfo_width()
             height = self.root.winfo_height()
+            resized = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized)
 
-            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+            if hasattr(self, 'bg_label') and self.bg_label.winfo_exists():
+                self.bg_label.config(image=self.backgroundImg)
+                self.bg_label.image = self.backgroundImg
 
-            if hasattr(self, 'bg_label') and self.bg_label is not None:
-                try:
-                    if self.bg_label.winfo_exists():
-                        self.bg_label.config(image=self.backgroundImg)
-                        self.bg_label.image = self.backgroundImg
-                except tk.TclError:
-                    pass
 
     def apply_settings(self):
         global APP_FONT
@@ -1392,53 +1379,53 @@ class ExpirationApp:
     def export_to_pdf(self, meal):
         print("Export to PDF for:", meal["strMeal"])
 
-    def show_full_recipe_view_old(self):
-        if not hasattr(self, "current_recipe") or not self.current_recipe:
-            return
+    # def show_full_recipe_view_old(self):
+    #     if not hasattr(self, "current_recipe") or not self.current_recipe:
+    #         return
 
-        self.clear_screen()
+    #     self.clear_screen()
 
-        meal = self.current_recipe
-        name = meal["strMeal"]
-        instructions = meal["strInstructions"]
-        image_url = meal["strMealThumb"]
+    #     meal = self.current_recipe
+    #     name = meal["strMeal"]
+    #     instructions = meal["strInstructions"]
+    #     image_url = meal["strMealThumb"]
 
-        # Background
-        bg_label = tk.Label(self.root, image=self.card_backgroundImg)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.lower()
+    #     # Background
+    #     bg_label = tk.Label(self.root, image=self.card_backgroundImg)
+    #     bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+    #     bg_label.lower()
 
-        # Title
-        tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
+    #     # Title
+    #     tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
 
-        # Image
-        img_data = requests.get(image_url, timeout=5).content
-        img = Image.open(BytesIO(img_data)).resize((300, 300))
-        photo = ImageTk.PhotoImage(img)
-        img_label = tk.Label(self.root, image=photo, bg="white")
-        img_label.image = photo
-        img_label.pack(pady=10)
+    #     # Image
+    #     img_data = requests.get(image_url, timeout=5).content
+    #     img = Image.open(BytesIO(img_data)).resize((300, 300))
+    #     photo = ImageTk.PhotoImage(img)
+    #     img_label = tk.Label(self.root, image=photo, bg="white")
+    #     img_label.image = photo
+    #     img_label.pack(pady=10)
 
-        # Instructions (scrollable)
-        frame = tk.Frame(self.root)
-        frame.pack(pady=10, fill=tk.BOTH, expand=True)
+    #     # Instructions (scrollable)
+    #     frame = tk.Frame(self.root)
+    #     frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
-        canvas = tk.Canvas(frame, height=200, bg="white")
-        scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="white")
+    #     canvas = tk.Canvas(frame, height=200, bg="white")
+    #     scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+    #     scroll_frame = tk.Frame(canvas, bg="white")
 
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+    #     scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    #     canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+    #     canvas.configure(yscrollcommand=scrollbar.set)
 
-        tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
+    #     tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+    #     canvas.pack(side="left", fill="both", expand=True)
+    #     scrollbar.pack(side="right", fill="y")
 
-        # Back button
-        back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
-        back_btn.pack(pady=10)
+    #     # Back button
+    #     back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
+    #     back_btn.pack(pady=10)
 
     def load_settings(self):
         if os.path.exists(CONFIG_FILE):
@@ -1714,8 +1701,7 @@ class ExpirationApp:
 	## Background Greeting ##
         welcome = Label(root,
                         text = " Expiration Tracker:",
-                        #font=("Comic Sans MS", 33)).pack()
-                        font=APP_FONT_TITLE.pack())
+                        font=APP_FONT_TITLE)
 
 	## Add Item ##
         add_btn = tk.Button(self.root,
@@ -1791,6 +1777,7 @@ class ExpirationApp:
     ## Create Card view ##
     def create_card_view(self, item=None):
         self.clear_screen()
+        self.load_items()
 
         self.bg_image_original = Image.open("pics/backgrounds/back_pastel.jpg")
         self.bg_label = tk.Label(self.root)
@@ -1879,6 +1866,7 @@ class ExpirationApp:
     def create_list_view(self, item=None):
         self.clear_screen()
         self.current_view = "list"
+        self.load_items()
 
         self.bg_image_original = Image.open("pics/backgrounds/back_toon.jpg")
         self.bg_label = tk.Label(self.root)
@@ -1904,7 +1892,7 @@ class ExpirationApp:
         search_entry.pack(side=tk.LEFT, padx=5)
         search_entry.bind("<KeyRelease>", lambda event: self.create_list_view())
 
-        tk.Button(search_frame, text="Clear", command=lambda: self.clear_search(self.create_list_view)).pack(side=tk.LEFT)
+        # tk.Button(search_frame, text="Clear", command=lambda: self.clear_search(self.create_list_view)).pack(side=tk.LEFT)
 
         # Scrollable canvas
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
@@ -2157,6 +2145,7 @@ class ExpirationApp:
 
     def show_nutrition_info(self, nutrition_info):
         # Show nutrition information in a popup window
+        self.clear_screen()
         info_window = tk.Toplevel(self.root)
         info_window.title("Nutrition Information")
 
@@ -2199,26 +2188,17 @@ class ExpirationApp:
         self.refresh_views()
 
     def load_items(self):
-        self.items = []
-        if os.path.exists("items.json"):
+        if os.path.exists(SAVE_FILE):
             try:
-                with open("items.json", "r") as f:
+                with open(SAVE_FILE, 'r') as f:
                     data = json.load(f)
-                    for item in data:
-                        # Adjust field names to match your JSON structure
-                        name = item.get("name")
-                        expiry_str = item.get("expiration_date")
-                        if expiry_str:
-                            # Ensure expiry_str is a string before parsing
-                            if isinstance(expiry_str, datetime):
-                                expiry = expiry_str
-                            else:
-                                expiry = datetime.strptime(expiry_str, "%Y-%m-%d")
-                            self.items.append(Item(name, expiry))
+                    self.items = [Item.from_dict(d) for d in data]
             except Exception as e:
-                print(f"[Error] Failed to load items.json: {e}")
+                print("Failed to load items:", e)
+                self.items = []
         else:
-            print("[Info] items.json does not exist.")
+            self.items = []
+
 
     def save_items(self):
         try:
@@ -2315,9 +2295,10 @@ class ExpirationApp:
         center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
-        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-
+        # Expiration date picker (unchanged)
+        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
+        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
+#        self.date_picker.pack(pady=5)
         self.cal = Calendar(
             center_frame,
             selectmode='day',
@@ -2355,7 +2336,7 @@ class ExpirationApp:
         # Submit button
         submit_btn = tk.Button(
             right_frame, image=saveImg, cursor="hand2",
-            bg="black", fg="white", command=self.save_items
+            bg="black", fg="white", command=self.save_new_item
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
@@ -3472,14 +3453,15 @@ class CameraApp:
 
     def set_background_image(self, image_path):
         if hasattr(self, "bg_label") and self.bg_label:
-            self.bg_label.destroy()
+            self.background_label.destroy()
 
-        self.bg_image_original = Image.open(image_path)
-        self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_image = Image.open(image_path)
+        self.bg_image = self.bg_image.resize((self.root.winfo_width(), self.root.winfo_height()), Image.ANTIALIAS)
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
+        self.background_label = tk.Label(self.root, image=self.bg_photo)
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.background_label.lower()  # Send background to the back
 
 class SpotifyApp:
     def __init__(self, root, backgroundImg, backImg, back_callback, token):
@@ -3823,6 +3805,7 @@ def make_click_callback(url):
     return lambda e: open_in_app_browser(url)
 
 def show_youtube_in_app(url, app_root):
+    self.clear_screen()
     app_root.withdraw()  # hide the main Tkinter window
     try:
         webview.create_window(
@@ -3915,17 +3898,17 @@ class MusicApp:
         self.bg_label.config(image=self.backgroundImg)
         self.bg_label.image = self.backgroundImg
 
-    def set_background_image(self, image_path):
-        if hasattr(self, 'bg_label') and self.bg_label:
-            self.bg_label.destroy()
-            self.bg_label = None
+    # def set_background_image(self, image_path):
+    #     if hasattr(self, 'bg_label') and self.bg_label:
+    #         self.bg_label.destroy()
+    #         self.bg_label = None
 
-        self.bg_image_original = Image.open(image_path)
-        self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+    #     self.bg_image_original = Image.open(image_path)
+    #     self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
 
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
+    #     self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+    #     self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+    #     self.bg_label.lower()
 
     def create_music_screen(self):
         self.clear_screen()
@@ -4461,5 +4444,5 @@ if __name__ == "__main__":
         #ExpirationApp(root)
         ExpirationApp(root, spotify_token)
 
-    root.after(3500, start_app)
+    root.after(4000, start_app)
     root.mainloop()
