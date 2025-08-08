@@ -1123,6 +1123,26 @@ class ExpirationApp:
         for widget in self.root.winfo_children():
             widget.lift()
 
+        def get_weather_icon(self):
+            if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
+                try:
+                    # Run weather update if possible
+                    self.update_weather()
+                except Exception as e:
+                    print(f"[Weather Fallback] Could not update weather: {e}")
+                    # Load a placeholder image
+                    try:
+                        placeholder_img = Image.open("pics/icons/weather_placeholder.png")
+                        self.current_weather_icon = ImageTk.PhotoImage(placeholder_img)
+                    except FileNotFoundError:
+                        # Create a blank placeholder
+                        from PIL import ImageDraw
+                        img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
+                        draw = ImageDraw.Draw(img)
+                        draw.text((10, 20), "?", fill="black")
+                        self.current_weather_icon = ImageTk.PhotoImage(img)
+            return self.current_weather_icon
+
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
         #panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
@@ -2337,21 +2357,48 @@ class ExpirationApp:
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
-        if not hasattr(self, "current_weather_icon"):
-             self.update_weather()
-        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
-             weather_btn = self.weather_button
-        else:
-             weather_btn = tk.Button(
-                  self.content_frame,
-                  image=self.current_weather_icon,  # assuming you store the icon here
-                  command=self.open_weather_ui,
-                  bg="black",
-                  borderwidth=0
-                  )
-             self.weather_button = weather_btn
+#        if not hasattr(self, "current_weather_icon"):
+#             self.update_weather()
+#        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
+#             weather_btn = self.weather_button
+#        else:
+#             weather_btn = tk.Button(
+#                  self.content_frame,
+#                  image=self.current_weather_icon,  # assuming you store the icon here
+#                  command=self.open_weather_ui,
+#                  bg="black",
+#                  borderwidth=0
+#                  )
+#             self.weather_button = weather_btn
 
-        weather_btn.place(relx=0.5, y=10, anchor="n")
+#        weather_btn.place(relx=0.5, y=10, anchor="n")
+#        ToolTip(weather_btn, "Click to Open the Weather App")
+
+        nav_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
+        nav_frame.pack(pady=10)
+
+#        # Back Button
+#        back_btn = tk.Button(
+#            nav_frame,
+#            image=backImg,
+#            font=APP_FONT,
+#            bg="orange",
+#            fg="white",
+#            command=self.create_home_screen
+#        )
+#        back_btn.pack(side=tk.LEFT, padx=5)
+#        ToolTip(back_btn, "Return to Home Screen")
+
+        # Weather Button (with guaranteed icon)
+        weather_icon = self.get_weather_icon()
+        weather_btn = tk.Button(
+            nav_frame,
+            image=weather_icon,
+            bg="orange",
+            command=lambda: self.open_weather_ui()
+        )
+        weather_btn.image = weather_icon  # prevent garbage collection
+        weather_btn.pack(side=tk.LEFT, padx=5)
         ToolTip(weather_btn, "Click to Open the Weather App")
 
     def get_expiring_items(self):
@@ -2382,7 +2429,7 @@ class ExpirationApp:
                 #bd=0,
                 #highlightthickness=0,
                 cursor="hand2",
-                command=lambda: self.open_weather_page(return_callback=self.add_item_popup)
+                command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
             )
             self.weather_button.image = icon_photo
             self.weather_button.pack()
@@ -3087,11 +3134,11 @@ class CameraApp:
         self.detected = False  # Track detection
         self.last_data = ""
         self.entry_var = tk.StringVar()  # For autofill
-        self.detect_label = tk.Label(self.frame, text="", font=("Helvetica", 16), bg="white", fg="green")
+        self.detect_label = tk.Label(self.frame, text="", font=APP_FONT, bg="white", fg="green")
         self.detect_label.place(relx=0.5, rely=0.85, anchor="center")
-        self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=("Helvetica", 14))
+        self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=APP_FONT)
         self.entry_field.place(relx=0.5, rely=0.9, anchor="center")
-        self.animation_label = tk.Label(self.frame, text="✓", font=("Helvetica", 50), fg="green", bg="white")
+        self.animation_label = tk.Label(self.frame, text="✓", font=APP_FONT_TITLE, fg="green", bg="white")
         self.animation_label.place(relx=0.5, rely=0.5, anchor="center")
         self.animation_label.lower()
 
@@ -3114,8 +3161,20 @@ class CameraApp:
         self.canvas = tk.Canvas(self.frame, width=640, height=480, bg="black", highlightthickness=0)
         self.canvas.place(relx=0.5, rely=0.4, anchor="center")
 
-        self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
-        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+#        self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
+#        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
+
+        back_btn = tk.Button(
+            self.root,
+            image=backImg,
+            bg="orange",
+            #borderwidth=0,
+            #highlightthickness=0,
+            cursor="hand2",
+            command=self.back_callback
+        )
+        back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")  # Top-right corner with small top margin
+        ToolTip(back_btn, "Click to Return to the Main Menu")
 
     def update_frame(self):
         if self.cap.isOpened():
@@ -3143,7 +3202,7 @@ class CameraApp:
                 imgtk = ImageTk.PhotoImage(image=img)
                 #self.video_label.configure(image=imgtk)
                 #self.video_label.image = imgtk
-            
+
                 # Clear previous canvas image if it exists
                 if hasattr(self, 'canvas_img_id'):
                     self.canvas.delete(self.canvas_img_id)
@@ -3209,24 +3268,6 @@ class CameraApp:
         self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
-
-## Spotipy ##
-#sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-#    client_id="YOUR_CLIENT_ID",
-#    client_secret="YOUR_CLIENT_SECRET",
-#    redirect_uri="http://localhost:8888/callback",
-#    scope="user-read-playback-state,user-modify-playback-state,user-read-currently-playing"
-#))
-
-#current = sp.current_playback()
-#if current:
-#    print("Currently Playing:", current['item']['name'])
-#else:
-#    print("Nothing is playing.")
-
-#play_btn = tk.Button(self.frame, text="Play", command=lambda: sp.start_playback())
-#pause_btn = tk.Button(self.frame, text="Pause", command=lambda: sp.pause_playback())
-#next_btn = tk.Button(self.frame, text="Next", command=lambda: sp.next_track())
 
 class SpotifyApp:
     def __init__(self, root, backgroundImg, backImg, back_callback, token):
