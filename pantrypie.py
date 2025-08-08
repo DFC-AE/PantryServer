@@ -11,6 +11,7 @@ from time import strftime
 import cv2
 from PIL import Image, ImageTk
 import itertools
+from pyzbar import pyzbar
 from pyzbar.pyzbar import decode
 import matplotlib.pyplot as plt
 import os
@@ -494,7 +495,6 @@ class ExpirationApp:
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
-        #self.init_camera()
         self.search_var = tk.StringVar()
         self.load_settings()
         self.apply_settings()
@@ -1866,7 +1866,7 @@ class ExpirationApp:
 #                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
 #        card_back_btn.pack(pady=10)
         card_back_btn = tk.Button(self.root, image=backImg,
-                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_tracker_ui(item))
+                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_home_screen(item))
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
@@ -1938,7 +1938,7 @@ class ExpirationApp:
 #        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
 #        back_btn.pack(pady=10)
         card_back_btn = tk.Button(self.root, image=backImg,
-                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_tracker_ui(item))
+                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_home_screen(item))
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
@@ -2554,7 +2554,7 @@ class ExpirationApp:
 
         back_btn = tk.Button(self.root,
                              image=backImg,
-        		     command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
+        		     command=lambda: [self.stop_camera(), self.create_home_screen(None)])
                              #command=lambda: self.create_tracker_ui(None))
         back_btn.pack(pady=10, side="left")
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
@@ -3204,6 +3204,39 @@ class CameraApp_old:
         self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
         ToolTip(back_btn, "Click to Return to the Main Menu")
 
+    def update_frame_new(self):
+        if self.cap is not None and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                # Convert OpenCV BGR to RGB
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # --- Barcode detection ---
+                barcodes = pyzbar.decode(frame)
+                for barcode in barcodes:
+                    (x, y, w, h) = barcode.rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                    barcode_data = barcode.data.decode("utf-8")
+                    barcode_type = barcode.type
+                    text = "{} ({})".format(barcode_data, barcode_type)
+                    cv2.putText(frame, text, (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                    # Flash effect
+                    self.flash_screen()
+
+                    # Save to inventory
+                    self.save_barcode_to_inventory(barcode_data)
+
+                # --- Convert for Tkinter display ---
+                img = Image.fromarray(frame)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.canvas.imgtk = imgtk
+                self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+
+        self.root.after(10, self.update_frame)
+
     def update_frame_old(self):
         if self.cap.isOpened():
             ret, frame = self.cap.read()
@@ -3359,6 +3392,39 @@ class CameraApp:
         if callable(self.back_callback):
             self.back_callback()
 
+    def update_frame(self):
+        if self.cap is not None and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                # Convert OpenCV BGR to RGB
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # --- Barcode detection ---
+                barcodes = pyzbar.decode(frame)
+                for barcode in barcodes:
+                    (x, y, w, h) = barcode.rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                    barcode_data = barcode.data.decode("utf-8")
+                    barcode_type = barcode.type
+                    text = "{} ({})".format(barcode_data, barcode_type)
+                    cv2.putText(frame, text, (x, y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                    # Flash effect
+                    self.flash_screen()
+
+                    # Save to inventory
+                    self.save_barcode_to_inventory(barcode_data)
+
+                # --- Convert for Tkinter display ---
+                img = Image.fromarray(frame)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.canvas.imgtk = imgtk
+                self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+
+        self.root.after(10, self.update_frame)
+
     def draw_overlay_rectangle(self, frame):
         h, w, _ = frame.shape
         rect_w, rect_h = int(w * 0.6), int(h * 0.2)
@@ -3398,6 +3464,14 @@ class CameraApp:
 
         # Play sound in a thread to avoid freezing UI
         #threading.Thread(target=lambda: playsound("beep.wav")).start()
+
+    def flash_screen(self):
+        self.frame.config(bg="yellow")
+        self.root.after(100, lambda: self.frame.config(bg="white"))
+
+    def save_barcode_to_inventory(self, code):
+        # TODO: Implement actual saving logic here
+        print(f"Barcode saved: {code}")
 
     def animate_check(self):
         self.animation_label.lift()
