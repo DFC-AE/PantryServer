@@ -2127,26 +2127,14 @@ class ExpirationApp:
         self.refresh_views()
 
     def load_items(self):
-        self.items = []
-        if os.path.exists("items.json"):
+        if os.path.exists(SAVE_FILE):
             try:
-                with open("items.json", "r") as f:
-                    data = json.load(f)
-                    for item in data:
-                        # Adjust field names to match your JSON structure
-                        name = item.get("name")
-                        expiry_str = item.get("expiration_date")
-                        if expiry_str:
-                            # Ensure expiry_str is a string before parsing
-                            if isinstance(expiry_str, datetime):
-                                expiry = expiry_str
-                            else:
-                                expiry = datetime.strptime(expiry_str, "%Y-%m-%d")
-                            self.items.append(Item(name, expiry))
+                with open(SAVE_FILE, 'r') as f:
+                    return json.load(f)
             except Exception as e:
-                print(f"[Error] Failed to load items.json: {e}")
-        else:
-            print("[Info] items.json does not exist.")
+                print("Failed to load items:", e)
+                return []
+        return []
 
     def save_items(self):
         try:
@@ -3186,14 +3174,15 @@ class CameraApp:
 
     def set_background_image(self, image_path):
         if hasattr(self, "bg_label") and self.bg_label:
-            self.bg_label.destroy()
+            self.background_label.destroy()
 
-        self.bg_image_original = Image.open(image_path)
-        self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_image = Image.open(image_path)
+        self.bg_image = self.bg_image.resize((self.root.winfo_width(), self.root.winfo_height()), Image.ANTIALIAS)
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
+        self.background_label = tk.Label(self.root, image=self.bg_photo)
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.background_label.lower()  # Send background to the back
 
 ## Spotipy ##
 #sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
