@@ -3123,63 +3123,79 @@ class WeatherApp:
             print("Icon load failed:", e)
             return None
 
-class CameraApp:
+class CameraApp_old:
     def __init__(self, root, backgroundImg, backImg, back_callback=None):
         self.root = root
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
+
         self.frame = tk.Frame(self.root)
         self.frame.place(x=0, y=0, relwidth=1, relheight=1)
-        self.detected = False  # Track detection
+
+        self.detected = False
         self.last_data = ""
-        self.entry_var = tk.StringVar()  # For autofill
+        self.entry_var = tk.StringVar()
+
         self.detect_label = tk.Label(self.frame, text="", font=APP_FONT, bg="white", fg="green")
         self.detect_label.place(relx=0.5, rely=0.85, anchor="center")
+
         self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=APP_FONT)
         self.entry_field.place(relx=0.5, rely=0.9, anchor="center")
-        self.animation_label = tk.Label(self.frame, text="✓", font=APP_FONT_TITLE, fg="green", bg="white")
+
+        self.animation_label = tk.Label(self.frame, text="Time", font=APP_FONT_TITLE, fg="green")
         self.animation_label.place(relx=0.5, rely=0.5, anchor="center")
         self.animation_label.lower()
 
+        # Load original background image for resizing
+        self.backgroundImg_original = Image.open("pics/backgrounds/cam.jpg")
+
+        # Open camera
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-           print("Failed to Open Camera")
+            print("Failed to Open Camera")
         else:
-           print("Camera Opened Successfully")
+            print("Camera Opened Successfully")
 
+        # Build UI (creates bg_canvas)
         self.camera_ui()
+
+        # Start updating video feed
         self.update_frame()
 
     def camera_ui(self):
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        # Create canvas for background
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
 
-        #self.video_label = tk.Label(self.frame, bg="black")
-        #self.video_label.place(relx=0.5, rely=0.4, anchor="center")
+        # Background image item
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.backgroundImg)
+        self.bg_canvas.bind("<Configure>", self.resize_background)
 
-        self.canvas = tk.Canvas(self.frame, width=640, height=480, bg="black", highlightthickness=0)
-        self.canvas.place(relx=0.5, rely=0.4, anchor="center")
+        # Camera view in center
+        self.camera_frame = tk.Label(self.bg_canvas, bg="black")
+        self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.camera_frame)
 
-#        self.back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback)
-#        self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
-
+        # Back button (top right)
         back_btn = tk.Button(
-            self.root,
-            image=backImg,
+            self.bg_canvas,
+            image=self.backImg,
             bg="orange",
-            #borderwidth=0,
-            #highlightthickness=0,
             cursor="hand2",
             command=self.back_callback
         )
-        back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")  # Top-right corner with small top margin
+        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
         ToolTip(back_btn, "Click to Return to the Main Menu")
 
-    def update_frame(self):
+    def update_frame_old(self):
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
+                frame = cv2.resize(frame, (self.camera_frame.winfo_width(), self.camera_frame.winfo_height()))
+                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.camera_frame.imgtk = imgtk
+                self.camera_frame.config(image=imgtk)
                 frame = self.draw_overlay_rectangle(frame)
                 barcodes = decode(frame)
                 if barcodes and not self.detected:
@@ -3212,6 +3228,109 @@ class CameraApp:
                 self.canvas.imgtk = imgtk
 
         self.frame.after(10, self.update_frame)
+
+class CameraApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback or self.create_home_screen  # fallback if not given
+
+        # ===== Frame covering the entire window =====
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # ===== Canvas for background =====
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0, bd=0)
+        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Load background image (fallback to provided backgroundImg if file not found)
+        try:
+            self.bg_image_original = Image.open("pics/backgrounds/cam.jpg")
+        except FileNotFoundError:
+            self.bg_image_original = backgroundImg  # use passed-in image
+
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+
+        # ===== Camera feed label (inside Canvas) =====
+        self.canvas = tk.Label(self.bg_canvas, bg="black")
+        self.camera_window = self.bg_canvas.create_window(
+            self.root.winfo_width() // 2,
+            self.root.winfo_height() // 2,
+            anchor="center",
+            window=self.canvas
+        )
+
+        # ===== Back button (floating in top-right) =====
+        self.back_btn = tk.Button(
+            self.bg_canvas,
+            image=self.backImg,
+            bg="orange",
+            cursor="hand2",
+            command=self.close
+        )
+        self.back_btn_window = self.bg_canvas.create_window(
+            self.root.winfo_width() - 10,
+            10,
+            anchor="ne",
+            window=self.back_btn
+        )
+        ToolTip(self.back_btn, "Click to Return to the Main Menu")
+
+        # ===== Bind resizing =====
+        self.bg_canvas.bind("<Configure>", self.resize_background)
+
+        # ===== Camera =====
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("Failed to Open Camera")
+        else:
+            print("Camera Opened Successfully")
+
+        self.update_frame()
+
+    def resize_background(self, event):
+        """Resize background, center camera feed, and reposition back button."""
+        new_width = event.width
+        new_height = event.height
+
+        # Resize background image
+        resized_bg = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+        self.bg_image = ImageTk.PhotoImage(resized_bg)
+        self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
+
+        # Resize and center camera feed
+        cam_width = int(new_width * 0.6)
+        cam_height = int(new_height * 0.6)
+        self.bg_canvas.coords(self.camera_window, new_width // 2, new_height // 2)
+        self.canvas.config(width=cam_width, height=cam_height)
+
+        # Always float back button in top-right
+        self.bg_canvas.coords(self.back_btn_window, new_width - 10, 10)
+
+    def update_frame(self):
+        """Grab frame from camera and update feed."""
+        ret, frame = self.cap.read()
+        if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (self.canvas.winfo_width(), self.canvas.winfo_height()))
+            img = ImageTk.PhotoImage(Image.fromarray(frame))
+            self.canvas.config(image=img)
+            self.canvas.image = img
+        self.root.after(10, self.update_frame)
+
+    def close(self):
+        """Release camera and go back."""
+        if self.cap.isOpened():
+            self.cap.release()
+        self.frame.destroy()
+        self.create_home_screen()
+
+    def create_home_screen(self):
+        """Fallback main menu method if not provided."""
+        if callable(self.back_callback):
+            self.back_callback()
 
     def draw_overlay_rectangle(self, frame):
         h, w, _ = frame.shape
