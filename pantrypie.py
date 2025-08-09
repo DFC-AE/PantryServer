@@ -41,6 +41,8 @@ import webview
 import tkinter.font as tkFont
 #from playsound import playsound
 import ephem
+from datetime import date as dt_date
+import calendar
 
 ## Create Root ##
 root = tk.Tk()
@@ -57,6 +59,8 @@ APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
 APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
 APP_FONT.configure(size=12)
 APP_FONT_TITLE.configure(size=25)
+APP_FONT_SMALL = ("Arial", 8)
+APP_FONT_SMALL_BOLD = ("Arial", 8, "bold")
 CITY = "Shreveport, US"
 KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 CONFIG_FILE = "config.json"
@@ -3372,43 +3376,43 @@ class WeatherApp:
         background_path = self.get_background_path_for_condition(condition, icon_code)
         self.set_background_from_path(background_path)
 
-        ## Set Background Image and Place in the Background ##
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
-        self.bg_label.image = self.backgroundImg
+        # 1. Load and place the background first
+        self.bg_image = Image.open("pics/backgrounds/weather.jpg")
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
-        ## Main Transparent Content Frame for Layout ##
-        content_frame = tk.Frame(self.frame, bg="", padx=10, pady=10)
-#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
-#        content_frame.pack(fill="both", expand=True)
-        content_frame.pack(expand=True)
+        self.bg_label = tk.Label(self.root, image=self.bg_photo)
+        self.bg_label.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-	## Current Weather Content Frame ##
-#        content_frame = tk.Frame(self.root, bg="white", padx=10, pady=10)
-#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+        # 2. Resize background dynamically
+        def resize_bg(event):
+            new_width = event.width
+            new_height = event.height
+            resized = self.bg_image.resize((new_width, new_height), Image.LANCZOS)
+            self.bg_photo = ImageTk.PhotoImage(resized)
+            self.bg_label.config(image=self.bg_photo)
+
+        self.root.bind("<Configure>", resize_bg)
+
+        # 3. Forecast frame (top)
+        self.forecast_frame = tk.Frame(self.root, bg="")
+        self.forecast_frame.pack(fill="x", pady=10)
+        self.forecast_frame.pack_propagate(False)
+
+        # 4. Moon calendar frame (bottom)
+        self.calendar_frame = tk.Frame(self.root, bg="")
+        self.calendar_frame.pack(fill="both", expand=True, pady=10)
 
         ## Current Weather Label ##
-        #self.weather_label = tk.Label(self.root, font=APP_FONT)
-        #self.weather_label = tk.Label(content_frame, font=APP_FONT, bg="white")
-        self.weather_label = tk.Label(content_frame, font=APP_FONT)
+        self.weather_label = tk.Label(self.forecast_frame, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
-        #self.weather_icon_label = tk.Label(self.root)
-        #self.weather_icon_label = tk.Label(content_frame, bg="white")
-        self.weather_icon_label = tk.Label(content_frame)
+        self.weather_icon_label = tk.Label(self.forecast_frame)
         self.weather_icon_label.pack()
-
-        ## Forecast Frame ##
-        #forecast_frame = tk.Frame(self.root)
-        #forecast_frame = tk.Frame(content_frame, bg="white")
-        forecast_frame = tk.Frame(content_frame)
-        forecast_frame.pack(pady=10)
 
         self.forecast_labels = []
         for _ in range(5):
-            day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame = tk.Frame(self.forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
             day_frame.pack(side="left", padx=5)
 
             #icon_label = tk.Label(day_frame, bg="white")
@@ -3421,35 +3425,27 @@ class WeatherApp:
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
+#        self.draw_moon_calendar(self.root)
+#        self.draw_moon_calendar(self.forecast_frame)
+
+        moon_frame = tk.Frame(self.calendar_frame, bg="white", highlightbackground="black", highlightthickness=1)
+        moon_frame.pack(pady=10)
+        self.draw_moon_calendar(moon_frame)
+
         moon_text = self.get_moon_phase()
-        moon_label = tk.Label(self.root, text=moon_text, font=("Arial", 14), bg="black", fg="white")
+        moon_label = tk.Label(self.root, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
         moon_label.pack(pady=5)
 
         ## Back Button ##
-        #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
-        #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
-        #back_btn.pack(pady=10)
-#        if callable(self.back_callback):
         self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
                               background="orange",
                               #image=self.backImg,
                               image=backsmallImg,
-                                  #command=self.back_callback)
-                                  #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
+                              #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
                               command=self.back_callback)
                                   #command=lambda: self.create_home_screen(None))
-#        else:
-#            self.back_btn = tk.Button(self.root,
-#                                  cursor="hand2",
-#                                  image=self.backImg,
-                                  #command=self.back_callback)
-#                                  command=self.root.destroy)
-                                  #command=lambda: self.create_home_screen(None))
-        #self.back_btn.pack(pady=10)
-        #self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
         self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
-        #self.back_btn.place(x=10, y=10, anchor="s")
         self.back_btn.image = self.backImg
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
@@ -3580,6 +3576,76 @@ class WeatherApp:
             return "Waning Crescent"
         else:
             return "New Moon"
+
+    def draw_moon_calendar(self, parent):
+        calendar_frame = tk.Frame(parent, bg="white")
+        calendar_frame.pack(pady=5, anchor="center")
+        tk.Label(calendar_frame, text="Moon Phase Calendar", font=APP_FONT_BOLD,
+                 bg="black", fg="white").pack(fill="x")
+
+        MOON_GLYPHS = {
+            "New Moon": "\U0001F311",
+            "Waxing Crescent": "\U0001F312",
+            "First Quarter": "\U0001F313",
+            "Waxing Gibbous": "\U0001F314",
+            "Full Moon": "\U0001F315",
+            "Waning Gibbous": "\U0001F316",
+            "Last Quarter": "\U0001F317",
+            "Waning Crescent": "\U0001F318"
+        }
+
+        def get_phase_name(date):
+            moon = ephem.Moon(date)
+            phase = moon.phase
+            if phase == 0:
+                return "New Moon"
+            elif phase < 7.4:
+                return "Waxing Crescent"
+            elif phase < 14.8:
+                return "First Quarter"
+            elif phase < 22.1:
+                return "Waxing Gibbous"
+            elif phase < 29.5:
+                return "Full Moon"
+            elif phase < 36.8:
+                return "Waning Gibbous"
+            elif phase < 44.1:
+                return "Last Quarter"
+            else:
+                return "Waning Crescent"
+
+        today = dt_date.today()
+        year, month = today.year, today.month
+
+        cal = calendar.Calendar(firstweekday=6)  # Sunday start
+        month_days = cal.monthdayscalendar(year, month)
+
+        cal_frame = tk.Frame(calendar_frame, bg="white")
+        cal_frame.pack(pady=5, anchor="center")
+
+        # Smaller fonts
+        day_font = ("Arial", 7, "bold")
+        cell_font = ("Arial", 8)
+
+        # Day headers
+        for idx, day_name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
+            tk.Label(cal_frame, text=day_name, font=day_font,
+                     bg="black", fg="white", width=3, height=1).grid(row=0, column=idx, padx=1, pady=1)
+
+        # Days with moon phases
+        for row_idx, week in enumerate(month_days, start=1):
+            for col_idx, day in enumerate(week):
+                if day == 0:
+                    tk.Label(cal_frame, text="", width=3, height=1,
+                             bg="white").grid(row=row_idx, column=col_idx, padx=1, pady=1)
+                else:
+                    date_obj = dt_date(year, month, day)
+                    phase_name = get_phase_name(date_obj)
+                    glyph = MOON_GLYPHS.get(phase_name, "")
+                    fg_color = "red" if date_obj == today else "black"
+                    tk.Label(cal_frame, text=f"{day}\n{glyph}",
+                             font=cell_font, width=3, height=2,
+                             bg="white", fg=fg_color).grid(row=row_idx, column=col_idx, padx=1, pady=1)
 
 class CameraApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
