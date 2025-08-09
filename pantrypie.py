@@ -1089,10 +1089,10 @@ class ExpirationApp:
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
-        #refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
-        #refresh_btn.image = foodImg
-        #refresh_btn.pack(side=tk.LEFT)
-        #ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
+        refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        refresh_btn.image = foodImg
+        refresh_btn.pack(side=tk.LEFT)
+        ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
@@ -1237,9 +1237,9 @@ class ExpirationApp:
 
         # Refresh button
         #refresh_btn = tk.Button(panel, cursor="hand2", image="refreshImg", command=self.load_random_recipe)
-        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
-        refresh_btn.pack(pady=5)
-        ToolTip(refresh_btn, "Click to Load a New Recipe")
+#        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+#        refresh_btn.pack(pady=5)
+#        ToolTip(refresh_btn, "Click to Load a New Recipe")
 
             # Load the first recipe
         self.load_random_recipe()
@@ -1294,20 +1294,38 @@ class ExpirationApp:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+#        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+#        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+
+        def _on_canvas_config(event):
+            # make the inner frame match the canvas width (so children can expand)
+            canvas.itemconfig(scroll_window, width=event.width)
+
+        canvas.bind("<Configure>", _on_canvas_config)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
         # Back button
-        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="white", bd=0)
-        back_btn.pack(pady=10, anchor="w", padx=10)
+#        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="orange", cursor="hand2", bd=0)
+        #back_btn.pack(pady=10, anchor="w", padx=10)
+#        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+#        back_btn.lift()
+#        ToolTip(back_btn, "Click to Return to the Previous Screen")
+
+        back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen,
+                     bd=0, cursor="hand2", background="orange", highlightthickness=0)
+        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        self.root.after(50, back_btn.lift)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
         ## New ##
         # Horizontal container for image and text
-        content_frame = tk.Frame(scrollable_frame, bg="white")
-        content_frame.pack(fill=tk.X, padx=10, pady=10)
+        content_frame = tk.Frame(scrollable_frame, bg="")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
         # Meal image (LEFT)
         try:
@@ -1323,14 +1341,14 @@ class ExpirationApp:
             print("Error loading image:", e)
 
         # Text content (RIGHT)
-        text_frame = tk.Frame(content_frame, bg="white")
+        text_frame = tk.Frame(content_frame, bg="")
         text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Vertically center the text content using stretch and expand
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
 
-        text_inner = tk.Frame(text_frame, bg="white")
+        text_inner = tk.Frame(text_frame, bg="")
         text_inner.pack(expand=True)
 
         tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
