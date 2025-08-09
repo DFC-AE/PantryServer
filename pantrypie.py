@@ -1809,17 +1809,17 @@ class ExpirationApp:
 
         self.current_view = "card"
 
+        # Sort menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
+        sort_menu.pack(pady=10)
+
         # Search bar
         search_frame = tk.Frame(self.root, bg="")
-        search_frame.pack(pady=(10, 0))
+        search_frame.pack(pady=(10, 15))
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
         search_entry.pack(side=tk.LEFT, padx=(10, 5))
         search_entry.bind("<KeyRelease>", lambda event: self.create_card_view())
-
-        # Sort menu
-        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
-        sort_menu.pack(pady=10)
 
         # Setup scrollable canvas
         #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
@@ -3142,145 +3142,6 @@ class WeatherApp:
             print("Icon load failed:", e)
             return None
 
-class CameraApp_old:
-    def __init__(self, root, backgroundImg, backImg, back_callback=None):
-        self.root = root
-        self.backgroundImg = backgroundImg
-        self.backImg = backImg
-        self.back_callback = back_callback
-
-        self.frame = tk.Frame(self.root)
-        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
-
-        self.detected = False
-        self.last_data = ""
-        self.entry_var = tk.StringVar()
-
-        self.detect_label = tk.Label(self.frame, text="", font=APP_FONT, bg="white", fg="green")
-        self.detect_label.place(relx=0.5, rely=0.85, anchor="center")
-
-        self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=APP_FONT)
-        self.entry_field.place(relx=0.5, rely=0.9, anchor="center")
-
-        self.animation_label = tk.Label(self.frame, text="Time", font=APP_FONT_TITLE, fg="green")
-        self.animation_label.place(relx=0.5, rely=0.5, anchor="center")
-        self.animation_label.lower()
-
-        # Load original background image for resizing
-        self.backgroundImg_original = Image.open("pics/backgrounds/cam.jpg")
-
-        # Open camera
-        #self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            print("Failed to Open Camera")
-        else:
-            print("Camera Opened Successfully")
-
-        # Build UI (creates bg_canvas)
-        self.camera_ui()
-
-        # Start updating video feed
-        self.update_frame()
-
-    def camera_ui(self):
-        # Create canvas for background
-        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
-        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
-
-        # Background image item
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.backgroundImg)
-        self.bg_canvas.bind("<Configure>", self.resize_background)
-
-        # Camera view in center
-        self.camera_frame = tk.Label(self.bg_canvas, bg="black")
-        self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.camera_frame)
-
-        # Back button (top right)
-        back_btn = tk.Button(
-            self.bg_canvas,
-            image=self.backImg,
-            bg="orange",
-            cursor="hand2",
-            command=self.back_callback
-        )
-        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
-        ToolTip(back_btn, "Click to Return to the Main Menu")
-
-    def update_frame_new(self):
-        if self.cap is not None and self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                # Convert OpenCV BGR to RGB
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                # --- Barcode detection ---
-                barcodes = pyzbar.decode(frame)
-                for barcode in barcodes:
-                    (x, y, w, h) = barcode.rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-                    barcode_data = barcode.data.decode("utf-8")
-                    barcode_type = barcode.type
-                    text = "{} ({})".format(barcode_data, barcode_type)
-                    cv2.putText(frame, text, (x, y - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                    # Flash effect
-                    self.flash_screen()
-
-                    # Save to inventory
-                    self.save_barcode_to_inventory(barcode_data)
-
-                # --- Convert for Tkinter display ---
-                img = Image.fromarray(frame)
-                imgtk = ImageTk.PhotoImage(image=img)
-                self.canvas.imgtk = imgtk
-                self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
-
-        self.root.after(10, self.update_frame)
-
-    def update_frame_old(self):
-        if self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                frame = cv2.resize(frame, (self.camera_frame.winfo_width(), self.camera_frame.winfo_height()))
-                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                imgtk = ImageTk.PhotoImage(image=img)
-                self.camera_frame.imgtk = imgtk
-                self.camera_frame.config(image=imgtk)
-                frame = self.draw_overlay_rectangle(frame)
-                barcodes = decode(frame)
-                if barcodes and not self.detected:
-                    data = barcodes[0].data.decode("utf-8")
-                    self.last_data = data
-                    self.entry_var.set(data)
-                    self.detect_label.config(text=f"Detected: {data}")
-                    self.play_beep()
-                    self.animate_check()
-                    self.detected = True
-                    #threading.Timer(2, self.reset_detection).start()
-                    self.frame.after(2000, self.reset_detection)
-
-                for barcode in barcodes:
-                    (x, y, w, h) = barcode.rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-                cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                img = Image.fromarray(cv2image)
-                imgtk = ImageTk.PhotoImage(image=img)
-                #self.video_label.configure(image=imgtk)
-                #self.video_label.image = imgtk
-
-                # Clear previous canvas image if it exists
-                if hasattr(self, 'canvas_img_id'):
-                    self.canvas.delete(self.canvas_img_id)
-
-                # Draw new frame image on canvas at top-left corner
-                self.canvas_img_id = self.canvas.create_image(0, 0, anchor='nw', image=imgtk)
-                self.canvas.imgtk = imgtk
-
-        self.frame.after(10, self.update_frame)
-
 class CameraApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None):
         self.root = root
@@ -3344,25 +3205,30 @@ class CameraApp:
         self.update_frame()
 
     def camera_ui(self):
-        # Background image canvas
+        # Background canvas
         self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        # Load background image
-        self.bg_image_original = self.backgroundImg
-        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
-        self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+        # Load background
+        try:
+            self.bg_image_original = Image.open("pics/backgrounds/camera_bg.jpg")
+        except Exception:
+            self.bg_image_original = Image.new("RGB", (800, 600), "gray")
 
-        # Camera feed canvas
-        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
+        self.bg_image_tk = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_canvas_bg = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+
+        # Camera feed label (centered smaller window)
+        self.camera_label = tk.Label(self.bg_canvas, bg="black")
         self.camera_window = self.bg_canvas.create_window(
             self.bg_canvas.winfo_width() // 2,
             self.bg_canvas.winfo_height() // 2,
             anchor="center",
-            window=self.canvas
+            window=self.camera_label
         )
+
+        # Back button - outside background canvas
         self.back_btn = tk.Button(
-#            self.bg_canvas,
             self.root,
             image=self.backImg,
             bg="orange",
@@ -3372,29 +3238,46 @@ class CameraApp:
             command=self.back_callback
         )
         self.back_btn.place(relx=0.98, rely=0.02, anchor="ne")
-        self.root.after(50, lambda: self.back_btn.lift())
-        self.root.after(100, lambda: self.back_btn.lift())
-#        self.back_btn_window = self.bg_canvas.create_window(
-#            0, 0, anchor="ne", window=self.back_btn
-#        )
+        self.root.after(50, self.back_btn.lift)
 
-        # Always bring to front
-#       self.bg_canvas.tag_raise(self.back_btn_window)
+        # OpenCV camera
+        self.cap = cv2.VideoCapture(0)
 
-        # Reposition on resize
-        def reposition(event):
+        def update_frame():
+            ret, frame = self.cap.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Get current camera label size
+                cam_w = self.camera_label.winfo_width()
+                cam_h = self.camera_label.winfo_height()
+                if cam_w > 0 and cam_h > 0:
+                    frame = cv2.resize(frame, (cam_w, cam_h), interpolation=cv2.INTER_AREA)
+
+                img = ImageTk.PhotoImage(Image.fromarray(frame))
+                self.camera_label.config(image=img)
+                self.camera_label.image = img
+
+            self.camera_label.after(15, update_frame)
+
+        update_frame()
+
+        # Handle resizing
+        def on_resize(event):
+            # Resize background
+            bg_resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(bg_resized)
+            self.bg_canvas.itemconfig(self.bg_canvas_bg, image=self.bg_image_tk)
+
+            # Resize camera feed area
+            cam_w = int(event.width * 0.7)
+            cam_h = int(event.height * 0.7)
             self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
-#            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
-#            self.bg_canvas.tag_raise(self.back_btn_window)
+            self.camera_label.config(width=cam_w, height=cam_h)
 
-        self.bg_canvas.bind("<Configure>", reposition)
-        # Force one manual reposition after load
-        self.bg_canvas.after(100, lambda: reposition(
-            type("Event", (), {"width": self.bg_canvas.winfo_width(), "height": self.bg_canvas.winfo_height()})
-        ))
+            self.back_btn.lift()
 
-        # Start camera preview + barcode scanning
-        self.update_frame_with_barcode()
+        self.bg_canvas.bind("<Configure>", on_resize)
 
     def update_frame_with_barcode(self):
         # Capture frame from camera
