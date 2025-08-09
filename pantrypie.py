@@ -4,6 +4,7 @@ from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, 
 from tkinter.font import Font as font
 ## For Calendar ##
 from datetime import datetime
+import datetime as dt
 from tkcalendar import Calendar, DateEntry
 import time
 from time import strftime
@@ -2385,7 +2386,7 @@ class ExpirationApp:
         left_frame = tk.Frame(main_frame, bg="white")
         left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
-        tk.Label(left_frame, text="Expiring Soon", bg="white").pack()
+        tk.Label(left_frame, text="Expiring Soon", bg="black", fg="white").pack()
 
         self.add_popup_expired_listbox = tk.Listbox(left_frame, height=12)
         self.add_popup_expired_listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
@@ -2413,7 +2414,7 @@ class ExpirationApp:
         barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, barcode_entry))
 
         # Expiration date picker label
-        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
+        tk.Label(center_frame, text="Select Expiration Date:", bg="black", fg="white", font=APP_FONT, justify="center").pack()
 
         self.cal = Calendar(
             center_frame,
@@ -2614,13 +2615,18 @@ class ExpirationApp:
             messagebox.showwarning("Duplicate", f"'{name}' already exists.")
             return
 
-        # Save item (replace with your actual save logic)
+        # Save item
         self.items.append({
             "name": name,
             "barcode": barcode,
             "expiration_date": expiration_date
         })
         self.save_items()
+
+        # Clear fields for next entry and reset calendar
+        self.item_name_var.set("")
+        self.item_barcode_var.set("")
+        self.cal.selection_set(dt.date.today())
 
         # Clear right frame and show details
         for widget in right_frame.winfo_children():
