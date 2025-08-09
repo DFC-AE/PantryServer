@@ -4297,9 +4297,15 @@ class MusicApp:
 #        if callable(self.update_weather_func):
 #            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
 
+#        if callable(self.update_weather_func):
+#           self.update_weather_func(
+#                return_callback=self.back_callback,
+#                target_frame=self.weather_icon_frame
+#           )
+
         if callable(self.update_weather_func):
            self.update_weather_func(
-                return_callback=self.back_callback,
+                return_callback=self.open_music_again,
                 target_frame=self.weather_icon_frame
            )
 
@@ -4310,6 +4316,27 @@ class MusicApp:
         self.klpi_playing = False
 
         self.create_ui()
+
+    def open_music_again(self):
+        # Clear whatever is on the root (like WeatherApp) before reopening MusicApp
+        if hasattr(self.root, 'clear_screen'):
+            # If root is actually your ExpirationApp instance
+            self.root.clear_screen()
+        else:
+            # Fallback: destroy all children of root
+            for widget in self.root.winfo_children():
+                widget.destroy()
+
+        # Re-create the music screen
+        self.__init__(
+            self.root,
+            self.backgroundImg,
+            self.backImg,
+            self.back_callback,
+            self.token,
+            self.set_background,
+            self.update_weather_func
+        )
 
     def set_background(self, path=None):
         try:
