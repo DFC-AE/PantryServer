@@ -895,7 +895,7 @@ class ExpirationApp:
             #panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
             panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-            tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
+            tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="black", fg="white").pack(pady=(10, 5))
 
             inner = tk.Frame(panel, bg="white")
             inner.pack(padx=10, pady=10)
@@ -1022,49 +1022,6 @@ class ExpirationApp:
         except Exception as e:
             print(f"[Weather Error] {e}")
 
-    def update_weath_work(self, return_callback=None):
-        try:
-            city = "Shreveport,US"
-            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
-            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
-
-            response = requests.get(url)
-            data = response.json()
-
-            icon_code = data["weather"][0]["icon"]
-            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-
-            icon_response = requests.get(icon_url)
-            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
-            icon_photo = ImageTk.PhotoImage(icon_img)
-
-            self.current_weather_icon = icon_photo
-
-            # Always choose correct command
-            if return_callback is None:
-                cmd = lambda: self.open_weather_ui()
-            else:
-                cmd = lambda: self.open_weather_ui(return_callback=return_callback)
-
-            # Always update/create the button
-            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
-                self.weather_button = tk.Button(
-                    self.weather_icon_frame,
-                    image=icon_photo,
-                    bg="orange",
-                    cursor="hand2",
-                    borderwidth=0,
-                    command=cmd
-                )
-                self.weather_button.pack()
-            else:
-                self.weather_button.config(image=icon_photo, command=cmd)
-
-            self.weather_button.image = icon_photo  # prevent GC
-
-        except Exception as e:
-            print(f"[Weather Error] {e}")
-
     def get_weather_icon(self):
         if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
             try:
@@ -1114,7 +1071,7 @@ class ExpirationApp:
         # create the weather text label and pack it under the clock so it pushes content down
         self.weather_label = tk.Label(
             self.root,
-            text="Loading weather...",
+            text="Loading Weather...",
             font=(self.current_font, 14),
             bg="orange",
             fg="yellow",
@@ -1257,10 +1214,10 @@ class ExpirationApp:
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
-        refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
-        refresh_btn.image = foodImg
-        refresh_btn.pack(side=tk.LEFT)
-        ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
+        #refresh_btn = tk.Button(button_frame, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        #refresh_btn.image = foodImg
+        #refresh_btn.pack(side=tk.LEFT)
+        #ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
 
         # Create the weather button using the shared icon
@@ -1316,7 +1273,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT_TITLE, bg="black", fg="white")
         title.pack(pady=(10, 5))
 
         list_frame = tk.Frame(panel, bg="white")
@@ -1417,7 +1374,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT_TITLE, bg="black", fg="white")
         title.pack(pady=(10, 5))
 
         # Recipe image
@@ -1426,21 +1383,21 @@ class ExpirationApp:
 
         # Recipe name
         self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
-                                          bg="white", wraplength=250)
+                                          bg="black", fg="white", wraplength=250)
         self.recipe_name_label.pack(pady=5)
 
         # Link to full recipe
-        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
-                                          cursor="hand2", bg="white")
-        self.recipe_link_label.pack(pady=5)
+#        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
+#                                          cursor="hand2", bg="white")
+#        self.recipe_link_label.pack(pady=5)
         #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
-        self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
+#        self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
 
         # Refresh button
-        #refresh_btn = tk.Button(panel, cursor="hand2", image="refreshImg", command=self.load_random_recipe)
-#        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
-#        refresh_btn.pack(pady=5)
-#        ToolTip(refresh_btn, "Click to Load a New Recipe")
+#        refresh_btn = tk.Button(panel, cursor="hand2", image=refreshImg, command=self.load_random_recipe)
+        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        refresh_btn.pack(pady=5)
+        ToolTip(refresh_btn, "Click to Load a New Recipe")
 
             # Load the first recipe
         self.load_random_recipe()
@@ -1465,10 +1422,10 @@ class ExpirationApp:
             self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view(self.current_recipe))
             self.recipe_image_label.config(cursor="hand2")
 
-            self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
+            ##self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
             #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
             #self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
-            self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(instructions))
+            ##self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(instructions))
 
             img_data = requests.get(image_url, timeout=5).content
             img = Image.open(BytesIO(img_data)).resize((200, 200))
@@ -1478,7 +1435,7 @@ class ExpirationApp:
 
         except Exception as e:
             self.recipe_name_label.config(text="Failed to load recipe.")
-            self.recipe_link_label.config(text="")
+            #self.recipe_link_label.config(text="")
             self.recipe_image_label.config(image='')
 
     def show_full_recipe_view(self, meal):
@@ -1603,11 +1560,29 @@ class ExpirationApp:
         button_frame = tk.Frame(scrollable_frame, bg="white")
         button_frame.pack(fill="x", pady=10, padx=20)
 
-        tk.Button(button_frame, text="Save to Favorites",
-                  command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Print",
-                  command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(
+            button_frame,
+            text="Save to Favorites",
+            command=lambda: self.save_recipe_favorite(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Print",
+            command=lambda: self.print_recipe(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Export to PDF",
+            command=lambda: self.export_recipe_to_pdf(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Load Recipe URL",
+            command=lambda: self.open_in_app_browser(self.recipe_url)
+        ).pack(side=tk.LEFT, padx=5)
 
         # Instructions
 #        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
