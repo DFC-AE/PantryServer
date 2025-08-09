@@ -2317,14 +2317,18 @@ class ExpirationApp:
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
         # Name entry
-        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="white").pack(anchor="w", pady=(5, 2))
+        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="black", fg="white").pack(anchor="w", pady=(5, 2))
         self.item_name_var = tk.StringVar()
-        tk.Entry(center_frame, textvariable=self.item_name_var, width=30).pack(pady=(0, 10))
+        name_entry = tk.Entry(center_frame, textvariable=self.item_name_var, width=30)
+        name_entry.pack(pady=(0, 10))
+        name_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, name_entry))
 
         # Barcode entry
-        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg="white").pack(anchor="w", pady=(5, 2))
+        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg= "black", fg="white").pack(anchor="w", pady=(5, 2))
         self.item_barcode_var = tk.StringVar()
-        tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30).pack(pady=(0, 15))
+        barcode_entry = tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30)
+        barcode_entry.pack(pady=(0, 15))
+        barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, barcode_entry))
 
         # Expiration date picker label
         tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
