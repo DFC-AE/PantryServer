@@ -679,7 +679,7 @@ class ExpirationApp:
     def open_music_ui(self):
         self.clear_screen()
         try:
-            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token, self.set_background)
         except Exception as e:
             print("Error Launching MusicApp:", e)
 
@@ -3291,15 +3291,27 @@ class CameraApp:
         self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
 
         # Back button
-        back_btn = tk.Button(
-            self.bg_canvas,
-            image=self.backImg,
-            bg="orange",
-            cursor="hand2",
-            command=self.back_callback
-        )
-        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
-        ToolTip(back_btn, "Click to Return to the Main Menu")
+#        back_btn = tk.Button(
+#            self.bg_canvas,
+#            image=self.backImg,
+#            bg="orange",
+#            cursor="hand2",
+#            command=self.back_callback
+#        )
+#        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
+#        ToolTip(back_btn, "Click to Return to the Main Menu")
+
+#        self.back_btn_window = self.bg_canvas.create_window(
+#             self.bg_canvas.winfo_width() - 50, 10,
+#             anchor="ne",
+#             window=self.back_btn
+#        )
+
+        # Move it whenever window resizes
+#        def reposition_back_btn(event):
+#            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
+
+#        self.bg_canvas.bind("<Configure>", reposition_back_btn)
 
         # Camera initialization
         self.cap = cv2.VideoCapture(0)
@@ -3310,55 +3322,146 @@ class CameraApp:
 
         self.update_frame()
 
+    def camera_ui(self):
+        # Background image canvas
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+
+        # Load background image
+        self.bg_image_original = self.backgroundImg
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+
+        # Camera feed canvas
+        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
+        self.camera_window = self.bg_canvas.create_window(
+            self.bg_canvas.winfo_width() // 2,
+            self.bg_canvas.winfo_height() // 2,
+            anchor="center",
+            window=self.canvas
+        )
+        self.back_btn = tk.Button(
+            self.bg_canvas,
+            image=self.backImg,
+            bg="orange",
+            borderwidth=0,
+            highlightthickness=0,
+            cursor="hand2",
+            command=self.back_callback
+        )
+        self.back_btn_window = self.bg_canvas.create_window(
+            0, 0, anchor="ne", window=self.back_btn
+        )
+
+        # Always bring to front
+        self.bg_canvas.tag_raise(self.back_btn_window)
+
+        # Reposition on resize
+        def reposition(event):
+            self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
+            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
+            self.bg_canvas.tag_raise(self.back_btn_window)
+
+        self.bg_canvas.bind("<Configure>", reposition)
+        # Force one manual reposition after load
+        self.bg_canvas.after(100, lambda: reposition(
+            type("Event", (), {"width": self.bg_canvas.winfo_width(), "height": self.bg_canvas.winfo_height()})
+        ))
+
+        # Start camera preview + barcode scanning
+        self.update_frame_with_barcode()
+
+    def update_frame_with_barcode(self):
+        # Capture frame from camera
+        ret, frame = self.cap.read()
+        if not ret:
+            self.bg_canvas.after(10, self.update_frame_with_barcode)
+            return
+
+        # Barcode detection
+        barcodes = pyzbar.decode(frame)
+        for barcode in barcodes:
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            barcode_data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+
+            if barcode_data != self.last_data:
+                self.last_data = barcode_data
+                print(f"[SCAN] Found {barcode_type}: {barcode_data}")
+                self.flash_screen()
+                self.save_scanned_barcode(barcode_data)
+
+        # Convert frame for Tkinter
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        imgtk = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
+
+        # Display frame on canvas
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+        self.canvas.imgtk = imgtk  # Keep reference
+
+        # Repeat
+        self.bg_canvas.after(10, self.update_frame_with_barcode)
+
+    def flash_screen(self):
+        """Quick flash effect when barcode detected."""
+        self.bg_canvas.config(bg="white")
+        self.bg_canvas.after(100, lambda: self.bg_canvas.config(bg=""))
+
+    def save_scanned_barcode(self, data):
+        """Save scanned barcode to inventory."""
+        print(f"[INVENTORY] Saving barcode: {data}")
+        # Replace with your actual save logic
+
     def resize_background(self, event):
         new_width = event.width
         new_height = event.height
-        resized = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+
+        resized = self.bg_image_original.resize((new_width, new_height), Image.Resampling.LANCZOS)
         self.bg_image = ImageTk.PhotoImage(resized)
+
         self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
         self.bg_canvas.coords(self.camera_window, new_width // 2, int(new_height * 0.4))
 
     def update_frame(self):
         ret, frame = self.cap.read()
-        if ret:
-            # Flip horizontally for mirror view
-            frame = cv2.flip(frame, 1)
+        if not ret:
+            print("Failed to grab frame")
+            self.root.after(10, self.update_frame)
+            return
 
-            # Barcode detection
-            barcodes = pyzbar.decode(frame)
-            for barcode in barcodes:
-                x, y, w, h = barcode.rect
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                barcode_data = barcode.data.decode("utf-8")
-                barcode_type = barcode.type
-                text = f"{barcode_data} ({barcode_type})"
-                cv2.putText(frame, text, (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # Barcode detection
+        barcodes = pyzbar.decode(frame)
+        for barcode in barcodes:
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                # If new barcode detected
-                if barcode_data != self.last_data:
-                    self.last_data = barcode_data
-                    self.flash_screen()
-                    self.save_to_inventory(barcode_data)
-                    self.detected = True
+            barcode_data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            text = f"{barcode_data} ({barcode_type})"
+            cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 255, 0), 2)
 
-            # Convert frame for Tkinter display
-            img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(img)
-            imgtk = ImageTk.PhotoImage(image=img)
+            # Flash effect
+            self.canvas.config(bg="white")
+            self.root.after(100, lambda: self.canvas.config(bg="black"))
 
-            # Draw frame on canvas
-            self.canvas.delete("all")
-            self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
-            self.canvas.image = imgtk
+            # Save detected item to inventory
+            self.save_scanned_item(barcode_data)
+
+        # Convert frame to ImageTk for display
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        imgtk = ImageTk.PhotoImage(image=Image.fromarray(frame))
+        self.canvas.imgtk = imgtk
+        self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
 
         self.root.after(10, self.update_frame)
 
-    def flash_screen(self):
-        """Brief white flash effect."""
-        flash = tk.Frame(self.bg_canvas, bg="white")
-        flash.place(relx=0, rely=0, relwidth=1, relheight=1)
-        self.root.after(100, flash.destroy)
+    def save_scanned_item(self, barcode_data):
+        # Placeholder: Save barcode to inventory database
+        print(f"Scanned and saved item: {barcode_data}")
+        # You can add DB insertion logic here
 
     def save_to_inventory(self, barcode_data):
         """Save scanned barcode into the main inventory."""
@@ -3822,8 +3925,10 @@ def show_youtube_in_app(url, app_root):
 
 ## Music Page ##
 class MusicApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback, token):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback):
         self.root = root
+        self.set_background = set_background_callback
+        self.set_background("pics/backgrounds/music.jpg")
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
@@ -3835,7 +3940,7 @@ class MusicApp:
         self.frame.pack(fill=tk.BOTH, expand=True)
 
 #        self.set_background()
-        self.set_background_image("pics/backgrounds/music.jpg")
+#        self.set_background_image("pics/backgrounds/music_bg.jpg")
         self.create_music_screen()
 
 #        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
@@ -3850,10 +3955,10 @@ class MusicApp:
 
         self.create_ui()
 
-    def set_background_new(self, path=None):
+    def set_background(self, path=None):
         try:
             if path is None:
-                path = self.current_background or "pics/backgrounds/back.jpg"
+                path = self.current_background or "pics/backgrounds/music.jpg"
 
             # Fix: If user picked a named theme like 'black', turn it into a real path
             if not os.path.exists(path) and not path.endswith(".jpg"):
@@ -3870,9 +3975,9 @@ class MusicApp:
         except Exception as e:
             print(f"Error loading background image: {e}")
 
-    def set_background(self):
-        self.bg_image_original = Image.open("pics/backgrounds/back.jpg")  # Or whichever image applies
-        self.bg_label = tk.Label(self.frame)  # Assuming self.frame is your container
+    def set_background_old(self):
+        self.bg_image_original = Image.open("pics/backgrounds/music.jpg")
+        self.bg_label = tk.Label(self.frame)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
@@ -3912,7 +4017,7 @@ class MusicApp:
 
     def create_music_screen(self):
         self.clear_screen()
-        self.set_background_image("pics/backgrounds/music.jpg")
+        self.set_background("pics/backgrounds/music.jpg")
 
         # Remove home screen background if still visible
         if hasattr(self, "bg_label") and self.bg_label:
@@ -3925,7 +4030,7 @@ class MusicApp:
         # Custom music background
         music_bg_path = "pics/backgrounds/music.jpg"
         if not os.path.exists(music_bg_path):
-            music_bg_path = "pics/backgrounds/day_clear.jpg"  # fallback
+            music_bg_path = "pics/backgrounds/back.jpg"
 
         try:
             image = Image.open(music_bg_path)
@@ -4062,9 +4167,10 @@ class MusicApp:
         #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
         #podcast_btn.pack(pady=(2, 0))
 
-        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0, bg="orange", highlightcolor="yellow", highlightbackground="yellow")
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         back_btn.lift()
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
         ## Spotify Horizontal Scrollbar ##
         track_container = tk.Frame(self.frame, bg="white")
