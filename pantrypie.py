@@ -588,7 +588,6 @@ class ExpirationApp:
                 self.bg_label.config(image=self.backgroundImg)
                 self.bg_label.image = self.backgroundImg
 
-
     def apply_settings(self):
         global APP_FONT
         APP_FONT = (self.current_font, 12)
@@ -628,6 +627,18 @@ class ExpirationApp:
             (canvas_width - new_width) // 2,
             (canvas_height - new_height) // 2
         )
+
+    def enable_mousewheel_scroll(self, canvas):
+        """Allow mouse wheel scrolling on a Tkinter canvas for Windows, macOS, and Linux."""
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        # Windows & macOS
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        # Linux (scroll up/down)
+        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
 
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
@@ -1300,6 +1311,16 @@ class ExpirationApp:
         scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
+        # Enable mouse wheel scrolling
+#        def _on_mousewheel(event):
+#            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+#        canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows/macOS
+#        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Linux scroll up
+#        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))   # Linux scroll down
+
+        self.enable_mousewheel_scroll(canvas)
+
         def _on_canvas_config(event):
             # make the inner frame match the canvas width (so children can expand)
             canvas.itemconfig(scroll_window, width=event.width)
@@ -1310,12 +1331,6 @@ class ExpirationApp:
         scrollbar.pack(side="right", fill="y")
 
         # Back button
-#        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="orange", cursor="hand2", bd=0)
-        #back_btn.pack(pady=10, anchor="w", padx=10)
-#        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
-#        back_btn.lift()
-#        ToolTip(back_btn, "Click to Return to the Previous Screen")
-
         back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen,
                      bd=0, cursor="hand2", background="orange", highlightthickness=0)
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
@@ -1366,26 +1381,55 @@ class ExpirationApp:
 #        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
 #                 font=APP_FONT, bg="white").pack(pady=5)
 
-        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+#        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+#        for i in range(1, 21):
+#            ingredient = meal.get(f"strIngredient{i}")
+#            measure = meal.get(f"strMeasure{i}")
+#            if ingredient and ingredient.strip():
+#                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
+#                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+
+        # --- Ingredients (full-width) ---
+        ingredients_frame = tk.Frame(scrollable_frame, bg="white")
+        ingredients_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=5)
+
+        tk.Label(ingredients_frame, text="Ingredients:", font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
         for i in range(1, 21):
             ingredient = meal.get(f"strIngredient{i}")
             measure = meal.get(f"strMeasure{i}")
             if ingredient and ingredient.strip():
-                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
-                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+                tk.Label(ingredients_frame, text=f"{ingredient} - {measure}",
+                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill="x", padx=(5,0), pady=1)
+
+        # --- Instructions (full-width) ---
+        instructions_frame = tk.Frame(scrollable_frame, bg="white")
+        instructions_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=(10, 5))
+
+        tk.Label(instructions_frame, text="Instructions:", font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
+        tk.Label(instructions_frame, text=meal.get("strInstructions", ""),
+                 wraplength=1000, justify="left", font=APP_FONT, bg="white").pack(anchor="w", pady=5)
+
+        # --- Buttons (full-width) ---
+        button_frame = tk.Frame(scrollable_frame, bg="white")
+        button_frame.pack(fill="x", pady=10, padx=20)
+
+        tk.Button(button_frame, text="Save to Favorites",
+                  command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Print",
+                  command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
 
         # Instructions
-        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
-        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
-                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
+#        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+#        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
+#                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
 
         # Print & PDF export buttons
-        button_frame = tk.Frame(scrollable_frame, bg="white")
-        button_frame.pack(pady=10)
+#        button_frame = tk.Frame(scrollable_frame, bg="white")
+#        button_frame.pack(pady=10)
 
-        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+#        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
+#        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
 
     def save_to_favorites(self, meal):
         # Save logic (e.g., append to a JSON file)
@@ -1396,54 +1440,6 @@ class ExpirationApp:
 
     def export_to_pdf(self, meal):
         print("Export to PDF for:", meal["strMeal"])
-
-    # def show_full_recipe_view_old(self):
-    #     if not hasattr(self, "current_recipe") or not self.current_recipe:
-    #         return
-
-    #     self.clear_screen()
-
-    #     meal = self.current_recipe
-    #     name = meal["strMeal"]
-    #     instructions = meal["strInstructions"]
-    #     image_url = meal["strMealThumb"]
-
-    #     # Background
-    #     bg_label = tk.Label(self.root, image=self.card_backgroundImg)
-    #     bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-    #     bg_label.lower()
-
-    #     # Title
-    #     tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
-
-    #     # Image
-    #     img_data = requests.get(image_url, timeout=5).content
-    #     img = Image.open(BytesIO(img_data)).resize((300, 300))
-    #     photo = ImageTk.PhotoImage(img)
-    #     img_label = tk.Label(self.root, image=photo, bg="white")
-    #     img_label.image = photo
-    #     img_label.pack(pady=10)
-
-    #     # Instructions (scrollable)
-    #     frame = tk.Frame(self.root)
-    #     frame.pack(pady=10, fill=tk.BOTH, expand=True)
-
-    #     canvas = tk.Canvas(frame, height=200, bg="white")
-    #     scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
-    #     scroll_frame = tk.Frame(canvas, bg="white")
-
-    #     scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    #     canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-    #     canvas.configure(yscrollcommand=scrollbar.set)
-
-    #     tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
-
-    #     canvas.pack(side="left", fill="both", expand=True)
-    #     scrollbar.pack(side="right", fill="y")
-
-    #     # Back button
-    #     back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
-    #     back_btn.pack(pady=10)
 
     def load_settings(self):
         if os.path.exists(CONFIG_FILE):
@@ -1827,6 +1823,9 @@ class ExpirationApp:
         #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+
+        self.enable_mousewheel_scroll(canvas)
+
         #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
         scroll_frame = tk.Frame(canvas, bg="")
 
@@ -1920,6 +1919,8 @@ class ExpirationApp:
         scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set, bg=self.root["bg"])
+
+        self.enable_mousewheel_scroll(canvas)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
