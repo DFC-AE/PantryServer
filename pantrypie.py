@@ -929,8 +929,50 @@ class ExpirationApp:
             self.result_var.set(result)
         except ValueError:
             self.result_var.set("Enter a valid number")
+    def update_weather(self, return_callback=None):
+        try:
+            city = "Shreveport,US"
+            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
 
-    def update_weather():
+            response = requests.get(url)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            self.current_weather_icon = icon_photo
+
+            # Always choose correct command
+            if return_callback is None:
+                cmd = lambda: self.open_weather_ui()
+            else:
+                cmd = lambda: self.open_weather_ui(return_callback=return_callback)
+
+            # Always update/create the button
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=cmd
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(image=icon_photo, command=cmd)
+
+            self.weather_button.image = icon_photo  # prevent GC
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def update_weather_old():
         try:
             city = "Shreveport,US"
             api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
@@ -1015,14 +1057,12 @@ class ExpirationApp:
     def create_home_screen(self, item=None):
     #    for widget in self.root.winfo_children():
     #        widget.destroy()
-
-        self.clear_screen()
-
         #def set_background(self):
      #   bg_label = tk.Label(self.root, image=self.backgroundImg)
      #   bg_label.place(x=0, y=0, relwidth=1, relheight=1)
      #   bg_label.lower()
 
+        self.clear_screen()
         self.set_background()
         self.current_view = 'home'
 
@@ -1035,9 +1075,67 @@ class ExpirationApp:
                                     background='orange', foreground='yellow')
         self.clock_label.pack(pady=(10, 0))
 
-        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
-                                      bg='orange', fg='yellow')
-        self.weather_label.pack(pady=(0, 10))
+        # create a frame for the weather icon (top-left) - create once
+        if not hasattr(self, "weather_icon_frame") or not self.weather_icon_frame.winfo_exists():
+            self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+            self.weather_icon_frame.place(x=10, y=10)
+
+        # create the weather text label and pack it under the clock so it pushes content down
+        self.weather_label = tk.Label(
+            self.root,
+            text="Loading weather...",
+            font=(self.current_font, 14),
+            bg="orange",
+            fg="yellow",
+            justify="center"
+        )
+        self.weather_label.pack(pady=(5, 10))
+
+        # fetch/update weather icon and text (update_weather chooses return target based on current_view)
+        self.update_weather(None)
+
+        # Create a frame for the weather button
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather()
+
+        # Add weather text under date
+#        try:
+#            city = "Shreveport,US"
+#            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+#            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+#            response = requests.get(url)
+#            data = response.json()
+
+#            location = f"{data['name']}, {data['sys']['country']}"
+
+#            weather_text = (
+#                f"{location}\n"
+#                f"{int(data['main']['temp'])}\u00B0F "
+#                f"(feels like {int(data['main']['feels_like'])}\u00B0F), "
+#                f"{data['weather'][0]['description'].title()}\n"
+#                f"Humidity: {data['main']['humidity']}%, "
+#                f"Wind: {int(data['wind']['speed'])} mph"
+#            )
+#            weather_text = f"{int(data['main']['temp'])}\u00B0F, {data['weather'][0]['description'].title()}"
+
+#            self.weather_label = tk.Label(
+#                self.weather_lable,
+#                self.root,
+#                text=weather_text,
+#                font=APP_FONT_TITLE,
+#                bg="orange",
+#                fg="yellow"
+#            )
+#            self.weather_label.place(relx=0.5, rely=0.15, anchor="n")
+
+#        except Exception as e:
+#            print(f"[Weather Text Error] {e}")
+
+#        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
+#                                      bg='orange', fg='yellow')
+#        self.weather_label.pack(pady=(0, 10))
 
         # Middle frame for side panels (Expiring Soon and Conversion)
         middle_frame = tk.Frame(self.root, bg="")
@@ -1133,10 +1231,6 @@ class ExpirationApp:
         refresh_btn.pack(side=tk.LEFT)
         ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
-        # Create a frame for the weather button
-        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
-        self.weather_icon_frame.place(x=10, y=10)
-        self.update_weather()
 
         # Create the weather button using the shared icon
 #        weather_icon = self.get_weather_icon()
@@ -2582,6 +2676,98 @@ class ExpirationApp:
         return expired
 
     def update_weather(self, return_callback=None):
+        """
+        Fetch latest weather, update the top-left weather icon button and
+        update the weather text label (if present). The return_callback
+        controls where the WeatherApp returns to after closing.
+        If return_callback is None, we choose based on self.current_view.
+        """
+        try:
+            city = "Shreveport,US"
+            api_key = KEY_WEATHER
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url, timeout=8)
+            data = response.json()
+
+            # store raw/parsed data for other UI pieces
+            self.weather_data = data
+
+            # load icon
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+            icon_response = requests.get(icon_url, timeout=8)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((64, 64), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+            self.current_weather_icon = icon_photo
+
+            # decide where the weather UI should return to
+            if return_callback is None:
+                # prefer explicit current_view if set
+                if getattr(self, "current_view", None) == "add_item":
+                    return_callback = getattr(self, "add_item_popup", None) or self.create_home_screen
+                else:
+                    return_callback = self.create_home_screen
+
+            cmd = lambda rc=return_callback: self.open_weather_ui(return_callback=rc)
+
+            # make sure the container exists (created once by create_home_screen)
+            if not hasattr(self, "weather_icon_frame") or not self.weather_icon_frame.winfo_exists():
+                # create a small frame in top-left for the icon (non-destructive)
+                self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+                # placing top-left; if you prefer pack/geometry change accordingly:
+                self.weather_icon_frame.place(x=10, y=10)
+
+            # create or update the button
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=cmd
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(image=icon_photo, command=cmd)
+
+            # keep a reference to prevent GC
+            self.weather_button.image = icon_photo
+
+            # update the detailed weather text label if it exists (and is alive)
+            if hasattr(self, "weather_label") and self.weather_label.winfo_exists():
+                try:
+                    self.weather_label.config(text=self.format_weather_text())
+                except Exception:
+                    # don't crash the app over label updates
+                    pass
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+        # schedule next refresh (10 minutes). Use a lambda so we recalc return_callback based on current view.
+        try:
+            self.root.after(600000, lambda: self.update_weather(None))
+        except Exception:
+            pass
+
+    def format_weather_text(self):
+        d = getattr(self, "weather_data", None)
+        if not d:
+            return "Weather: loading..."
+        try:
+            loc = f"{d.get('name','')}, {d.get('sys',{}).get('country','')}"
+            temp = int(round(d['main']['temp']))
+            feels = int(round(d['main'].get('feels_like', temp)))
+            desc = d['weather'][0]['description'].title()
+            hum = d['main'].get('humidity', '?')
+            wind = int(round(d.get('wind', {}).get('speed', 0)))
+            return f"{loc} - {temp}\u00B0F (feels {feels}\u00B0F)\n{desc} - Humidity {hum}% - Wind {wind} mph"
+        except Exception:
+            return "Weather: unavailable"
+
+    def update_weather_new(self, return_callback=None):
         try:
             city = "Shreveport,US"
             api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
