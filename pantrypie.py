@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+### Imports ###
 import tkinter as tk
 from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, ttk, Frame, Button, Label
 from tkinter.font import Font as font
@@ -39,6 +40,82 @@ import webview
 ## For System Fonts ##
 import tkinter.font as tkFont
 #from playsound import playsound
+
+## Create Root ##
+root = tk.Tk()
+root.geometry("1280x720")
+#root.geometry("1920x1080")
+#root.geometry("3180x2160")
+#root.title("Expiration Tracker")
+root.title("Pantry Server")
+
+## Variables ##
+APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
+APP_FONT.configure(size=12)
+APP_FONT_TITLE.configure(size=25)
+CITY = "Shreveport, US"
+KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+CONFIG_FILE = "config.json"
+SAVE_FILE = "items.json"
+SPOT_ID = "a25567f1dbcb4a17ab52a0732fae30c5"
+SPOT_SECRET = "3ef33e87da0f44d593ee29a00b250b28"
+
+_SPOTIFY_TOKEN = None
+_SPOTIFY_TOKEN_EXPIRES_AT = 0
+
+def get_spotify_token(client_id=None, client_secret=None):
+    global _SPOTIFY_TOKEN, _SPOTIFY_TOKEN_EXPIRES_AT
+
+    client_id = SPOT_ID
+    client_secret = SPOT_SECRET
+
+#    client_id = client_id or os.environ.get("SPOTIFY_CLIENT_ID")
+#    client_secret = client_secret or os.environ.get("SPOTIFY_CLIENT_SECRET")
+
+    if not client_id or not client_secret:
+        raise RuntimeError(
+            "Spotify credentials not found. "
+            "Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET env vars."
+        )
+
+    # Reuse cached token if still valid
+    if _SPOTIFY_TOKEN and time.time() < _SPOTIFY_TOKEN_EXPIRES_AT - 60:
+        return _SPOTIFY_TOKEN
+
+    auth_str = f"{client_id}:{client_secret}"
+    b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+    resp = requests.post(
+        "https://accounts.spotify.com/api/token",
+        headers={"Authorization": f"Basic {b64_auth_str}"},
+        data={"grant_type": "client_credentials"},
+        timeout=5
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    _SPOTIFY_TOKEN = data.get("access_token")
+    expires_in = data.get("expires_in", 3600)
+    _SPOTIFY_TOKEN_EXPIRES_AT = time.time() + expires_in
+    return _SPOTIFY_TOKEN
+
+def load_image(path, size=None, fallback_path=None):
+    try:
+        img = Image.open(path)
+        if size:
+            img = img.resize(size, Image.LANCZOS)
+    except Exception:
+        if fallback_path:
+            try:
+                img = Image.open(fallback_path)
+                if size:
+                    img = img.resize(size, Image.LANCZOS)
+            except Exception:
+                img = Image.new("RGBA", size or (100, 100), (200, 200, 200, 255))
+        else:
+            img = Image.new("RGBA", size or (100, 100), (200, 200, 200, 255))
+    return ImageTk.PhotoImage(img)
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -211,26 +288,6 @@ class OnScreenKeyboard:
     def _on_close(self):
         OnScreenKeyboard._current = None
         self.window.destroy()
-
-## Create Root ##
-root = tk.Tk()
-root.geometry("1280x720")
-#root.geometry("1920x1080")
-#root.geometry("3180x2160")
-#root.title("Expiration Tracker")
-root.title("Pantry Server")
-
-## Variables ##
-APP_FONT = tkFont.nametofont("TkDefaultFont")
-APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
-APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
-APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
-APP_FONT.configure(size=12)
-APP_FONT_TITLE.configure(size=25)
-CITY = "Shreveport, US"
-KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
-CONFIG_FILE = "config.json"
-SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
 ## Button Size ##
@@ -458,8 +515,8 @@ def check_dates(days):
 ## Spotify via Requests ##
 ## Spotify Credentials ##
 #client_id = "YOUR_CLIENT_ID"
-client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
 #client_secret = "YOUR_CLIENT_SECRET"
+client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
 client_secret = "3ef33e87da0f44d593ee29a00b250b28"
 
 ## Get Token ##
@@ -669,7 +726,7 @@ class ExpirationApp:
 
     def open_camera_ui_old(self):
         self.clear_screen()
-        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, update_weather_func=self.update_weather)
 
     def open_camera_ui(self):
         # Make sure no other cv2 capture is still open
@@ -686,7 +743,15 @@ class ExpirationApp:
         except:
             pass
 
-        self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+#        self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, update_weather_func=self.update_weather)
+
+        self.camera_app_instance = CameraApp(
+            self.root,
+            self.backgroundImg,
+            self.backImg,
+            self.create_home_screen,
+            update_weather_func=self.update_weather
+        )
 
     def open_weather_ui(self, return_callback=None):
         self.clear_screen()
@@ -700,7 +765,18 @@ class ExpirationApp:
     def open_music_ui(self):
         self.clear_screen()
         try:
-            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token, self.set_background)
+            #MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token, self.set_background)
+            spotify_token = get_spotify_token()
+            self.music_app_instance = MusicApp(
+                self.root,
+                self.backgroundImg,
+                self.backImg,
+                self.create_home_screen,
+                spotify_token,
+                self.set_background,
+                update_weather_func=self.update_weather
+            )
+
         except Exception as e:
             print("Error Launching MusicApp:", e)
 
@@ -881,33 +957,6 @@ class ExpirationApp:
             to_unit_var.trace_add("write", convert_units)
             ingredient_var.trace_add("write", convert_units)
 
-    def create_conversion_table_panel_old(self, parent):
-        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
-        panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
-
-        title = tk.Label(panel, text="Unit Conversion", font=APP_FONT, bg="white")
-        title.pack(pady=(10, 5))
-
-        content = tk.Frame(panel, bg="white")
-        content.pack(padx=10, pady=10)
-
-        self.amount_var = tk.StringVar()
-        self.unit_var = tk.StringVar(value="grams")
-        self.result_var = tk.StringVar()
-
-        tk.Entry(content, textvariable=self.amount_var, width=10).grid(row=0, column=0, padx=5)
-        ttk.Combobox(
-            content,
-            textvariable=self.unit_var,
-            values=["grams", "ounces", "sugar", "flour", "butter"],
-            width=10
-        ).grid(row=0, column=1, padx=5)
-
-        tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
-        tk.Label(content, textvariable=self.result_var, bg="white", font=APP_FONT).grid(
-            row=1, column=0, columnspan=3, pady=10
-        )
-
     def convert_units(self):
         try:
             amount = float(self.amount_var.get())
@@ -929,7 +978,51 @@ class ExpirationApp:
             self.result_var.set(result)
         except ValueError:
             self.result_var.set("Enter a valid number")
-    def update_weather(self, return_callback=None):
+
+    def update_weather(self, return_callback=None, target_frame=None):
+        try:
+            city = "Shreveport,US"
+            api_key = os.environ.get("OPENWEATHER_KEY")
+            if not api_key:
+                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+
+            url = (
+                f"http://api.openweathermap.org/data/2.5/weather"
+                f"?q={city}&appid={api_key}&units=imperial"
+            )
+
+            response = requests.get(url, timeout=5)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url, timeout=5)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            cmd = (
+                lambda: self.open_weather_ui(return_callback=return_callback)
+                if return_callback else self.open_weather_ui
+            )
+
+            parent = target_frame if target_frame else self.weather_icon_frame
+
+            weather_btn = tk.Button(
+                parent,
+                image=icon_photo,
+                bg="orange",
+                cursor="hand2",
+                borderwidth=0,
+                command=cmd
+            )
+            weather_btn.image = icon_photo
+            weather_btn.pack()
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def update_weath_work(self, return_callback=None):
         try:
             city = "Shreveport,US"
             api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
@@ -971,68 +1064,6 @@ class ExpirationApp:
 
         except Exception as e:
             print(f"[Weather Error] {e}")
-
-    def update_weather_old():
-        try:
-            city = "Shreveport,US"
-            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
-            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
-
-            response = requests.get(url)
-            data = response.json()
-
-            temp = data["main"]["temp"]
-            condition = data["weather"][0]["description"].capitalize()
-            icon_code = data["weather"][0]["icon"]
-            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-
-            icon_response = requests.get(icon_url)
-            icon_img = Image.open(BytesIO(icon_response.content))
-            icon_photo = ImageTk.PhotoImage(icon_img)
-
-            if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
-                #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
-                #self.weather_icon_label.pack()
-                self.weather_button = tk.Button(
-                     self.weather_icon_frame,
-                     image=icon_photo,
-                     bg="orange",
-                     #bd=0,                 # no border
-                     #highlightthickness=0, # no highlight border
-                     command=self.open_weather_ui
-                )
-                self.weather_button.image = icon_photo
-                self.weather_button.pack()
-            else:
-                self.weather_button.config(image=icon_photo)
-                self.weather_button.image = icon_photo
-
-            if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
-                self.weather_label = tk.Label(
-                    self.root,
-                    font=APP_FONT,
-                    bg="orange",
-                    fg="yellow"
-                )
-
-                self.weather_label.pack(pady=(0, 10))
-            #self.update_weather()
-
-            #self.weather_icon_label.config(image=icon_photo)
-            #self.weather_icon_label.image = icon_photo  # Prevent GC
-
-            self.weather_label.config(
-                text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
-            )
-
-        except tk.TclError:
-            print("Weather Widget Destroyed - Stopping Update.")
-        except Exception as e:
-            print("Weather fetch error:", e)
-            if hasattr(self, "weather_label"):
-                self.weather_label.config(text="Weather: Unable to load")
-
-        self.root.after(600000, update_weather)
 
     def get_weather_icon(self):
         if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
@@ -2675,7 +2706,7 @@ class ExpirationApp:
                     pass
         return expired
 
-    def update_weather(self, return_callback=None):
+    def update_weather(self, return_callback=None, target_frame=None):
         """
         Fetch latest weather, update the top-left weather icon button and
         update the weather text label (if present). The return_callback
@@ -3445,7 +3476,7 @@ class WeatherApp:
 
         self.update_weather()
 
-    def update_weather(self):
+    def update_weather(self, return_callback=None, target_frame=None):
         try:
             if not hasattr(self, 'city'):
                   self.city = "Shreveport, US"
@@ -3517,11 +3548,12 @@ class WeatherApp:
             return None
 
 class CameraApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
         self.root = root
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
+        self.update_weather_func = update_weather_func
 
         # Frame container
         self.frame = tk.Frame(self.root)
@@ -3542,6 +3574,28 @@ class CameraApp:
         self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
         self.bg_canvas.bind("<Configure>", self.resize_background)
 
+        # Weather icon frame
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+
+        if callable(self.update_weather_func):
+            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
+
+        # Back button
+        self.back_button = tk.Button(
+            self.root,
+            image=self.backImg,
+            bg="orange",
+            cursor="hand2",
+            borderwidth=0,
+            command=self.back_callback if self.back_callback else self.root.quit
+        )
+        self.back_button.place(x=60, y=10)
+
+        # Camera feed canvas init
+        self.camera_window = None
+        self.bg_canvas.bind("<Configure>", self.resize_background)
+
         # Camera feed canvas
         self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
         self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
@@ -3555,7 +3609,6 @@ class CameraApp:
 #            command=self.back_callback
 #        )
 #        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
-#        ToolTip(back_btn, "Click to Return to the Main Menu")
 
 #        self.back_btn_window = self.bg_canvas.create_window(
 #             self.bg_canvas.winfo_width() - 50, 10,
@@ -3700,11 +3753,11 @@ class CameraApp:
         new_width = event.width
         new_height = event.height
 
-        resized = self.bg_image_original.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        self.bg_image = ImageTk.PhotoImage(resized)
-
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original.resize((new_width, new_height), Image.LANCZOS))
         self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
-        self.bg_canvas.coords(self.camera_window, new_width // 2, int(new_height * 0.4))
+
+        if self.camera_window is not None:
+            self.bg_canvas.coords(self.camera_window, new_width // 2, int(new_height * 0.4))
 
     def update_frame(self):
         ret, frame = self.cap.read()
@@ -3984,7 +4037,12 @@ class SpotifyApp:
         #self.update_now_playing()
         threading.Thread(target=self.load_music_data, daemon=True).start()
 
-    def get_spotify_token(client_id, client_secret):
+    def get_spotify_token(client_id, client_secret=None):
+        #global _SPOTIFY_TOKEN, _SPOTIFY_TOKEN_EXPIRES_AT
+
+        #client_id = "your_client_id_here"
+        #client_secret = "your_client_secret_here"
+
         auth_str = f"{client_id}:{client_secret}"
         b64_auth = base64.b64encode(auth_str.encode()).decode()
 
@@ -4207,14 +4265,16 @@ def show_youtube_in_app(url, app_root):
 
 ## Music Page ##
 class MusicApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback, update_weather_func=None):
         self.root = root
-        self.set_background = set_background_callback
-        self.set_background("pics/backgrounds/music.jpg")
+#        self.set_background = set_background_callback
+#        self.set_background("pics/backgrounds/music.jpg")
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
+        self.set_background = set_background_callback
+        self.update_weather_func = update_weather_func
         self.nprImg = ImageTk.PhotoImage(Image.open("pics/icons/npr.png").resize((100, 100)))
         self.podImg = ImageTk.PhotoImage(Image.open("pics/icons/podcast.png").resize((100, 100)))
         self.bg_label_music = None
@@ -4228,6 +4288,20 @@ class MusicApp:
 #        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
 #        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 #        self.bg_label.lower()
+
+        # Create weather icon frame (top-left)
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+
+        # Draw the weather button if update_weather_func is provided
+#        if callable(self.update_weather_func):
+#            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
+
+        if callable(self.update_weather_func):
+           self.update_weather_func(
+                return_callback=self.back_callback,
+                target_frame=self.weather_icon_frame
+           )
 
         self.npr_player = None
         self.npr_playing = False
