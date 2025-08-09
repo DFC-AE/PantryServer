@@ -40,6 +40,7 @@ import webview
 ## For System Fonts ##
 import tkinter.font as tkFont
 #from playsound import playsound
+import ephem
 
 ## Create Root ##
 root = tk.Tk()
@@ -3357,7 +3358,6 @@ class WeatherApp:
         except Exception as e:
             print("Error updating background image:", e)
 
-
     def clear_screen(self):
         #for widget in self.root.winfo_children():
         for widget in self.frame.winfo_children():
@@ -3420,6 +3420,10 @@ class WeatherApp:
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        moon_text = self.get_moon_phase()
+        moon_label = tk.Label(self.root, text=moon_text, font=("Arial", 14), bg="black", fg="white")
+        moon_label.pack(pady=5)
 
         ## Back Button ##
         #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
@@ -3521,6 +3525,61 @@ class WeatherApp:
         except Exception as e:
             print("Icon load failed:", e)
             return None
+
+    def get_moon_phase(self):
+        today = datetime.utcnow()
+        moon = ephem.Moon(today)
+        phase = moon.phase  # 0=new moon, 50=full moon
+        if phase == 0:
+            phase_name = "New Moon"
+        elif phase < 50:
+            phase_name = "Waxing Moon"
+        elif phase == 50:
+            phase_name = "Full Moon"
+        else:
+            phase_name = "Waning Moon"
+        return f"{phase_name} ({phase:.1f}%)"
+
+    def get_moon_phase_python(self):
+        # Simple moon phase calculation
+        # Source: Astronomical Algorithms by Jean Meeus (simplified)
+        now = datetime.utcnow()
+        year = now.year
+        month = now.month
+        day = now.day
+
+        if month < 3:
+            year -= 1
+            month += 12
+
+        a = int(year / 100)
+        b = 2 - a + int(a / 4)
+        jd = int(365.25 * (year + 4716)) + int(30.6001 * (month + 1)) + day + b - 1524.5
+
+        # Moon cycle reference
+        days_since_new = jd - 2451550.1
+        new_moons = days_since_new / 29.53058867
+        phase_index = (new_moons - int(new_moons)) * 29.53058867
+
+        # Phase names
+        if phase_index < 1.84566:
+            return "New Moon"
+        elif phase_index < 5.53699:
+            return "Waxing Crescent"
+        elif phase_index < 9.22831:
+            return "First Quarter"
+        elif phase_index < 12.91963:
+            return "Waxing Gibbous"
+        elif phase_index < 16.61096:
+            return "Full Moon"
+        elif phase_index < 20.30228:
+            return "Waning Gibbous"
+        elif phase_index < 23.99361:
+            return "Last Quarter"
+        elif phase_index < 27.68493:
+            return "Waning Crescent"
+        else:
+            return "New Moon"
 
 class CameraApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
