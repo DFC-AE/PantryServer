@@ -500,7 +500,7 @@ class ExpirationApp:
         self.load_settings()
         self.apply_settings()
         self.create_home_screen()
-#        self.weather_ui()
+#        self.update_weather()
 
     ## Create Background ##
 #    def set_background(self):
@@ -641,6 +641,11 @@ class ExpirationApp:
         canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
         canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
 
+#    def get_weather_icon(self):
+#        if not hasattr(self, "current_weather_icon"):
+#            self.update_weather()
+#        return self.current_weather_icon
+
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
         width = self.root.winfo_width()
@@ -683,10 +688,14 @@ class ExpirationApp:
 
         self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
 
-    def open_weather_ui(self):
+    def open_weather_ui(self, return_callback=None):
         self.clear_screen()
-        WeatherApp(root, backImg, self.create_home_screen)
-        #WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+        # Fallback to home if no callback is provided
+        if return_callback is None:
+            return_callback = self.create_home_screen
+
+        WeatherApp(self.root, backImg, return_callback)
 
     def open_music_ui(self):
         self.clear_screen()
@@ -921,6 +930,88 @@ class ExpirationApp:
         except ValueError:
             self.result_var.set("Enter a valid number")
 
+    def update_weather():
+        try:
+            city = "Shreveport,US"
+            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url)
+            data = response.json()
+
+            temp = data["main"]["temp"]
+            condition = data["weather"][0]["description"].capitalize()
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url)
+            icon_img = Image.open(BytesIO(icon_response.content))
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
+                #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
+                #self.weather_icon_label.pack()
+                self.weather_button = tk.Button(
+                     self.weather_icon_frame,
+                     image=icon_photo,
+                     bg="orange",
+                     #bd=0,                 # no border
+                     #highlightthickness=0, # no highlight border
+                     command=self.open_weather_ui
+                )
+                self.weather_button.image = icon_photo
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(image=icon_photo)
+                self.weather_button.image = icon_photo
+
+            if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
+                self.weather_label = tk.Label(
+                    self.root,
+                    font=APP_FONT,
+                    bg="orange",
+                    fg="yellow"
+                )
+
+                self.weather_label.pack(pady=(0, 10))
+            #self.update_weather()
+
+            #self.weather_icon_label.config(image=icon_photo)
+            #self.weather_icon_label.image = icon_photo  # Prevent GC
+
+            self.weather_label.config(
+                text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
+            )
+
+        except tk.TclError:
+            print("Weather Widget Destroyed - Stopping Update.")
+        except Exception as e:
+            print("Weather fetch error:", e)
+            if hasattr(self, "weather_label"):
+                self.weather_label.config(text="Weather: Unable to load")
+
+        self.root.after(600000, update_weather)
+
+    def get_weather_icon(self):
+        if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
+            try:
+                # Run weather update if possible
+                self.update_weather()
+            except Exception as e:
+                print(f"[Weather Fallback] Could not update weather: {e}")
+                # Load a placeholder image
+                try:
+                    placeholder_img = Image.open("pics/icons/weather_placeholder.png")
+                    self.current_weather_icon = ImageTk.PhotoImage(placeholder_img)
+                except FileNotFoundError:
+                    # Create a blank placeholder
+                    from PIL import ImageDraw
+                    img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
+                    draw = ImageDraw.Draw(img)
+                    draw.text((10, 20), "?", fill="black")
+                    self.current_weather_icon = ImageTk.PhotoImage(img)
+        return self.current_weather_icon
+
     def create_home_screen(self, item=None):
     #    for widget in self.root.winfo_children():
     #        widget.destroy()
@@ -966,70 +1057,6 @@ class ExpirationApp:
                 self.root.after(1000, update_clock)
 
         update_clock()
-
-        def update_weather():
-            try:
-                city = "Shreveport,US"
-                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
-                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
-
-                response = requests.get(url)
-                data = response.json()
-
-                temp = data["main"]["temp"]
-                condition = data["weather"][0]["description"].capitalize()
-                icon_code = data["weather"][0]["icon"]
-                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-
-                icon_response = requests.get(icon_url)
-                icon_img = Image.open(BytesIO(icon_response.content))
-                icon_photo = ImageTk.PhotoImage(icon_img)
-
-                if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
-                    #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
-                    #self.weather_icon_label.pack()
-                    self.weather_button = tk.Button(
-                         self.weather_icon_frame,
-                         image=icon_photo,
-                         bg="orange",
-                         #bd=0,                 # no border
-                         #highlightthickness=0, # no highlight border
-                         command=self.open_weather_ui
-                    )
-                    self.weather_button.image = icon_photo
-                    self.weather_button.pack()
-                else:
-                    self.weather_button.config(image=icon_photo)
-                    self.weather_button.image = icon_photo
-
-                if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
-                    self.weather_label = tk.Label(
-                        self.root,
-                        font=APP_FONT,
-                        bg="orange",
-                        fg="yellow"
-                    )
-
-                    self.weather_label.pack(pady=(0, 10))
-                #self.update_weather()
-
-                #self.weather_icon_label.config(image=icon_photo)
-                #self.weather_icon_label.image = icon_photo  # Prevent GC
-
-                self.weather_label.config(
-                    text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
-                )
-
-            except tk.TclError:
-                print("Weather Widget Destroyed - Stopping Update.")
-            except Exception as e:
-                print("Weather fetch error:", e)
-                if hasattr(self, "weather_label"):
-                    self.weather_label.config(text="Weather: Unable to load")
-
-            self.root.after(600000, update_weather)
-
-        update_weather()
 
         # Enlarged calendar
         #self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
@@ -1106,6 +1133,25 @@ class ExpirationApp:
         refresh_btn.pack(side=tk.LEFT)
         ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
+        # Create a frame for the weather button
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather()
+
+        # Create the weather button using the shared icon
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#           self.weather_icon_frame,
+#           image=weather_icon,
+#           bg="orange",
+#           cursor="hand2",
+#           borderwidth=0,
+#           command=self.open_weather_ui
+#        )
+#        weather_btn.image = weather_icon  # prevent GC
+#        weather_btn.pack()
+#        ToolTip(weather_btn, "Click to Open the Weather App")
+
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
 
@@ -1138,26 +1184,6 @@ class ExpirationApp:
 
         for widget in self.root.winfo_children():
             widget.lift()
-
-        def get_weather_icon(self):
-            if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
-                try:
-                    # Run weather update if possible
-                    self.update_weather()
-                except Exception as e:
-                    print(f"[Weather Fallback] Could not update weather: {e}")
-                    # Load a placeholder image
-                    try:
-                        placeholder_img = Image.open("pics/icons/weather_placeholder.png")
-                        self.current_weather_icon = ImageTk.PhotoImage(placeholder_img)
-                    except FileNotFoundError:
-                        # Create a blank placeholder
-                        from PIL import ImageDraw
-                        img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
-                        draw = ImageDraw.Draw(img)
-                        draw.text((10, 20), "?", fill="black")
-                        self.current_weather_icon = ImageTk.PhotoImage(img)
-            return self.current_weather_icon
 
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
@@ -2467,16 +2493,24 @@ class ExpirationApp:
 #        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
 #             weather_btn = self.weather_button
 #        else:
-#             weather_btn = tk.Button(
-#                  self.content_frame,
-#                  image=self.current_weather_icon,  # assuming you store the icon here
-#                  command=self.open_weather_ui,
-#                  bg="black",
-#                  borderwidth=0
-#                  )
+        self.weather_icon_frame = tk.Frame(self.content_frame, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather(return_callback=self.add_item_popup)
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#              self.content_frame,
+#              self.weather_icon_frame,
+#              image=weather_icon,
+#              bg="orange",
+#             borderwidth=0,
+#              cursor="hand2",
+#              command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
+#        )
 #             self.weather_button = weather_btn
-
+#        self.weather_btn.image = weather_icon
+#        self.weather_button = weather_btn
 #        weather_btn.place(relx=0.5, y=10, anchor="n")
+#        self.weather_btn.place(x=10, y=10, anchor="nw")
 #        ToolTip(weather_btn, "Click to Open the Weather App")
 
         nav_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
@@ -2547,7 +2581,85 @@ class ExpirationApp:
                     pass
         return expired
 
-    def update_weather(self):
+    def update_weather(self, return_callback=None):
+        try:
+            city = "Shreveport,US"
+            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            self.current_weather_icon = icon_photo
+
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=(lambda: self.open_weather_ui(return_callback=return_callback)
+                             if return_callback else lambda: self.open_weather_ui())
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(
+                    image=icon_photo,
+                    command=(lambda: self.open_weather_ui(return_callback=return_callback)
+                             if return_callback else lambda: self.open_weather_ui())
+                )
+
+            self.weather_button.image = icon_photo
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def update_weather_new(self):
+        try:
+            city = "Shreveport,US"
+            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            self.current_weather_icon = icon_photo  # store for get_weather_icon()
+
+            # Create or update button
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(image=icon_photo)
+
+            self.weather_button.image = icon_photo  # prevent GC
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def update_weather_old(self):
         try:
             city = "Shreveport,US"
             api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
@@ -3193,6 +3305,7 @@ class WeatherApp:
 #        if callable(self.back_callback):
         self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
+                              background="orange",
                               #image=self.backImg,
                               image=backsmallImg,
                                   #command=self.back_callback)
