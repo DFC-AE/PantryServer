@@ -2312,14 +2312,23 @@ class ExpirationApp:
         for item in self.get_expiring_items():
             self.expiring_listbox.insert(tk.END, item)
 
-        # CENTER PANEL: Calendar
+        # CENTER PANEL: Name + Barcode + Calendar
         center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
-        # Expiration date picker (unchanged)
+        # Name entry
+        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="white").pack(anchor="w", pady=(5, 2))
+        self.item_name_var = tk.StringVar()
+        tk.Entry(center_frame, textvariable=self.item_name_var, width=30).pack(pady=(0, 10))
+
+        # Barcode entry
+        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg="white").pack(anchor="w", pady=(5, 2))
+        self.item_barcode_var = tk.StringVar()
+        tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30).pack(pady=(0, 15))
+
+        # Expiration date picker label
         tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
-        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
-#        self.date_picker.pack(pady=5)
+
         self.cal = Calendar(
             center_frame,
             selectmode='day',
@@ -2336,31 +2345,20 @@ class ExpirationApp:
         )
         self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20)
 
-        # RIGHT PANEL: Item Details
-        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
-
-        tk.Label(right_frame, text="Enter Item Name:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-        self.name_entry = tk.Entry(right_frame)
-        self.name_entry.pack(pady=5)
-        self.name_entry.bind("<Button-1>",
-                             lambda e: OnScreenKeyboard(self.content_frame, self.name_entry))
-
-        tk.Label(right_frame, text="Enter Barcode Number:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-        self.barcode_entry = tk.Entry(right_frame)
-        self.barcode_entry.pack(pady=5)
-        self.barcode_entry.bind("<Button-1>",
-                                lambda e: OnScreenKeyboard(self.content_frame, self.barcode_entry))
-
-        # Submit button
+        # Save button below calendar
         submit_btn = tk.Button(
-            right_frame, image=saveImg, cursor="hand2",
-            bg="black", fg="white", command=self.save_new_item
+            center_frame, image=saveImg, cursor="hand2",
+            bg="black", fg="white", command=lambda: self.save_new_item(right_frame)
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
+
+        # RIGHT PANEL: Details View
+        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
+        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+
+        tk.Label(right_frame, text="Item Details", font=APP_FONT_TITLE,
+                 bg="black", fg="white").pack(pady=5)
 
         # Back button
         backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
@@ -2476,38 +2474,48 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
-    def save_new_item(self):
-        name = self.name_entry.get()
-        date = self.date_picker.get()
-        barcode = self.barcode_entry.get() if hasattr(self, 'barcode_entry') else ""
+    def save_new_item(self, right_frame):
+        name = self.item_name_var.get().strip()
+        barcode = self.item_barcode_var.get().strip()
+        expiration_date = self.cal.get_date()
 
-        nutrition_info = {}
-        product_name = None
-
-        # Step 1: Fetch nutrition and product name if barcode exists
-        if barcode:
-            fetched_info = self.fetch_open_food_facts(barcode)
-            if fetched_info:
-                nutrition_info = fetched_info
-                product_name = fetched_info.get("Product Name", "")
-                if product_name and product_name != "Unknown":
-                    name = product_name  #Force overwrite with product name
-                    self.name_entry.delete(0, tk.END)
-                    self.name_entry.insert(0, name)
-
-        # Step 2: Validate name
         if not name:
-            messagebox.showerror("Error", "Item name required")
+            messagebox.showerror("Error", "Item name is required.")
             return
 
-        # Step 3: Create and save item
-        try:
-            item = Item(name, date, nutrition_info)
-            self.items.append(item)
-            self.save_items()
-            self.refresh_views()
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not save item: {e}")
+        # Prevent duplicate entries
+        existing_items = self.get_all_items()  # Your method to get items
+        if any(item['name'].lower() == name.lower() for item in existing_items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Save item (replace with your actual save logic)
+        self.add_item_to_db(name, barcode, expiration_date)
+
+        # Clear right frame and show details
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame,
+            text=name,
+            font=APP_FONT_BOLD,
+            bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Barcode: {barcode}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Expires: {expiration_date}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
 
     def clear_screen(self):
         try:
