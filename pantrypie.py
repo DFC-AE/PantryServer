@@ -481,9 +481,9 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+        self.items = []  # List to hold all items
         self.load_items()
         self.clear_screen()
-        self.items = []  # List to hold all items
         self.barcode = barcode = None
         self.current_view = 'home'
         self.dark_mode = False  # Track dark mode state
@@ -1189,39 +1189,75 @@ class ExpirationApp:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def populate_expiring_items(self):
-        for widget in self.expiring_frame.winfo_children():
-            widget.destroy()
+        """Populate both home and popup expired lists, if their widgets exist."""
+        from datetime import datetime, timedelta, date
 
-        from datetime import datetime, timedelta
-        today = datetime.today()
-        soon = today + timedelta(days=3)
+        now = datetime.today()
+        soon = now + timedelta(days=3)
 
-        expiring_items = [
-            item for item in self.items
-            if item.expiration_date and item.expiration_date <= soon
-        ]
+        expiring_items = []
+        for item in self.items:
+            name = getattr(item, "name", None) or (item.get("name") if isinstance(item, dict) else None)
+            exp_date_raw = getattr(item, "expiration_date", None) or (item.get("expiration_date") if isinstance(item, dict) else None)
 
-        if not expiring_items:
-            tk.Label(self.expiring_frame, text="No items expiring soon.",
-                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
-        else:
-            for item in expiring_items:
-                name = item.name
-                expiry = item.expiration_date.strftime("%Y-%m-%d")
-                days_left = (item.expiration_date - today).days
+            if not name or not exp_date_raw:
+                continue
 
-                # Color code
-                if days_left <= 0:
-                    color = "red"
-                elif days_left == 1:
-                    color = "orange"
+            try:
+                if isinstance(exp_date_raw, str):
+                    exp_dt = datetime.strptime(exp_date_raw, "%Y-%m-%d")
+                elif isinstance(exp_date_raw, datetime):
+                    exp_dt = exp_date_raw
+                elif isinstance(exp_date_raw, date):
+                    exp_dt = datetime(exp_date_raw.year, exp_date_raw.month, exp_date_raw.day)
                 else:
-                    color = "green"
+                    continue
+            except Exception:
+                continue
 
-                label = tk.Label(self.expiring_frame,
-                                 text=f"{name} (expires in {days_left} day{'s' if days_left != 1 else ''})",
-                                 font=APP_FONT, bg="white", fg=color, anchor="w", justify="left")
-                label.pack(fill=tk.X, padx=10, pady=5)
+            days_left = (exp_dt - now).days
+            expiring_items.append((name, days_left, exp_dt))
+
+        # --- Home screen update ---
+        if hasattr(self, "expiring_frame") and self.expiring_frame.winfo_exists():
+            for widget in self.expiring_frame.winfo_children():
+                widget.destroy()
+
+            if not expiring_items:
+                tk.Label(self.expiring_frame, text="No items expiring soon.",
+                         font=APP_FONT, bg="white", fg="gray").pack(pady=10)
+            else:
+                for name, days_left, exp_dt in expiring_items:
+                    if days_left < 0:
+                        color = "red"
+                    elif days_left == 0:
+                        color = "orange"
+                    else:
+                        color = "green"
+
+                    label = tk.Label(self.expiring_frame,
+                                     text=f"{name} (expires in {abs(days_left)} day{'s' if abs(days_left) != 1 else ''})",
+                                     font=APP_FONT, bg="white", fg=color, anchor="w", justify="left")
+                    label.pack(fill=tk.X, padx=10, pady=5)
+
+        # --- Add Item page update ---
+        if hasattr(self, "add_popup_expired_listbox") and self.add_popup_expired_listbox.winfo_exists():
+            lb = self.add_popup_expired_listbox
+            lb.delete(0, tk.END)
+            if not expiring_items:
+                lb.insert(tk.END, "No items expiring soon.")
+            else:
+                for name, days_left, exp_dt in expiring_items:
+                    text = f"{name} - {abs(days_left)} day{'s' if abs(days_left) != 1 else ''}"
+                    lb.insert(tk.END, text)
+
+                    # Match home screen colors
+                    if days_left < 0:
+                        lb.itemconfig(tk.END, fg="red")
+                    elif days_left == 0:
+                        lb.itemconfig(tk.END, fg="orange")
+                    else:
+                        lb.itemconfig(tk.END, fg="green")
 
     def create_random_recipe_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300, height=300)
@@ -2220,16 +2256,27 @@ class ExpirationApp:
         else:
             self.items = []
 
+    def add_item_to_db(self, name, barcode, expiration_date):
+        new_item = Item(name, expiration_date)
+        new_item.barcode = barcode
+        self.items.append(new_item)
+        self.save_items()
 
     def save_items(self):
+        # Convert any dicts in self.items to Item objects
+        cleaned_items = []
+        for item in self.items:
+            if isinstance(item, dict):
+                # assumes expiration_date is stored as string
+                cleaned_items.append(Item(item["name"], item["expiration_date"]))
+            else:
+                cleaned_items.append(item)
+
+        self.items = cleaned_items
+
         try:
             with open("items.json", "w") as f:
-                json.dump(
-                    [{"name": item.name, "expiration_date": item.expiration_date.strftime("%Y-%m-%d")}
-                     for item in self.items],
-                    f,
-                    indent=2
-                )
+                json.dump([item.to_dict() for item in self.items], f)
         except Exception as e:
             print(f"[Error] Failed to save items.json: {e}")
 
@@ -2280,17 +2327,45 @@ class ExpirationApp:
 
         # --- BACKGROUND SETUP ---
         self.bg_image_original = Image.open("pics/backgrounds/jars.jpg")
-        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_resized_image = ImageTk.PhotoImage(self.bg_image_original)
 
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
-        self.bg_canvas.bind("<Configure>", self.resize_background)
+        # Draw background image first
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_resized_image)
+        self.bg_canvas.tag_lower(self.bg_bg_label)
 
-        # Transparent container over background
-        self.content_frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+        # Force initial background resize so it shows immediately
+        self.bg_canvas.update_idletasks()
+        if self.bg_canvas.winfo_width() > 0 and self.bg_canvas.winfo_height() > 0:
+            initial_bg = self.bg_image_original.resize(
+                (self.bg_canvas.winfo_width(), self.bg_canvas.winfo_height()),
+                Image.LANCZOS
+            )
+            self.bg_resized_image = ImageTk.PhotoImage(initial_bg)
+            self.bg_canvas.image = self.bg_resized_image  # prevent GC
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
+            self.bg_canvas.tag_lower(self.bg_bg_label)
+
+        # Container on top of background
+        self.content_frame = tk.Frame(self.bg_canvas, bg=self.bg_canvas.cget("background"), highlightthickness=0)
         self.content_window = self.bg_canvas.create_window(0, 0, anchor="nw", window=self.content_frame)
+
+        # Dynamically resize background + frame
+        def on_canvas_resize(event):
+            if event.width > 0 and event.height > 0:
+                resized_bg = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+                self.bg_resized_image = ImageTk.PhotoImage(resized_bg)
+
+                # keep a reference to prevent garbage collection
+                self.bg_canvas.image = self.bg_resized_image
+
+                self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
+                self.bg_canvas.tag_lower(self.bg_bg_label)
+                self.bg_canvas.itemconfig(self.content_window, width=event.width, height=event.height)
+
+        self.bg_canvas.bind("<Configure>", on_canvas_resize)
 
         # --- HEADER ---
         tk.Label(self.content_frame, text="Add New Item", font=APP_FONT_TITLE_BOLD,
@@ -2300,21 +2375,28 @@ class ExpirationApp:
         main_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-        # LEFT PANEL: Expiring Soon
-        left_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10)
+        # Configure grid to have 3 equal columns (left, center, right)
+        main_frame.grid_columnconfigure(0, weight=1)  # Left panel
+        main_frame.grid_columnconfigure(1, weight=2)  # Center panel (bigger)
+        main_frame.grid_columnconfigure(2, weight=1)  # Right panel
+        main_frame.grid_rowconfigure(0, weight=1)
 
-        tk.Label(left_frame, text="Expiring Soon", font=APP_FONT_TITLE,
-                 bg="black", fg="white").pack(pady=5)
-        self.expiring_listbox = tk.Listbox(left_frame, font=APP_FONT, height=20)
-        self.expiring_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        # Left panel for Expiring Soon in Add Item screen
+        left_frame = tk.Frame(main_frame, bg="white")
+        left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
-        for item in self.get_expiring_items():
-            self.expiring_listbox.insert(tk.END, item)
+        tk.Label(left_frame, text="Expiring Soon", bg="white").pack()
+
+        self.add_popup_expired_listbox = tk.Listbox(left_frame, height=12)
+        self.add_popup_expired_listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+
+        # Fill it with current expiring items
+        self.populate_expiring_items()
 
         # CENTER PANEL: Name + Barcode + Calendar
         center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        #center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        center_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         # Name entry
         tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="black", fg="white").pack(anchor="w", pady=(5, 2))
@@ -2347,7 +2429,7 @@ class ExpirationApp:
             othermonthwebackground="lightgray",
             othermonthbackground="white"
         )
-        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20)
+        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20, fill=tk.BOTH, expand=True)
 
         # Save button below calendar
         submit_btn = tk.Button(
@@ -2359,7 +2441,8 @@ class ExpirationApp:
 
         # RIGHT PANEL: Details View
         right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        #right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
 
         tk.Label(right_frame, text="Item Details", font=APP_FONT_TITLE,
                  bg="black", fg="white").pack(pady=5)
@@ -2411,20 +2494,57 @@ class ExpirationApp:
 #        ToolTip(back_btn, "Return to Home Screen")
 
         # Weather Button (with guaranteed icon)
-        weather_icon = self.get_weather_icon()
-        weather_btn = tk.Button(
-            nav_frame,
-            image=weather_icon,
-            bg="orange",
-            command=lambda: self.open_weather_ui()
-        )
-        weather_btn.image = weather_icon  # prevent garbage collection
-        weather_btn.pack(side=tk.LEFT, padx=5)
-        ToolTip(weather_btn, "Click to Open the Weather App")
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#            nav_frame,
+#            image=weather_icon,
+#            bg="orange",
+#            command=lambda: self.open_weather_ui()
+#        )
+#        weather_btn.image = weather_icon  # prevent garbage collection
+#        weather_btn.pack(side=tk.LEFT, padx=5)
+#        ToolTip(weather_btn, "Click to Open the Weather App")
 
-    def get_expiring_items(self):
-        # Placeholder logic, replace with actual item expiration check
-        return ["Milk - 2025-08-10", "Eggs - 2025-08-12", "Yogurt - 2025-08-13"]
+        self.bg_canvas.update_idletasks()
+        self.bg_canvas.event_generate("<Configure>")
+
+    def update_expired_items_display(self):
+        expired_items = self.get_expired_items()
+
+        # Update home screen widget
+        if hasattr(self, "expired_listbox"):
+            self.expired_listbox.delete(0, tk.END)
+            for item in expired_items:
+                self.expired_listbox.insert(tk.END, item)
+
+        # Update add-item popup widget
+        if hasattr(self, "add_popup_expired_listbox"):
+            self.add_popup_expired_listbox.delete(0, tk.END)
+            for item in expired_items:
+                self.add_popup_expired_listbox.insert(tk.END, item)
+
+
+    def get_expired_items(self):
+        expired = []
+        today = datetime.today().date()
+        for item in self.items:
+            exp_date = item.expiration_date  # attribute, not dict key
+            if exp_date:
+                try:
+                    if isinstance(exp_date, str):
+                        exp_dt = datetime.strptime(exp_date, "%Y-%m-%d").date()
+                    elif isinstance(exp_date, datetime):
+                        exp_dt = exp_date.date()
+                    elif isinstance(exp_date, date):
+                        exp_dt = exp_date
+                    else:
+                        continue  # unknown format, skip
+
+                    if exp_dt < today:
+                        expired.append(item.name)
+                except Exception:
+                    pass
+        return expired
 
     def update_weather(self):
         try:
@@ -2488,13 +2608,19 @@ class ExpirationApp:
             return
 
         # Prevent duplicate entries
-        existing_items = self.get_all_items()  # Your method to get items
-        if any(item['name'].lower() == name.lower() for item in existing_items):
+        existing_items = self.items
+        #if any(item['name'].lower() == name.lower() for item in existing_items):
+        if any(item.name.lower() == name.lower() for item in existing_items):
             messagebox.showwarning("Duplicate", f"'{name}' already exists.")
             return
 
         # Save item (replace with your actual save logic)
-        self.add_item_to_db(name, barcode, expiration_date)
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date
+        })
+        self.save_items()
 
         # Clear right frame and show details
         for widget in right_frame.winfo_children():
