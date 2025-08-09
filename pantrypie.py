@@ -1183,6 +1183,8 @@ class ExpirationApp:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
+        self.enable_mousewheel_scroll(canvas)
+
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -3360,7 +3362,8 @@ class CameraApp:
             window=self.canvas
         )
         self.back_btn = tk.Button(
-            self.bg_canvas,
+#            self.bg_canvas,
+            self.root,
             image=self.backImg,
             bg="orange",
             borderwidth=0,
@@ -3368,18 +3371,21 @@ class CameraApp:
             cursor="hand2",
             command=self.back_callback
         )
-        self.back_btn_window = self.bg_canvas.create_window(
-            0, 0, anchor="ne", window=self.back_btn
-        )
+        self.back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        self.root.after(50, lambda: self.back_btn.lift())
+        self.root.after(100, lambda: self.back_btn.lift())
+#        self.back_btn_window = self.bg_canvas.create_window(
+#            0, 0, anchor="ne", window=self.back_btn
+#        )
 
         # Always bring to front
-        self.bg_canvas.tag_raise(self.back_btn_window)
+#       self.bg_canvas.tag_raise(self.back_btn_window)
 
         # Reposition on resize
         def reposition(event):
             self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
-            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
-            self.bg_canvas.tag_raise(self.back_btn_window)
+#            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
+#            self.bg_canvas.tag_raise(self.back_btn_window)
 
         self.bg_canvas.bind("<Configure>", reposition)
         # Force one manual reposition after load
