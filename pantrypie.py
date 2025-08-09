@@ -3396,46 +3396,43 @@ class WeatherApp:
         # 3. Forecast frame (top)
         self.forecast_frame = tk.Frame(self.root, bg="")
         self.forecast_frame.pack(fill="x", pady=10)
-        self.forecast_frame.pack_propagate(False)
 
-        # 4. Moon calendar frame (bottom)
-        self.calendar_frame = tk.Frame(self.root, bg="")
-        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+        # Inner frame to center forecast content
+        forecast_content = tk.Frame(self.forecast_frame, bg="")
+        forecast_content.pack(anchor="center")  # centers the content
 
         ## Current Weather Label ##
-        self.weather_label = tk.Label(self.forecast_frame, font=APP_FONT)
+        self.weather_label = tk.Label(forecast_content, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
-        self.weather_icon_label = tk.Label(self.forecast_frame)
+        self.weather_icon_label = tk.Label(forecast_content)
         self.weather_icon_label.pack()
 
         self.forecast_labels = []
         for _ in range(5):
-            day_frame = tk.Frame(self.forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame = tk.Frame(forecast_content, borderwidth=1, relief="solid", padx=5, pady=5)
             day_frame.pack(side="left", padx=5)
 
-            #icon_label = tk.Label(day_frame, bg="white")
             icon_label = tk.Label(day_frame)
             icon_label.pack()
 
-            #text_label = tk.Label(day_frame, font=APP_FONT, bg="white")
             text_label = tk.Label(day_frame, font=APP_FONT)
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
-#        self.draw_moon_calendar(self.root)
-#        self.draw_moon_calendar(self.forecast_frame)
+        # 4. Moon calendar frame (bottom)
+        self.calendar_frame = tk.Frame(self.root, bg="")
+        self.calendar_frame.pack(fill="both", expand=True, pady=10)
 
         moon_frame = tk.Frame(self.calendar_frame, bg="white", highlightbackground="black", highlightthickness=1)
         moon_frame.pack(pady=10)
         self.draw_moon_calendar(moon_frame)
 
         moon_text = self.get_moon_phase()
-        moon_label = tk.Label(self.root, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
+        moon_label = tk.Label(self.calendar_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
         moon_label.pack(pady=5)
-
         ## Back Button ##
         self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
@@ -3446,6 +3443,7 @@ class WeatherApp:
                               command=self.back_callback)
                                   #command=lambda: self.create_home_screen(None))
         self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
+        self.back_btn.lift()
         self.back_btn.image = self.backImg
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
