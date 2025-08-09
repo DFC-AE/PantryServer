@@ -1072,12 +1072,12 @@ class ExpirationApp:
         self.weather_label = tk.Label(
             self.root,
             text="Loading Weather...",
-            font=(self.current_font, 14),
+            font=APP_FONT_TITLE,
             bg="orange",
             fg="yellow",
             justify="center"
         )
-        self.weather_label.pack(pady=(5, 10))
+        self.weather_label.pack(pady=(5, 5))
 
         # fetch/update weather icon and text (update_weather chooses return target based on current_view)
         self.update_weather(None)
