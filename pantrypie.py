@@ -942,15 +942,15 @@ class ExpirationApp:
 
             tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="black", fg="white").pack(pady=(10, 5))
 
-            inner = tk.Frame(panel, bg="white")
+            inner = tk.Frame(panel, bg="black")
             inner.pack(padx=10, pady=10)
 
             # Ingredient dropdown
-            tk.Label(inner, text="Ingredient:", bg="white").grid(row=0, column=0, sticky="w")
+            tk.Label(inner, text="Ingredient:", bg="black", fg="white").grid(row=0, column=0, sticky="w")
             ttk.Combobox(inner, textvariable=ingredient_var, values=list(densities.keys()), state="readonly", width=12).grid(row=0, column=1, sticky="w", pady=5)
 
             # From entry
-            tk.Label(inner, text="Amount:", bg="white").grid(row=1, column=0, sticky="w")
+            tk.Label(inner, text="Amount:", bg="black", fg="white").grid(row=1, column=0, sticky="w")
             entry = tk.Entry(inner, textvariable=input_var, width=10)
             entry.grid(row=1, column=1, sticky="w", pady=5)
 
@@ -960,7 +960,7 @@ class ExpirationApp:
             ttk.Combobox(inner, textvariable=to_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=1, sticky="w", pady=5)
 
             # Result display
-            tk.Label(inner, text="Converted:", bg="white").grid(row=3, column=0, sticky="w")
+            tk.Label(inner, text="Converted:", bg="black", fg="white").grid(row=3, column=0, sticky="w")
             result_entry = tk.Entry(inner, textvariable=result_var, state="readonly", width=15)
             result_entry.grid(row=3, column=1, sticky="w", pady=5)
 
