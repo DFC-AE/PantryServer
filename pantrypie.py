@@ -555,6 +555,8 @@ class ExpirationApp:
         self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
+        self.weatherImg = ImageTk.PhotoImage(Image.open("pics/icons/weather.png"))
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
@@ -2467,23 +2469,17 @@ class ExpirationApp:
         bg_img_original = Image.open("pics/backgrounds/jars.jpg").convert("RGBA")
 
         # --- Top bar ---
-        self.top_bar = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0, bg="")
+        self.top_bar = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+
+        # Title (center)
         title_lbl = tk.Label(
             self.top_bar,
             text="Item Tracker",
             font=(APP_FONT[0], APP_FONT[1] + 4, "bold"),
             fg="white",
-            bg="black"
+            bg="#FFA500"
         )
-        title_lbl.pack(side=tk.LEFT, padx=10)
-
-        back_btn = tk.Button(
-            self.top_bar,
-            text="Back",
-            font=APP_FONT,
-            command=lambda: self.create_home_screen(None)
-        )
-        back_btn.pack(side=tk.RIGHT, padx=10)
+        title_lbl.pack(side=tk.LEFT, expand=True, padx=10)
 
         # --- Panel frames ---
         self.left_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
@@ -2596,6 +2592,36 @@ class ExpirationApp:
             panel_height = event.height - top_margin - (event.height * 0.05)  # 5% bottom gap
             bar_height = event.height * 0.08
 
+            # --- Weather button in top left ---
+#            self.bg_canvas.create_window(
+#                10, 10,
+#                anchor="nw",
+#                window=tk.Button(
+#                    self.bg_canvas,
+#                    image=self.weatherImg,
+#                    cursor="hand2",
+#                    bg="#FFA500",
+#                    highlightthickness=0,
+#                    bd=0,
+#                    command=self.open_weather_page
+#                )
+#            )
+
+            # --- Back button in top right ---
+            self.bg_canvas.create_window(
+                event.width - 10, 10,
+                anchor="ne",
+                window=tk.Button(
+                    self.bg_canvas,
+                    image=self.backImg,
+                    cursor="hand2",
+                    bg="#FFA500",
+                    highlightthickness=0,
+                    bd=0,
+                    command=lambda: self.create_home_screen(None)
+                )
+            )
+
             # Top bar coords (centered above center panel)
             cx1 = gap + panel_width + gap
             cx2 = cx1 + panel_width
@@ -2603,7 +2629,6 @@ class ExpirationApp:
             self.bg_canvas.create_window(bar_x, top_margin - bar_height / 2,
                                          window=self.top_bar, width=panel_width,
                                          height=bar_height)
-
             # Left panel
             lx1 = gap
             lx2 = lx1 + panel_width
