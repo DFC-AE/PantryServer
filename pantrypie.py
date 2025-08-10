@@ -710,6 +710,44 @@ class ExpirationApp:
 #            self.update_weather()
 #        return self.current_weather_icon
 
+    def update_weather_icon(self, target_frame, icon_size=36):
+        try:
+            city = "Shreveport,US"
+#            api_key = os.environ.get("OPENWEATHER_KEY")
+            api_key = KEY_WEATHER
+            if not api_key:
+#                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+                raise RuntimeError("KEY_WEATHER environment variable not set.")
+
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+            response = requests.get(url, timeout=5)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url, timeout=5)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((icon_size, icon_size), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            for child in target_frame.winfo_children():
+                child.destroy()
+
+            weather_btn = tk.Button(
+                target_frame,
+                image=icon_photo,
+                bg="#FFA500",
+                cursor="hand2",
+                borderwidth=0,
+                highlightthickness=0,
+                command=self.open_weather_page
+            )
+            weather_btn.image = icon_photo
+            weather_btn.pack()
+
+        except Exception as e:
+            print(f"[Weather] Failed to update weather icon: {e}")
+
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
         width = self.root.winfo_width()
@@ -988,10 +1026,12 @@ class ExpirationApp:
 
     def update_weather(self, return_callback=None, target_frame=None):
         try:
-            city = "Shreveport,US"
-            api_key = os.environ.get("OPENWEATHER_KEY")
+            city = CITY
+#            api_key = os.environ.get("OPENWEATHER_KEY")
+            api_key = KEY_WEATHER
             if not api_key:
-                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+#                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+                raise RuntimeError("KEY_WEATHER environment variable not set.")
 
             url = (
                 f"http://api.openweathermap.org/data/2.5/weather"
@@ -2480,6 +2520,31 @@ class ExpirationApp:
         )
         title_lbl.pack(side=tk.LEFT, expand=True, padx=10)
 
+        # --- Corner weather frame (top-left) ---
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 10, anchor="nw", window=self.corner_weather_frame)
+        self.bg_canvas.tag_raise(self.weather_window_id)
+
+        # Populate live weather glyph in top-left
+        self.update_weather_icon(self.corner_weather_frame, icon_size=36)
+
+        # --- Corner back button frame (top-right) ---
+        self.corner_back_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.back_window_id = self.bg_canvas.create_window(0, 10, anchor="ne", window=self.corner_back_frame)
+
+        # Back button with orange background
+        back_btn_corner = tk.Button(
+            self.corner_back_frame,
+            image=self.backImg,
+            cursor="hand2",
+            bg="#FFA500",
+            highlightthickness=0,
+            bd=0,
+            command=lambda: self.create_home_screen(None)
+        )
+        back_btn_corner.image = self.backImg
+        back_btn_corner.pack()
+
         # --- Panel frames ---
         self.left_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
         self.center_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
@@ -2496,6 +2561,11 @@ class ExpirationApp:
             relief="flat", width=25
         )
         self.add_popup_expired_listbox.pack(pady=10)
+
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 10, anchor="nw", window=self.corner_weather_frame)
+#        self.update_weather(target_frame=self.corner_weather_frame, icon_size=36)
+        self.update_weather_icon(self.corner_weather_frame, icon_size=36)
 
         def on_expiring_select(event):
             selection = event.widget.curselection()
@@ -2527,10 +2597,12 @@ class ExpirationApp:
 
         cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
                        font=APP_FONT,
-                       background="#FFFFFF", foreground="black",
-                       headersbackground="#FFFFFF",
+                       #background="#FFFFFF",
+                       background="orange",
+                       foreground="white",
+                       headersbackground="orange",
                        normalbackground="#FFFFFF",
-                       weekendbackground="#FFFFFF",
+                       weekendbackground="lightgray",
                        othermonthbackground="#FFFFFF")
         cal.pack(pady=15)
 
@@ -2581,6 +2653,8 @@ class ExpirationApp:
             self.bg_photo = ImageTk.PhotoImage(self.resized_bg)
             self.bg_canvas.delete("all")
             self.bg_canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+
+            self.bg_canvas.coords(self.weather_window_id, 10, 10)
 
             self._overlay_images = []
 
@@ -2909,7 +2983,7 @@ class ExpirationApp:
         If return_callback is None, we choose based on self.current_view.
         """
         try:
-            city = "Shreveport,US"
+            city = CITY
             api_key = KEY_WEATHER
             url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
 
@@ -2995,8 +3069,8 @@ class ExpirationApp:
 
     def update_weather_new(self, return_callback=None):
         try:
-            city = "Shreveport,US"
-            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            city = CITY
+            api_key = KEY_WEATHER
             url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
 
             response = requests.get(url)
