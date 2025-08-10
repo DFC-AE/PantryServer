@@ -2571,17 +2571,17 @@ class ExpirationApp:
         self.populate_expiring_items()
 
         # --- Center panel widgets ---
-        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
+        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
         name_entry = tk.Entry(self.center_panel, font=APP_FONT,
                               highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         name_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
+        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
         barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         barcode_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
+        tk.Label(self.center_panel, text="Category:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
         details_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         details_entry.pack(fill=tk.X, pady=5)
