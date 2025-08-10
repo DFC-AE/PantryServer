@@ -149,7 +149,7 @@ class SplashScreen(tk.Toplevel):
             self.frames = [ImageTk.PhotoImage(Image.open(gif_path))]
 
         # Display first frame
-        self.label = tk.Label(self, image=self.frames[0], bg='black')
+        self.label = tk.Label(self, image=self.frames[0], bg='#2E2E2E')
         self.label.pack()
 
         # Center the splash on screen
@@ -940,17 +940,17 @@ class ExpirationApp:
             #panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
             panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-            tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="black", fg="white").pack(pady=(10, 5))
+            tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="#2E2E2E", fg="white").pack(pady=(10, 5))
 
-            inner = tk.Frame(panel, bg="black")
+            inner = tk.Frame(panel, bg="#2E2E2E")
             inner.pack(padx=10, pady=10)
 
             # Ingredient dropdown
-            tk.Label(inner, text="Ingredient:", bg="black", fg="white").grid(row=0, column=0, sticky="w")
+            tk.Label(inner, text="Ingredient:", bg="#2E2E2E", fg="white").grid(row=0, column=0, sticky="w")
             ttk.Combobox(inner, textvariable=ingredient_var, values=list(densities.keys()), state="readonly", width=12).grid(row=0, column=1, sticky="w", pady=5)
 
             # From entry
-            tk.Label(inner, text="Amount:", bg="black", fg="white").grid(row=1, column=0, sticky="w")
+            tk.Label(inner, text="Amount:", bg="#2E2E2E", fg="white").grid(row=1, column=0, sticky="w")
             entry = tk.Entry(inner, textvariable=input_var, width=10)
             entry.grid(row=1, column=1, sticky="w", pady=5)
 
@@ -960,7 +960,7 @@ class ExpirationApp:
             ttk.Combobox(inner, textvariable=to_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=1, sticky="w", pady=5)
 
             # Result display
-            tk.Label(inner, text="Converted:", bg="black", fg="white").grid(row=3, column=0, sticky="w")
+            tk.Label(inner, text="Converted:", bg="#2E2E2E", fg="white").grid(row=3, column=0, sticky="w")
             result_entry = tk.Entry(inner, textvariable=result_var, state="readonly", width=15)
             result_entry.grid(row=3, column=1, sticky="w", pady=5)
 
@@ -1085,7 +1085,7 @@ class ExpirationApp:
                     from PIL import ImageDraw
                     img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
                     draw = ImageDraw.Draw(img)
-                    draw.text((10, 20), "?", fill="black")
+                    draw.text((10, 20), "?", fill="#2E2E2E")
                     self.current_weather_icon = ImageTk.PhotoImage(img)
         return self.current_weather_icon
 
@@ -1320,7 +1320,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT_TITLE, bg="black", fg="white")
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT_TITLE, bg="#2E2E2E", fg="white")
         title.pack(pady=(10, 5))
 
         list_frame = tk.Frame(panel, bg="white")
@@ -1381,7 +1381,7 @@ class ExpirationApp:
 
             if not expiring_items:
                 tk.Label(self.expiring_frame, text="No items expiring soon.",
-                         font=APP_FONT, bg="white", fg="gray").pack(pady=10)
+                         font=APP_FONT, bg="white", fg="#2E2E2E").pack(pady=10)
             else:
                 for name, days_left, exp_dt in expiring_items:
                     if days_left < 0:
@@ -1421,7 +1421,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Random Recipe", font=APP_FONT_TITLE, bg="black", fg="white")
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT_TITLE, bg="#2E2E2E", fg="white")
         title.pack(pady=(10, 5))
 
         # Recipe image
@@ -1430,7 +1430,7 @@ class ExpirationApp:
 
         # Recipe name
         self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
-                                          bg="black", fg="white", wraplength=250)
+                                          bg="#2E2E2E", fg="white", wraplength=250)
         self.recipe_name_label.pack(pady=5)
 
         # Link to full recipe
@@ -1490,9 +1490,9 @@ class ExpirationApp:
         rating = round(random.uniform(3.5, 5.0), 1)
 
         # Create scrollable canvas
-        canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
+        canvas = tk.Canvas(self.root, bg="#2E2E2E", highlightthickness=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg="white")
+        scrollable_frame = tk.Frame(canvas, bg="")
 
         scrollable_frame.bind(
             "<Configure>",
@@ -1504,14 +1504,6 @@ class ExpirationApp:
 
         scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Enable mouse wheel scrolling
-#        def _on_mousewheel(event):
-#            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-#        canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows/macOS
-#        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Linux scroll up
-#        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))   # Linux scroll down
 
         self.enable_mousewheel_scroll(canvas)
 
@@ -1560,11 +1552,11 @@ class ExpirationApp:
         text_inner = tk.Frame(text_frame, bg="")
         text_inner.pack(expand=True)
 
-        tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
-                 bg="white", anchor="w").pack(anchor="w", pady=(0, 5))
+        tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_TITLE_BOLD,
+                 bg="orange", fg="#2E2E2E", anchor="w").pack(anchor="w", pady=(0, 5))
 
         tk.Label(text_inner, text=f"Category: {meal['strCategory']}   Rating: {rating:.1f} ",
-                 font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
+                 font=APP_FONT_TITLE, bg="orange", fg="#2E2E2E", anchor="w").pack(anchor="w")
 
         ## Meal name
 #        tk.Label(scrollable_frame, text=meal["strMeal"], font=APP_FONT_BOLD, bg="white").pack(pady=10)
@@ -1720,7 +1712,7 @@ class ExpirationApp:
 
         # Background selection
         tk.Label(frame, text="Select Background Theme:", font=(self.current_font, 14), bg="white").grid(row=1, column=0, sticky="w")
-        backgrounds = ["back.jpg", "back_pastel.jpg", "back_toon.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "black"]
+        backgrounds = ["back.jpg", "back_pastel.jpg", "back_toon.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "#2E2E2E"]
         self.bg_var = tk.StringVar(value=self.current_background)
         bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
         bg_menu.grid(row=1, column=1, sticky="ew")
@@ -1782,7 +1774,7 @@ class ExpirationApp:
 
         # Live preview label
         self.preview_label = tk.Label(frame, text="Sample Text", font=(self.font_var.get(), 14),
-                                      bg=self.bg_var.get() if self.bg_var.get() in ["white", "black", "lightgray"] else "white")
+                                      bg=self.bg_var.get() if self.bg_var.get() in ["white", "#2E2E2E", "lightgray"] else "white")
         self.preview_label.grid(row=4, column=0, columnspan=2, pady=20)
 
         # Buttons
@@ -1804,7 +1796,7 @@ class ExpirationApp:
         # Update label preview
         self.preview_label.config(font=(font, 14))
 
-        if bg in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
+        if bg in ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]:
             self.preview_label.config(bg=bg)
 
         # Live background update if theme was changed
@@ -1852,7 +1844,7 @@ class ExpirationApp:
 
         # Background selection
         tk.Label(frame, text="Select Background Color:", font=(self.current_font, 14)).grid(row=1, column=0, sticky="w")
-        backgrounds = ["white", "lightgray", "lightblue", "lightgreen", "black"]
+        backgrounds = ["white", "lightgray", "lightblue", "lightgreen", "#2E2E2E"]
         self.bg_var = tk.StringVar(value=self.current_background)
         bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
         bg_menu.grid(row=1, column=1, sticky="ew")
@@ -1877,7 +1869,7 @@ class ExpirationApp:
         self.preview_label = tk.Label(preview_frame, text="Preview Text",
                                       font=(self.current_font, 16),
                                       bg=self.current_background,
-                                      fg="black" if not self.dark_mode else "white",
+                                      fg="#2E2E2E" if not self.dark_mode else "white",
                                       width=30, height=5)
         self.preview_label.pack()
 
@@ -1899,7 +1891,7 @@ class ExpirationApp:
         bg_choice = self.bg_var.get()
         dark = self.dark_mode_var.get()
 
-        fg_color = "white" if dark else "black"
+        fg_color = "white" if dark else "#2E2E2E"
 
         self.preview_label.config(
             font=(font_choice, 16),
@@ -2065,7 +2057,7 @@ class ExpirationApp:
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
 
             c_btn = tk.Button(
-               scroll_frame, text=text, bg=color, fg="black", font=APP_FONT, wraplength=150,
+               scroll_frame, text=text, bg=color, fg="#2E2E2E", font=APP_FONT, wraplength=150,
                width=15, height=6, highlightthickness=0, bd=1,
                command=lambda i=item: self.show_detail_view(i)
             )
@@ -2150,7 +2142,7 @@ class ExpirationApp:
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
-            tk.Label(frame, text=text, bg=color, fg="black", font=APP_FONT).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            tk.Label(frame, text=text, bg=color, fg="#2E2E2E", font=APP_FONT).pack(side=tk.LEFT, fill=tk.X, expand=True)
             tk.Button(frame, text="Delete", command=lambda i=item: self.delete_item(i)).pack(side=tk.RIGHT)
 
         # Back button
@@ -2487,7 +2479,7 @@ class ExpirationApp:
     def toggle_dark_mode(self):
         self.dark_mode = not self.dark_mode
         bg = "#2E2E2E" if self.dark_mode else "white"
-        fg = "white" if self.dark_mode else "black"
+        fg = "white" if self.dark_mode else "#2E2E2E"
         self.root.configure(bg=bg)
         for widget in self.root.winfo_children():
             try:
@@ -2516,7 +2508,7 @@ class ExpirationApp:
             font=(APP_FONT[0], APP_FONT[1] + 4, "bold"),
             fg="white",
             #bg="#FFA500"
-            bg="black"
+            bg="#2E2E2E"
         )
         title_lbl.pack(side=tk.LEFT, expand=True, padx=10)
 
@@ -2555,7 +2547,7 @@ class ExpirationApp:
         self.add_popup_expired_listbox = tk.Listbox(
             self.left_panel, font=APP_FONT,
             highlightthickness=0, bd=0,
-            bg="#FFFFFF", fg="black",
+            bg="#FFFFFF", fg="#2E2E2E",
             selectbackground="#AAAAAA",
             relief="flat", width=25
         )
@@ -2581,17 +2573,17 @@ class ExpirationApp:
         # --- Center panel widgets ---
         tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
         name_entry = tk.Entry(self.center_panel, font=APP_FONT,
-                              highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+                              highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         name_entry.pack(fill=tk.X, pady=5)
 
         tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
         barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
-                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         barcode_entry.pack(fill=tk.X, pady=5)
 
         tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
         details_entry = tk.Entry(self.center_panel, font=APP_FONT,
-                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         details_entry.pack(fill=tk.X, pady=5)
 
         cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
@@ -2606,7 +2598,7 @@ class ExpirationApp:
         cal.pack(pady=15)
 
         tk.Button(self.center_panel, image=saveImg,
-                      background="black",
+                      background="#2E2E2E",
                       highlightcolor="orange",
                       command=lambda: self.save_item(
                       name_entry.get(),
@@ -2619,7 +2611,7 @@ class ExpirationApp:
                  font=(APP_FONT[0], APP_FONT[1], "bold"), fg="white").pack()
         self.detail_text = tk.Text(
             self.right_panel, font=APP_FONT, wrap="word",
-            highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat", width=30
+            highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat", width=30
         )
         self.detail_text.pack(pady=10)
 
@@ -2787,7 +2779,7 @@ class ExpirationApp:
 
         # --- HEADER ---
         tk.Label(self.content_frame, text="Expiration Tracker", font=APP_FONT_TITLE_BOLD,
-                 bg="black", fg="white").pack(pady=10)
+                 bg="#2E2E2E", fg="white").pack(pady=10)
 
         # --- MAIN LAYOUT ---
         main_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
@@ -2803,7 +2795,7 @@ class ExpirationApp:
         left_frame = tk.Frame(main_frame, bg="white")
         left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
-        tk.Label(left_frame, text="Expiring Soon", bg="black", fg="white").pack()
+        tk.Label(left_frame, text="Expiring Soon", bg="#2E2E2E", fg="white").pack()
 
         self.add_popup_expired_listbox = tk.Listbox(left_frame, height=12)
         self.add_popup_expired_listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
@@ -2817,21 +2809,21 @@ class ExpirationApp:
         center_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
         # Name entry
-        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="black", fg="white").pack(anchor="w", pady=(5, 2))
+        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="#2E2E2E", fg="white").pack(anchor="w", pady=(5, 2))
         self.item_name_var = tk.StringVar()
         name_entry = tk.Entry(center_frame, textvariable=self.item_name_var, width=30)
         name_entry.pack(pady=(0, 10))
         name_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, name_entry))
 
         # Barcode entry
-        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg= "black", fg="white").pack(anchor="w", pady=(5, 2))
+        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg= "#2E2E2E", fg="white").pack(anchor="w", pady=(5, 2))
         self.item_barcode_var = tk.StringVar()
         barcode_entry = tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30)
         barcode_entry.pack(pady=(0, 15))
         barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, barcode_entry))
 
         # Expiration date picker label
-        tk.Label(center_frame, text="Select Expiration Date:", bg="black", fg="white", font=APP_FONT, justify="center").pack()
+        tk.Label(center_frame, text="Select Expiration Date:", bg="#2E2E2E", fg="white", font=APP_FONT, justify="center").pack()
 
         self.cal = Calendar(
             center_frame,
@@ -2852,7 +2844,7 @@ class ExpirationApp:
         # Save button below calendar
         submit_btn = tk.Button(
             center_frame, image=saveImg, cursor="hand2",
-            bg="black", fg="white", command=lambda: self.save_new_item(right_frame)
+            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(right_frame)
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
@@ -2863,7 +2855,7 @@ class ExpirationApp:
         right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
 
         tk.Label(right_frame, text="Item Details", font=APP_FONT_TITLE,
-                 bg="black", fg="white").pack(pady=5)
+                 bg="#2E2E2E", fg="white").pack(pady=5)
 
         # Back button
         backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
@@ -3806,13 +3798,13 @@ class WeatherApp:
 #            print(f"Could not draw sun banner: {e}")
 
         # Right: Moon calendar
-        moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="black", highlightthickness=1)
+        moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="#2E2E2E", highlightthickness=1)
 #        moon_frame.pack(side="left", padx=10, pady=10)
         moon_frame.pack(expand=True, padx=10)
 
         # Moon phase title above the calendar
         moon_text = self.get_moon_phase()
-        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="black", fg="white")
+        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="#2E2E2E", fg="white")
         moon_label.pack(pady=(0, 5))
 
         # Moon calendar below the title
@@ -3993,8 +3985,8 @@ class WeatherApp:
         )
 
         # Draw sunrise/sunset labels
-        sun_canvas.create_text(5, canvas_height - 10, text=sunrise_str, anchor="w", fill="black", font=("Arial", 9, "bold"))
-        sun_canvas.create_text(canvas_width - 5, canvas_height - 10, text=sunset_str, anchor="e", fill="black", font=("Arial", 9, "bold"))
+        sun_canvas.create_text(5, canvas_height - 10, text=sunrise_str, anchor="w", fill="#2E2E2E", font=("Arial", 9, "bold"))
+        sun_canvas.create_text(canvas_width - 5, canvas_height - 10, text=sunset_str, anchor="e", fill="#2E2E2E", font=("Arial", 9, "bold"))
 
         return sun_canvas
 
@@ -4057,7 +4049,7 @@ class WeatherApp:
         calendar_frame = tk.Frame(parent, bg="white")
         calendar_frame.pack(pady=5, anchor="center")
         tk.Label(calendar_frame, text="Moon Phase Calendar", font=APP_FONT_BOLD,
-                 bg="black", fg="white").pack(fill="x")
+                 bg="#2E2E2E", fg="white").pack(fill="x")
 
         MOON_GLYPHS = {
             "New Moon": "\U0001F311",
@@ -4106,7 +4098,7 @@ class WeatherApp:
         # Day headers
         for idx, day_name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
             tk.Label(cal_frame, text=day_name, font=day_font,
-                     bg="black", fg="white", width=3, height=1).grid(row=0, column=idx, padx=1, pady=1)
+                     bg="#2E2E2E", fg="white", width=3, height=1).grid(row=0, column=idx, padx=1, pady=1)
 
         # Days with moon phases
         for row_idx, week in enumerate(month_days, start=1):
@@ -4118,7 +4110,7 @@ class WeatherApp:
                     date_obj = dt_date(year, month, day)
                     phase_name = get_phase_name(date_obj)
                     glyph = MOON_GLYPHS.get(phase_name, "")
-                    fg_color = "red" if date_obj == today else "black"
+                    fg_color = "red" if date_obj == today else "#2E2E2E"
                     tk.Label(cal_frame, text=f"{day}\n{glyph}",
                              font=cell_font, width=3, height=2,
                              bg="white", fg=fg_color).grid(row=row_idx, column=col_idx, padx=1, pady=1)
@@ -4193,7 +4185,7 @@ class CameraApp:
 
         self.bg_canvas.bind("<Configure>", redraw)
         # Camera feed canvas
-        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
+        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="#2E2E2E", highlightthickness=0)
         self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
 
         # Camera initialization
@@ -4229,7 +4221,7 @@ class CameraApp:
         self.bg_canvas_bg = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
 
         # Camera feed label (centered smaller window)
-        self.camera_label = tk.Label(self.bg_canvas, bg="black")
+        self.camera_label = tk.Label(self.bg_canvas, bg="#2E2E2E")
         self.camera_window = self.bg_canvas.create_window(
             self.bg_canvas.winfo_width() // 2,
             self.bg_canvas.winfo_height() // 2,
@@ -4363,7 +4355,7 @@ class CameraApp:
 
             # Flash effect
             self.canvas.config(bg="white")
-            self.root.after(100, lambda: self.canvas.config(bg="black"))
+            self.root.after(100, lambda: self.canvas.config(bg="#2E2E2E"))
 
             # Save detected item to inventory
             self.save_scanned_item(barcode_data)
