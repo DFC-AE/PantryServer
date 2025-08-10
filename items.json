@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-[{"name": "banana", "expiration_date": "2025-08-10", "nutrition_info": {}}]
-=======
-[{"name": "Milk", "expiration_date": "2025-08-09", "nutrition_info": {}}, {"name": "Eggs", "expiration_date": "2025-08-11", "nutrition_info": {}}, {"name": "Butter", "expiration_date": "2025-08-12", "nutrition_info": {}}, {"name": "Cheese", "expiration_date": "2025-08-15", "nutrition_info": {}}, {"name": "Turkey", "expiration_date": "2025-07-31", "nutrition_info": {}}, {"name": "Chicken", "expiration_date": "2025-08-21", "nutrition_info": {}}, {"name": "Tuna", "expiration_date": "2025-08-19", "nutrition_info": {}}, {"name": "Beef", "expiration_date": "2025-08-13", "nutrition_info": {}}, {"name": "Sardines", "expiration_date": "2025-08-12", "nutrition_info": {}}]
->>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157
+[{"name": "Banana", "expiration_date": "2025-08-10", "nutrition_info": {}}]
