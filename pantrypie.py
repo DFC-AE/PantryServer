@@ -2428,6 +2428,7 @@ class ExpirationApp:
         new_item.barcode = barcode
         self.items.append(new_item)
         self.save_items()
+        self.populate_expiring_items()
 
     def save_items(self):
         # Convert any dicts in self.items to Item objects
@@ -3141,7 +3142,7 @@ class ExpirationApp:
         #self.item_barcode_var.set(barcode)
         #self.cal.selection_set(expiration_date)
 
-    def save_new_item(self, right_frame, name_entry_widget):
+    def save_new_item_mid(self, right_frame, name_entry_widget):
         name = self.item_name_var.get().strip()
         barcode = self.item_barcode_var.get().strip()
         expiration_date = self.cal.get_date()
@@ -3243,72 +3244,6 @@ class ExpirationApp:
             text=f"Category: {category}",
             font=APP_FONT,
             bg="white"
-        ).pack(pady=(0, 5))
-
-    def save_new_item_broke(self, name, barcode, expiration_date, category, right_frame,
-                      name_entry, barcode_entry, details_entry, cal):
-        name = name.strip()
-        barcode = barcode.strip()
-        expiration_date = expiration_date
-        category = category.strip()
-
-        nutrition_info = {}
-        product_name = None
-
-        # Step 1: Fetch nutrition and product name if barcode exists
-        if barcode:
-            fetched_info = self.fetch_open_food_facts(barcode)
-            if fetched_info:
-                nutrition_info = fetched_info
-                product_name = fetched_info.get("Product Name", "")
-                if product_name and product_name != "Unknown":
-                    name = product_name  # Force overwrite with product name
-
-        # Step 2: Validate name
-        if not name:
-            messagebox.showerror("Error", "Item name is required.")
-            return
-
-        # Prevent duplicate entries
-        if any(item["name"].lower() == name.lower() for item in self.items):
-            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
-            return
-
-        # Step 3: Save item
-        self.items.append({
-            "name": name,
-            "barcode": barcode,
-            "expiration_date": expiration_date,
-            "category": category
-        })
-        self.save_items()
-
-        # Step 4: Clear entry fields
-        name_entry.delete(0, tk.END)
-        barcode_entry.delete(0, tk.END)
-        details_entry.delete(0, tk.END)
-
-        # Step 5: Reset calendar to today
-        cal.selection_set(dt.date.today())
-
-        # Step 6: Clear right frame and show details
-        for widget in right_frame.winfo_children():
-            widget.destroy()
-
-        tk.Label(
-            right_frame, text=name, font=APP_FONT_BOLD, bg="white"
-        ).pack(pady=(5, 2))
-
-        tk.Label(
-            right_frame, text=f"Barcode: {barcode}", font=APP_FONT, bg="white"
-        ).pack(pady=(0, 2))
-
-        tk.Label(
-            right_frame, text=f"Expires: {expiration_date}", font=APP_FONT, bg="white"
-        ).pack(pady=(0, 5))
-
-        tk.Label(
-            right_frame, text=f"Category: {category}", font=APP_FONT, bg="white"
         ).pack(pady=(0, 5))
 
     ## Saves item to list ##
