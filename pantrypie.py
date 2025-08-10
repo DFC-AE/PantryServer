@@ -2133,10 +2133,11 @@ class ExpirationApp:
             self.create_card_view()
         elif self.current_view == "list":
             self.create_list_view()
+        
 
     def show_detail_view(self, item):
         self.current_item = item
-        self.clear_screen()
+        # self.clear_screen()
         self.set_background()
         days = item.days_until_expired()
 
@@ -2844,10 +2845,38 @@ class ExpirationApp:
         barcode = self.item_barcode_var.get().strip()
         expiration_date = self.cal.get_date()
 
+<<<<<<< HEAD
+        nutrition_info = {}
+        product_name = None
+
+        # Step 1: Fetch nutrition and product name if barcode exists
+        if barcode:
+            fetched_info = self.fetch_open_food_facts(barcode)
+            if fetched_info:
+                nutrition_info = fetched_info
+                product_name = fetched_info.get("Product Name", "")
+                if product_name and product_name != "Unknown":
+                    name = product_name  #Force overwrite with product name
+                    self.name_entry.delete(0, tk.END)
+                    self.name_entry.insert(0, name)
+        # Step 2: Validate name
+=======
+>>>>>>> refs/remotes/origin/main
         if not name:
             messagebox.showerror("Error", "Item name is required.")
             return
 
+<<<<<<< HEAD
+        # Step 3: Create and save item
+        try:
+            item = Item(name, date, nutrition_info)
+            self.items.append(item)
+            self.save_items()
+
+            self.create_home_screen()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save item: {e}")
+=======
         # Prevent duplicate entries
         existing_items = self.items
         #if any(item['name'].lower() == name.lower() for item in existing_items):
@@ -2892,6 +2921,7 @@ class ExpirationApp:
             font=APP_FONT,
             bg="white"
         ).pack(pady=(0, 5))
+>>>>>>> refs/remotes/origin/main
 
     def clear_screen(self):
         try:
