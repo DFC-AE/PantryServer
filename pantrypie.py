@@ -2454,6 +2454,190 @@ class ExpirationApp:
                 pass
 
     def add_item_popup(self):
+        from PIL import ImageDraw, ImageFilter
+
+        # Clear main window
+        self.clear_screen()
+
+        # --- Background canvas ---
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+
+        # Load jars background
+        bg_img_original = Image.open("pics/backgrounds/jars.jpg").convert("RGBA")
+
+        # --- Top bar ---
+        self.top_bar = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0, bg="")
+        title_lbl = tk.Label(
+            self.top_bar,
+            text="Item Tracker",
+            font=(APP_FONT[0], APP_FONT[1] + 4, "bold"),
+            fg="white",
+            bg="black"
+        )
+        title_lbl.pack(side=tk.LEFT, padx=10)
+
+        back_btn = tk.Button(
+            self.top_bar,
+            text="Back",
+            font=APP_FONT,
+            command=lambda: self.create_home_screen(None)
+        )
+        back_btn.pack(side=tk.RIGHT, padx=10)
+
+        # --- Panel frames ---
+        self.left_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.center_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.right_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+
+        # --- Left panel widgets ---
+        tk.Label(self.left_panel, text="Expiring Soon",
+                 font=(APP_FONT[0], APP_FONT[1], "bold"), fg="white").pack()
+        self.add_popup_expired_listbox = tk.Listbox(
+            self.left_panel, font=APP_FONT,
+            highlightthickness=0, bd=0,
+            bg="#FFFFFF", fg="black",
+            selectbackground="#AAAAAA",
+            relief="flat", width=25
+        )
+        self.add_popup_expired_listbox.pack(pady=10)
+
+        def on_expiring_select(event):
+            selection = event.widget.curselection()
+            if not selection:
+                return
+            index = selection[0]
+            item_text = event.widget.get(index)
+            self.detail_text.delete("1.0", tk.END)
+            self.detail_text.insert(tk.END, f"Details for:\n{item_text}")
+
+        self.add_popup_expired_listbox.bind("<<ListboxSelect>>", on_expiring_select)
+        self.populate_expiring_items()
+
+        # --- Center panel widgets ---
+        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
+        name_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                              highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        name_entry.pack(fill=tk.X, pady=5)
+
+        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
+        barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        barcode_entry.pack(fill=tk.X, pady=5)
+
+        tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
+        details_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        details_entry.pack(fill=tk.X, pady=5)
+
+        cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
+                       font=APP_FONT,
+                       background="#FFFFFF", foreground="black",
+                       headersbackground="#FFFFFF",
+                       normalbackground="#FFFFFF",
+                       weekendbackground="#FFFFFF",
+                       othermonthbackground="#FFFFFF")
+        cal.pack(pady=15)
+
+        tk.Button(self.center_panel, text="Add Item",
+                  font=(APP_FONT[0], APP_FONT[1], "bold"),
+                  command=lambda: self.save_item(
+                      name_entry.get(),
+                      barcode_entry.get(),
+                      details_entry.get()
+                  )).pack(pady=5)
+
+        # --- Right panel widgets ---
+        tk.Label(self.right_panel, text="Detail View",
+                 font=(APP_FONT[0], APP_FONT[1], "bold"), fg="white").pack()
+        self.detail_text = tk.Text(
+            self.right_panel, font=APP_FONT, wrap="word",
+            highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat", width=30
+        )
+        self.detail_text.pack(pady=10)
+
+        # --- Draw frosted glass helper ---
+        def draw_frosted_glass(x1, y1, x2, y2, radius=20, alpha=0.6):
+            w = max(1, int(x2 - x1))
+            h = max(1, int(y2 - y1))
+
+            crop = self.resized_bg.crop((int(x1), int(y1), int(x2), int(y2)))
+            blur = crop.filter(ImageFilter.GaussianBlur(8)).resize((w, h))
+
+            mask = Image.new("L", (w, h), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.rounded_rectangle([(0, 0), (w, h)], radius=radius, fill=int(alpha * 255))
+
+            glass = Image.new("RGBA", (w, h), (255, 255, 255, 0))
+            glass.paste(blur, (0, 0), mask=mask)
+
+            photo = ImageTk.PhotoImage(glass)
+            self.bg_canvas.create_image(x1, y1, image=photo, anchor="nw")
+
+            if not hasattr(self, "_overlay_images"):
+                self._overlay_images = []
+            self._overlay_images.append(photo)
+
+        # --- Redraw everything on resize ---
+        def redraw(event):
+            # Stretch background
+            self.resized_bg = bg_img_original.resize((event.width, event.height))
+            self.bg_photo = ImageTk.PhotoImage(self.resized_bg)
+            self.bg_canvas.delete("all")
+            self.bg_canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+
+            self._overlay_images = []
+
+            # Spacing
+            gap = event.width * 0.05
+            panel_width = (event.width - (gap * 4)) / 3
+            #panel_height = event.height * 0.75
+            top_margin = event.height * 0.20
+            panel_height = event.height - top_margin - (event.height * 0.05)  # 5% bottom gap
+            bar_height = event.height * 0.08
+
+            # Top bar coords (centered above center panel)
+            cx1 = gap + panel_width + gap
+            cx2 = cx1 + panel_width
+            bar_x = (cx1 + cx2) / 2
+            self.bg_canvas.create_window(bar_x, top_margin - bar_height / 2,
+                                         window=self.top_bar, width=panel_width,
+                                         height=bar_height)
+
+            # Left panel
+            lx1 = gap
+            lx2 = lx1 + panel_width
+            draw_frosted_glass(lx1, top_margin, lx2, top_margin + panel_height)
+            self.bg_canvas.create_window((lx1 + lx2) / 2, top_margin + panel_height / 2,
+                                         window=self.left_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+            # Center panel
+            draw_frosted_glass(cx1, top_margin, cx2, top_margin + panel_height)
+            self.bg_canvas.create_window(bar_x, top_margin + panel_height / 2,
+                                         window=self.center_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+            # Right panel
+            rx1 = cx2 + gap
+            rx2 = rx1 + panel_width
+            draw_frosted_glass(rx1, top_margin, rx2, top_margin + panel_height)
+            self.bg_canvas.create_window((rx1 + rx2) / 2, top_margin + panel_height / 2,
+                                         window=self.right_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+        # Bind resize
+        self.bg_canvas.bind("<Configure>", redraw)
+
+        # Force first draw
+        class DummyEvent:
+            pass
+        dummy_event = DummyEvent()
+        dummy_event.width = self.bg_canvas.winfo_width()
+        dummy_event.height = self.bg_canvas.winfo_height()
+        redraw(dummy_event)
+
+    def add_item_popup_old(self):
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -2501,7 +2685,7 @@ class ExpirationApp:
         self.bg_canvas.bind("<Configure>", on_canvas_resize)
 
         # --- HEADER ---
-        tk.Label(self.content_frame, text="Add New Item", font=APP_FONT_TITLE_BOLD,
+        tk.Label(self.content_frame, text="Expiration Tracker", font=APP_FONT_TITLE_BOLD,
                  bg="black", fg="white").pack(pady=10)
 
         # --- MAIN LAYOUT ---
@@ -2648,6 +2832,11 @@ class ExpirationApp:
 
         self.bg_canvas.update_idletasks()
         self.bg_canvas.event_generate("<Configure>")
+
+    def create_detail_view_panel(self, parent):
+        # TODO: implement detail view
+        placeholder = tk.Label(parent, text="Details coming soon...", font=APP_FONT)
+        placeholder.pack(pady=10)
 
     def update_expired_items_display(self):
         expired_items = self.get_expired_items()
@@ -3214,15 +3403,15 @@ class WeatherApp:
 
             print(f"Using Background: {background_path}")
 
-            # Load the image
-            self.bg_image_original = Image.open(path)
+            # Load the image and store original for frosted effect
+            self.bg_image_original = Image.open(background_path).copy()
             self.update_background_image()
             return
 
         except Exception as e:
             print(f"Error setting background image: {e}")
             print(f"Falling back to default background: {default_path}")
-            self.bg_image_original = Image.open(default_path)
+            self.bg_image_original = Image.open(default_path).copy()
             self.update_background_image()
 
     def on_resize(self, event):
@@ -3235,6 +3424,25 @@ class WeatherApp:
                 self.bg_label.lower()
 
     def update_background_image(self):
+        if hasattr(self, 'bg_image_original'):
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            # Create bg_label if it doesn't exist
+            if not hasattr(self, 'bg_label'):
+                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+            self.bg_label.config(image=self.backgroundImg)
+            self.bg_label.image = self.backgroundImg
+
+            # Always send background to the very back
+            self.bg_label.lower()
+
+    def update_background_image_new(self):
         if hasattr(self, 'bg_image_original'):
             width = self.root.winfo_width()
             height = self.root.winfo_height()
