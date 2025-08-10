@@ -228,7 +228,7 @@ class OnScreenKeyboard:
         self.frame.pack(side="bottom", fill="x")
 
         self._build_keys()
-        # self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_keys(self):
         # rows of keys: digits, QWERTY, ASDF, ZXCV, specials
@@ -2419,6 +2419,7 @@ class ExpirationApp:
 
         if os.path.exists(SAVE_FILE):
             try:
+<<<<<<< HEAD:scrap.py
                 with open(SAVE_FILE, "r") as f:
                     raw_items = json.load(f)
 
@@ -2432,6 +2433,11 @@ class ExpirationApp:
                     else:
                         print(f"Skipping unrecognized item format: {data}")
 
+=======
+                with open(SAVE_FILE, 'r') as f:
+                    data = json.load(f)
+                    self.items = [Item.from_dict(d) for d in data]
+>>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
             except Exception as e:
                 print("Failed to load items:", e)
                 self.items = []
@@ -2443,7 +2449,6 @@ class ExpirationApp:
         new_item.barcode = barcode
         self.items.append(new_item)
         self.save_items()
-        self.populate_expiring_items()
 
     def save_items(self):
         cleaned_items = []
@@ -2480,8 +2485,8 @@ class ExpirationApp:
                 data = json.load(f)
               except json.JSONDecodeError:
                 data = []
-                self.items = json.load(open(SAVE_FILE, 'r'))
-                self.items = json.load(open(SAVE_FILE, 'r'))
+                self.items = [Item.from_dict(d) for d in data]
+                self.items = [Item.from_dict(item) for item in data]
         except json.JSONDecodeError as e:
             print(f"Error loading items.json: {e}")
             messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
@@ -2593,17 +2598,17 @@ class ExpirationApp:
         self.populate_expiring_items()
 
         # --- Center panel widgets ---
-        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
         name_entry = tk.Entry(self.center_panel, font=APP_FONT,
                               highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         name_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
         barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         barcode_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Category:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
         details_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         details_entry.pack(fill=tk.X, pady=5)
@@ -2876,22 +2881,19 @@ class ExpirationApp:
             othermonthbackground="white"
         )
         self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20, fill=tk.BOTH, expand=True)
-        self.name_entry = tk.Entry(right_frame)
 
         # Save button below calendar
-#        submit_btn = tk.Button(
-#            center_frame, image=saveImg, cursor="hand2",
-#            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(
-#                name_entry.get().strip(),
-#                barcode_entry.get().strip(),
-#                self.cal.get_date(),
-#                details_entry.get().strip(),
-#                right_frame)
-#            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(right_frame)
-#            bg="black", fg="white", command=lambda: self.save_new_item(self.name_entry).pack()
-#        )
-#        submit_btn.pack(pady=10)
-#        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
+        submit_btn = tk.Button(
+            center_frame, image=saveImg, cursor="hand2",
+            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(
+                name_entry.get().strip(),
+                barcode_entry.get().strip(),
+                self.cal.get_date(),
+                details_entry.get().strip(),
+                right_frame)
+        )
+        submit_btn.pack(pady=10)
+        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
 
         # Back button
         backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
@@ -3158,11 +3160,188 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
+<<<<<<< HEAD:scrap.py
     def save_new_item(self, name, exp_date_str, nutrition_info=None):
         """Save a new item, avoiding duplicates, and refresh the UI."""
         name = name.strip()
         if not name:
             messagebox.showerror("Error", "Please enter an item name.")
+=======
+    def save_new_item_good(self, name, barcode, expiration_date, category, right_frame):
+        #self.item_name_var.set(name)
+        #self.item_barcode_var.set(barcode)
+        #self.cal.selection_set(expiration_date)
+        name = self.item_name_var.get().strip()
+        barcode = self.item_barcode_var.get().strip()
+        expiration_date = self.cal.get_date()
+        category = self.item_details_var.get().strip()
+
+        nutrition_info = {}
+        product_name = None
+
+        # Step 1: Fetch nutrition and product name if barcode exists
+        if barcode:
+            fetched_info = self.fetch_open_food_facts(barcode)
+            if fetched_info:
+                nutrition_info = fetched_info
+                product_name = fetched_info.get("Product Name", "")
+                if product_name and product_name != "Unknown":
+                    name = product_name  #Force overwrite with product name
+                    self.name_entry.delete(0, tk.END)
+                    self.name_entry.insert(0, name)
+        # Step 2: Validate name
+        if not name:
+            messagebox.showerror("Error", "Item name is required.")
+            return
+
+        # Step 3: Create and save item
+        try:
+            item = Item(name, date, nutrition_info)
+            self.items.append(item)
+            self.save_items()
+
+            self.create_home_screen()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save item: {e}")
+
+        # Prevent duplicate entries
+        if any(
+            (item.name.lower() if hasattr(item, "name") else item["name"].lower()) == name.lower()
+            for item in self.items
+        ):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        if any(item["name"].lower() == name.lower() for item in self.items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Save item as a dictionary (consistent format)
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date,
+            "category": category
+        })
+        self.save_items()
+
+        # Save item
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date,
+            "category": category
+        })
+        self.save_items()
+
+        # Clear fields for next entry and reset calendar
+        self.item_name_var.set("")
+        self.item_barcode_var.set("")
+        self.cal.selection_set(dt.date.today())
+
+        # Clear right frame and show details
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame,
+            text=name,
+            font=APP_FONT_BOLD,
+            bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Barcode: {barcode}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Expires: {expiration_date}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+        tk.Label(
+            right_frame,
+            text=f"Category: {category}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+
+    def save_new_item_broke(self, name, barcode, expiration_date, category, right_frame,
+                      name_entry, barcode_entry, details_entry, cal):
+        name = name.strip()
+        barcode = barcode.strip()
+        expiration_date = expiration_date
+        category = category.strip()
+
+        nutrition_info = {}
+        product_name = None
+
+        # Step 1: Fetch nutrition and product name if barcode exists
+        if barcode:
+            fetched_info = self.fetch_open_food_facts(barcode)
+            if fetched_info:
+                nutrition_info = fetched_info
+                product_name = fetched_info.get("Product Name", "")
+                if product_name and product_name != "Unknown":
+                    name = product_name  # Force overwrite with product name
+
+        # Step 2: Validate name
+        if not name:
+            messagebox.showerror("Error", "Item name is required.")
+            return
+
+        # Prevent duplicate entries
+        if any(item["name"].lower() == name.lower() for item in self.items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Step 3: Save item
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date,
+            "category": category
+        })
+        self.save_items()
+
+        # Step 4: Clear entry fields
+        name_entry.delete(0, tk.END)
+        barcode_entry.delete(0, tk.END)
+        details_entry.delete(0, tk.END)
+
+        # Step 5: Reset calendar to today
+        cal.selection_set(dt.date.today())
+
+        # Step 6: Clear right frame and show details
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame, text=name, font=APP_FONT_BOLD, bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame, text=f"Barcode: {barcode}", font=APP_FONT, bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame, text=f"Expires: {expiration_date}", font=APP_FONT, bg="white"
+        ).pack(pady=(0, 5))
+
+        tk.Label(
+            right_frame, text=f"Category: {category}", font=APP_FONT, bg="white"
+        ).pack(pady=(0, 5))
+
+    ## Saves item to list ##
+    def save_new_item(self, name, barcode, expiration_date, category, right_frame):
+        # Step 1: Validate name
+        if not name.strip():
+            messagebox.showerror("Error", "Item name is required.")
+>>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
             return
 
         # Make sure exp_date_str is a proper date string
@@ -3172,6 +3351,7 @@ class ExpirationApp:
             messagebox.showerror("Error", "Invalid expiration date format. Use YYYY-MM-DD.")
             return
 
+<<<<<<< HEAD:scrap.py
         # Avoid duplicate names (case-insensitive)
         if any(item.name.lower() == name.lower() for item in self.items):
             messagebox.showwarning("Duplicate Item", f"'{name}' already exists.")
@@ -3195,6 +3375,8 @@ class ExpirationApp:
         self.populate_expiring_items()
         self.create_home_screen()
 
+=======
+>>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
     def clear_screen(self):
         try:
           if hasattr(self, "camera_loop_id"):
