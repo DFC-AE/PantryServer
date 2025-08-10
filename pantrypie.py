@@ -2845,7 +2845,6 @@ class ExpirationApp:
         barcode = self.item_barcode_var.get().strip()
         expiration_date = self.cal.get_date()
 
-<<<<<<< HEAD
         nutrition_info = {}
         product_name = None
 
@@ -2860,13 +2859,10 @@ class ExpirationApp:
                     self.name_entry.delete(0, tk.END)
                     self.name_entry.insert(0, name)
         # Step 2: Validate name
-=======
->>>>>>> refs/remotes/origin/main
         if not name:
             messagebox.showerror("Error", "Item name is required.")
             return
 
-<<<<<<< HEAD
         # Step 3: Create and save item
         try:
             item = Item(name, date, nutrition_info)
@@ -2876,7 +2872,7 @@ class ExpirationApp:
             self.create_home_screen()
         except Exception as e:
             messagebox.showerror("Error", f"Could not save item: {e}")
-=======
+
         # Prevent duplicate entries
         existing_items = self.items
         #if any(item['name'].lower() == name.lower() for item in existing_items):
@@ -2921,7 +2917,6 @@ class ExpirationApp:
             font=APP_FONT,
             bg="white"
         ).pack(pady=(0, 5))
->>>>>>> refs/remotes/origin/main
 
     def clear_screen(self):
         try:
