@@ -228,7 +228,7 @@ class OnScreenKeyboard:
         self.frame.pack(side="bottom", fill="x")
 
         self._build_keys()
-        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+        # self.window.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_keys(self):
         # rows of keys: digits, QWERTY, ASDF, ZXCV, specials
@@ -2854,19 +2854,22 @@ class ExpirationApp:
             othermonthbackground="white"
         )
         self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20, fill=tk.BOTH, expand=True)
+        self.name_entry = tk.Entry(right_frame)
 
         # Save button below calendar
-        submit_btn = tk.Button(
-            center_frame, image=saveImg, cursor="hand2",
-            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(
-                name_entry.get().strip(),
-                barcode_entry.get().strip(),
-                self.cal.get_date(),
-                details_entry.get().strip(),
-                right_frame)
-        )
-        submit_btn.pack(pady=10)
-        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
+#        submit_btn = tk.Button(
+#            center_frame, image=saveImg, cursor="hand2",
+#            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(
+#                name_entry.get().strip(),
+#                barcode_entry.get().strip(),
+#                self.cal.get_date(),
+#                details_entry.get().strip(),
+#                right_frame)
+#            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(right_frame)
+#            bg="black", fg="white", command=lambda: self.save_new_item(self.name_entry).pack()
+#        )
+#        submit_btn.pack(pady=10)
+#        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
 
         # Back button
         backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
@@ -3133,10 +3136,12 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
-    def save_new_item_good(self, name, barcode, expiration_date, category, right_frame):
+ #   def save_new_item_good(self, name, barcode, expiration_date, category, right_frame):
         #self.item_name_var.set(name)
         #self.item_barcode_var.set(barcode)
         #self.cal.selection_set(expiration_date)
+
+    def save_new_item(self, right_frame, name_entry_widget):
         name = self.item_name_var.get().strip()
         barcode = self.item_barcode_var.get().strip()
         expiration_date = self.cal.get_date()
@@ -3144,6 +3149,9 @@ class ExpirationApp:
 
         nutrition_info = {}
         product_name = None
+
+        item_name = name_entry_widget.get().strip()
+        name_entry_widget.delete(0, tk.END)
 
         # Step 1: Fetch nutrition and product name if barcode exists
         if barcode:
@@ -3153,8 +3161,8 @@ class ExpirationApp:
                 product_name = fetched_info.get("Product Name", "")
                 if product_name and product_name != "Unknown":
                     name = product_name  #Force overwrite with product name
-                    self.name_entry.delete(0, tk.END)
-                    self.name_entry.insert(0, name)
+                    self.item_name
+                    self.item_name
         # Step 2: Validate name
         if not name:
             messagebox.showerror("Error", "Item name is required.")
@@ -3229,6 +3237,7 @@ class ExpirationApp:
             font=APP_FONT,
             bg="white"
         ).pack(pady=(0, 5))
+
         tk.Label(
             right_frame,
             text=f"Category: {category}",
