@@ -11,7 +11,7 @@ import time
 from time import strftime
 ## For Camera ##
 import cv2
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFilter
 import itertools
 from pyzbar import pyzbar
 from pyzbar.pyzbar import decode
@@ -2456,8 +2456,6 @@ class ExpirationApp:
                 pass
 
     def add_item_popup(self):
-        from PIL import ImageDraw, ImageFilter
-
         # Clear main window
         self.clear_screen()
 
@@ -2477,7 +2475,8 @@ class ExpirationApp:
             text="Item Tracker",
             font=(APP_FONT[0], APP_FONT[1] + 4, "bold"),
             fg="white",
-            bg="#FFA500"
+            #bg="#FFA500"
+            bg="black"
         )
         title_lbl.pack(side=tk.LEFT, expand=True, padx=10)
 
@@ -2535,9 +2534,10 @@ class ExpirationApp:
                        othermonthbackground="#FFFFFF")
         cal.pack(pady=15)
 
-        tk.Button(self.center_panel, text="Add Item",
-                  font=(APP_FONT[0], APP_FONT[1], "bold"),
-                  command=lambda: self.save_item(
+        tk.Button(self.center_panel, image=saveImg,
+                      background="black",
+                      highlightcolor="orange",
+                      command=lambda: self.save_item(
                       name_entry.get(),
                       barcode_entry.get(),
                       details_entry.get()
