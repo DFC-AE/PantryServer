@@ -11,7 +11,7 @@ import time
 from time import strftime
 ## For Camera ##
 import cv2
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFilter
 import itertools
 from pyzbar import pyzbar
 from pyzbar.pyzbar import decode
@@ -555,6 +555,8 @@ class ExpirationApp:
         self.backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back.jpg").resize((1024, 600), Image.LANCZOS))
         self.card_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_pastel.jpg").resize((1024, 600), Image.LANCZOS))
         self.list_backgroundImg = ImageTk.PhotoImage(Image.open("pics/backgrounds/back_toon.jpg").resize((1024, 600), Image.LANCZOS))
+        self.weatherImg = ImageTk.PhotoImage(Image.open("pics/icons/weather.png"))
+        self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
         #self.backImg = PhotoImage(file="pics/back.png")
         self.bg_color = "#f0f0f0"
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50,50), Image.LANCZOS))
@@ -708,6 +710,44 @@ class ExpirationApp:
 #            self.update_weather()
 #        return self.current_weather_icon
 
+    def update_weather_icon(self, target_frame, icon_size=36):
+        try:
+            city = "Shreveport,US"
+#            api_key = os.environ.get("OPENWEATHER_KEY")
+            api_key = KEY_WEATHER
+            if not api_key:
+#                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+                raise RuntimeError("KEY_WEATHER environment variable not set.")
+
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+            response = requests.get(url, timeout=5)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url, timeout=5)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((icon_size, icon_size), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            for child in target_frame.winfo_children():
+                child.destroy()
+
+            weather_btn = tk.Button(
+                target_frame,
+                image=icon_photo,
+                bg="#FFA500",
+                cursor="hand2",
+                borderwidth=0,
+                highlightthickness=0,
+                command=self.open_weather_page
+            )
+            weather_btn.image = icon_photo
+            weather_btn.pack()
+
+        except Exception as e:
+            print(f"[Weather] Failed to update weather icon: {e}")
+
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
         width = self.root.winfo_width()
@@ -755,7 +795,7 @@ class ExpirationApp:
             self.backgroundImg,
             self.backImg,
             self.create_home_screen,
-            update_weather_func=self.update_weather
+            update_weather_func=self.update_weather_icon
         )
 
     def open_weather_ui(self, return_callback=None):
@@ -902,15 +942,15 @@ class ExpirationApp:
 
             tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="black", fg="white").pack(pady=(10, 5))
 
-            inner = tk.Frame(panel, bg="white")
+            inner = tk.Frame(panel, bg="black")
             inner.pack(padx=10, pady=10)
 
             # Ingredient dropdown
-            tk.Label(inner, text="Ingredient:", bg="white").grid(row=0, column=0, sticky="w")
+            tk.Label(inner, text="Ingredient:", bg="black", fg="white").grid(row=0, column=0, sticky="w")
             ttk.Combobox(inner, textvariable=ingredient_var, values=list(densities.keys()), state="readonly", width=12).grid(row=0, column=1, sticky="w", pady=5)
 
             # From entry
-            tk.Label(inner, text="Amount:", bg="white").grid(row=1, column=0, sticky="w")
+            tk.Label(inner, text="Amount:", bg="black", fg="white").grid(row=1, column=0, sticky="w")
             entry = tk.Entry(inner, textvariable=input_var, width=10)
             entry.grid(row=1, column=1, sticky="w", pady=5)
 
@@ -920,7 +960,7 @@ class ExpirationApp:
             ttk.Combobox(inner, textvariable=to_unit_var, values=["grams", "ounces", "cups"], state="readonly", width=10).grid(row=2, column=1, sticky="w", pady=5)
 
             # Result display
-            tk.Label(inner, text="Converted:", bg="white").grid(row=3, column=0, sticky="w")
+            tk.Label(inner, text="Converted:", bg="black", fg="white").grid(row=3, column=0, sticky="w")
             result_entry = tk.Entry(inner, textvariable=result_var, state="readonly", width=15)
             result_entry.grid(row=3, column=1, sticky="w", pady=5)
 
@@ -986,10 +1026,12 @@ class ExpirationApp:
 
     def update_weather(self, return_callback=None, target_frame=None):
         try:
-            city = "Shreveport,US"
-            api_key = os.environ.get("OPENWEATHER_KEY")
+            city = CITY
+#            api_key = os.environ.get("OPENWEATHER_KEY")
+            api_key = KEY_WEATHER
             if not api_key:
-                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+#                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+                raise RuntimeError("KEY_WEATHER environment variable not set.")
 
             url = (
                 f"http://api.openweathermap.org/data/2.5/weather"
@@ -2454,6 +2496,249 @@ class ExpirationApp:
                 pass
 
     def add_item_popup(self):
+        # Clear main window
+        self.clear_screen()
+
+        # --- Background canvas ---
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+
+        # Load jars background
+        bg_img_original = Image.open("pics/backgrounds/jars.jpg").convert("RGBA")
+
+        # --- Top bar ---
+        self.top_bar = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+
+        # Title (center)
+        title_lbl = tk.Label(
+            self.top_bar,
+            text="Item Tracker",
+            font=(APP_FONT[0], APP_FONT[1] + 4, "bold"),
+            fg="white",
+            #bg="#FFA500"
+            bg="black"
+        )
+        title_lbl.pack(side=tk.LEFT, expand=True, padx=10)
+
+        # --- Corner weather frame (top-left) ---
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 10, anchor="nw", window=self.corner_weather_frame)
+
+        # Populate live weather glyph in top-left
+        self.update_weather_icon(self.corner_weather_frame, icon_size=36)
+
+        # --- Corner back button frame (top-right) ---
+        self.corner_back_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.back_window_id = self.bg_canvas.create_window(0, 10, anchor="ne", window=self.corner_back_frame)
+
+        # Back button with orange background
+        back_btn_corner = tk.Button(
+            self.corner_back_frame,
+            image=self.backImg,
+            cursor="hand2",
+            bg="#FFA500",
+            highlightthickness=0,
+            bd=0,
+            command=lambda: self.create_home_screen(None)
+        )
+        back_btn_corner.image = self.backImg
+        back_btn_corner.pack()
+
+        # --- Panel frames ---
+        self.left_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.center_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.right_panel = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+
+        # --- Left panel widgets ---
+        tk.Label(self.left_panel, text="Expiring Soon",
+                 font=(APP_FONT[0], APP_FONT[1], "bold"), fg="white").pack()
+        self.add_popup_expired_listbox = tk.Listbox(
+            self.left_panel, font=APP_FONT,
+            highlightthickness=0, bd=0,
+            bg="#FFFFFF", fg="black",
+            selectbackground="#AAAAAA",
+            relief="flat", width=25
+        )
+        self.add_popup_expired_listbox.pack(pady=10)
+
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 10, anchor="nw", window=self.corner_weather_frame)
+#        self.update_weather(target_frame=self.corner_weather_frame, icon_size=36)
+        self.update_weather_icon(self.corner_weather_frame, icon_size=36)
+
+        def on_expiring_select(event):
+            selection = event.widget.curselection()
+            if not selection:
+                return
+            index = selection[0]
+            item_text = event.widget.get(index)
+            self.detail_text.delete("1.0", tk.END)
+            self.detail_text.insert(tk.END, f"Details for:\n{item_text}")
+
+        self.add_popup_expired_listbox.bind("<<ListboxSelect>>", on_expiring_select)
+        self.populate_expiring_items()
+
+        # --- Center panel widgets ---
+        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
+        name_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                              highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        name_entry.pack(fill=tk.X, pady=5)
+
+        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
+        barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        barcode_entry.pack(fill=tk.X, pady=5)
+
+        tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
+        details_entry = tk.Entry(self.center_panel, font=APP_FONT,
+                                 highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat")
+        details_entry.pack(fill=tk.X, pady=5)
+
+        cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
+                       font=APP_FONT,
+                       #background="#FFFFFF",
+                       background="orange",
+                       foreground="white",
+                       headersbackground="orange",
+                       normalbackground="#FFFFFF",
+                       weekendbackground="lightgray",
+                       othermonthbackground="#FFFFFF")
+        cal.pack(pady=15)
+
+        tk.Button(self.center_panel, image=saveImg,
+                      background="black",
+                      highlightcolor="orange",
+                      command=lambda: self.save_item(
+                      name_entry.get(),
+                      barcode_entry.get(),
+                      details_entry.get()
+                  )).pack(pady=5)
+
+        # --- Right panel widgets ---
+        tk.Label(self.right_panel, text="Detail View",
+                 font=(APP_FONT[0], APP_FONT[1], "bold"), fg="white").pack()
+        self.detail_text = tk.Text(
+            self.right_panel, font=APP_FONT, wrap="word",
+            highlightthickness=0, bd=0, bg="#FFFFFF", fg="black", relief="flat", width=30
+        )
+        self.detail_text.pack(pady=10)
+
+        # --- Draw frosted glass helper ---
+        def draw_frosted_glass(x1, y1, x2, y2, radius=20, alpha=0.6):
+            w = max(1, int(x2 - x1))
+            h = max(1, int(y2 - y1))
+
+            crop = self.resized_bg.crop((int(x1), int(y1), int(x2), int(y2)))
+            blur = crop.filter(ImageFilter.GaussianBlur(8)).resize((w, h))
+
+            mask = Image.new("L", (w, h), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.rounded_rectangle([(0, 0), (w, h)], radius=radius, fill=int(alpha * 255))
+
+            glass = Image.new("RGBA", (w, h), (255, 255, 255, 0))
+            glass.paste(blur, (0, 0), mask=mask)
+
+            photo = ImageTk.PhotoImage(glass)
+            self.bg_canvas.create_image(x1, y1, image=photo, anchor="nw")
+
+            if not hasattr(self, "_overlay_images"):
+                self._overlay_images = []
+            self._overlay_images.append(photo)
+
+        self.bg_canvas.tag_raise(self.weather_window_id)
+        self.bg_canvas.tag_raise(self.back_window_id)
+
+        # --- Redraw everything on resize ---
+        def redraw(event):
+            # Stretch background
+            self.resized_bg = bg_img_original.resize((event.width, event.height))
+            self.bg_photo = ImageTk.PhotoImage(self.resized_bg)
+            self.bg_canvas.delete("all")
+            self.bg_canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+
+            self.bg_canvas.coords(self.weather_window_id, 10, 10)
+
+            self._overlay_images = []
+
+            # Spacing
+            gap = event.width * 0.05
+            panel_width = (event.width - (gap * 4)) / 3
+            #panel_height = event.height * 0.75
+            top_margin = event.height * 0.20
+            panel_height = event.height - top_margin - (event.height * 0.05)  # 5% bottom gap
+            bar_height = event.height * 0.08
+
+            # --- Weather button in top left ---
+#            self.bg_canvas.create_window(
+#                10, 10,
+#                anchor="nw",
+#                window=tk.Button(
+#                    self.bg_canvas,
+#                    image=self.weatherImg,
+#                    cursor="hand2",
+#                    bg="#FFA500",
+#                    highlightthickness=0,
+#                    bd=0,
+#                    command=self.open_weather_page
+#                )
+#            )
+
+            # --- Back button in top right ---
+            self.bg_canvas.create_window(
+                event.width - 10, 10,
+                anchor="ne",
+                window=tk.Button(
+                    self.bg_canvas,
+                    image=self.backImg,
+                    cursor="hand2",
+                    bg="#FFA500",
+                    highlightthickness=0,
+                    bd=0,
+                    command=lambda: self.create_home_screen(None)
+                )
+            )
+
+            # Top bar coords (centered above center panel)
+            cx1 = gap + panel_width + gap
+            cx2 = cx1 + panel_width
+            bar_x = (cx1 + cx2) / 2
+            self.bg_canvas.create_window(bar_x, top_margin - bar_height / 2,
+                                         window=self.top_bar, width=panel_width,
+                                         height=bar_height)
+            # Left panel
+            lx1 = gap
+            lx2 = lx1 + panel_width
+            draw_frosted_glass(lx1, top_margin, lx2, top_margin + panel_height)
+            self.bg_canvas.create_window((lx1 + lx2) / 2, top_margin + panel_height / 2,
+                                         window=self.left_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+            # Center panel
+            draw_frosted_glass(cx1, top_margin, cx2, top_margin + panel_height)
+            self.bg_canvas.create_window(bar_x, top_margin + panel_height / 2,
+                                         window=self.center_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+            # Right panel
+            rx1 = cx2 + gap
+            rx2 = rx1 + panel_width
+            draw_frosted_glass(rx1, top_margin, rx2, top_margin + panel_height)
+            self.bg_canvas.create_window((rx1 + rx2) / 2, top_margin + panel_height / 2,
+                                         window=self.right_panel, width=panel_width - 20,
+                                         height=panel_height - 20)
+
+        # Bind resize
+        self.bg_canvas.bind("<Configure>", redraw)
+
+        # Force first draw
+        class DummyEvent:
+            pass
+        dummy_event = DummyEvent()
+        dummy_event.width = self.bg_canvas.winfo_width()
+        dummy_event.height = self.bg_canvas.winfo_height()
+        redraw(dummy_event)
+
+    def add_item_popup_old(self):
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -2501,7 +2786,7 @@ class ExpirationApp:
         self.bg_canvas.bind("<Configure>", on_canvas_resize)
 
         # --- HEADER ---
-        tk.Label(self.content_frame, text="Add New Item", font=APP_FONT_TITLE_BOLD,
+        tk.Label(self.content_frame, text="Expiration Tracker", font=APP_FONT_TITLE_BOLD,
                  bg="black", fg="white").pack(pady=10)
 
         # --- MAIN LAYOUT ---
@@ -2650,6 +2935,11 @@ class ExpirationApp:
         self.bg_canvas.update_idletasks()
         self.bg_canvas.event_generate("<Configure>")
 
+    def create_detail_view_panel(self, parent):
+        # TODO: implement detail view
+        placeholder = tk.Label(parent, text="Details coming soon...", font=APP_FONT)
+        placeholder.pack(pady=10)
+
     def update_expired_items_display(self):
         expired_items = self.get_expired_items()
 
@@ -2696,7 +2986,7 @@ class ExpirationApp:
         If return_callback is None, we choose based on self.current_view.
         """
         try:
-            city = "Shreveport,US"
+            city = CITY
             api_key = KEY_WEATHER
             url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
 
@@ -2782,8 +3072,8 @@ class ExpirationApp:
 
     def update_weather_new(self, return_callback=None):
         try:
-            city = "Shreveport,US"
-            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+            city = CITY
+            api_key = KEY_WEATHER
             url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
 
             response = requests.get(url)
@@ -2876,6 +3166,54 @@ class ExpirationApp:
             self.create_home_screen()
         except Exception as e:
             messagebox.showerror("Error", f"Could not save item: {e}")
+<<<<<<< HEAD
+=======
+
+        # Prevent duplicate entries
+        existing_items = self.items
+        #if any(item['name'].lower() == name.lower() for item in existing_items):
+        if any(item.name.lower() == name.lower() for item in existing_items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Save item
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date
+        })
+        self.save_items()
+
+        # Clear fields for next entry and reset calendar
+        self.item_name_var.set("")
+        self.item_barcode_var.set("")
+        self.cal.selection_set(dt.date.today())
+
+        # Clear right frame and show details
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame,
+            text=name,
+            font=APP_FONT_BOLD,
+            bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Barcode: {barcode}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Expires: {expiration_date}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+>>>>>>> c16736948d1b1b863f85327e41a25b6592c213d0
 
     def clear_screen(self):
         try:
@@ -3173,15 +3511,15 @@ class WeatherApp:
 
             print(f"Using Background: {background_path}")
 
-            # Load the image
-            self.bg_image_original = Image.open(path)
+            # Load the image and store original for frosted effect
+            self.bg_image_original = Image.open(background_path).copy()
             self.update_background_image()
             return
 
         except Exception as e:
             print(f"Error setting background image: {e}")
             print(f"Falling back to default background: {default_path}")
-            self.bg_image_original = Image.open(default_path)
+            self.bg_image_original = Image.open(default_path).copy()
             self.update_background_image()
 
     def on_resize(self, event):
@@ -3194,6 +3532,25 @@ class WeatherApp:
                 self.bg_label.lower()
 
     def update_background_image(self):
+        if hasattr(self, 'bg_image_original'):
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+
+            # Create bg_label if it doesn't exist
+            if not hasattr(self, 'bg_label'):
+                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+            self.bg_label.config(image=self.backgroundImg)
+            self.bg_label.image = self.backgroundImg
+
+            # Always send background to the very back
+            self.bg_label.lower()
+
+    def update_background_image_new(self):
         if hasattr(self, 'bg_image_original'):
             width = self.root.winfo_width()
             height = self.root.winfo_height()
@@ -3490,7 +3847,7 @@ class WeatherApp:
 
         ## Back Button ##
         cmd = self.back_callback if callable(self.back_callback) else (self.create_home_screen if hasattr(self, "create_home_screen") else self.root.quit)
-        self.back_btn = tk.Button(self.frame,
+        self.back_btn = tk.Button(self.root,
                               cursor="hand2",
                               background="orange",
                               #image=self.backImg,
@@ -3800,53 +4157,51 @@ class CameraApp:
         self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
         self.bg_canvas.bind("<Configure>", self.resize_background)
 
-        # Weather icon frame
-        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
-        self.weather_icon_frame.place(x=10, y=10)
-
+        # Weather icon frame (top-left with margin)
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, bg="orange", highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 15, anchor="nw", window=self.corner_weather_frame)
         if callable(self.update_weather_func):
-            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
+            self.update_weather_func(self.corner_weather_frame, icon_size=36)
 
-        # Back button
-        self.back_button = tk.Button(
-            self.root,
+        # Back button frame (top-right with margin)
+        self.corner_back_frame = tk.Frame(self.bg_canvas, bg="orange", highlightthickness=0, bd=0)
+        self.back_window_id = self.bg_canvas.create_window(
+            self.bg_canvas.winfo_width() - 10, 15, anchor="ne", window=self.corner_back_frame
+        )
+
+        back_btn_corner = tk.Button(
+            self.corner_back_frame,
             image=self.backImg,
-            bg="orange",
             cursor="hand2",
-            borderwidth=0,
+            bg="#FFA500",
+            highlightthickness=0,
+            bd=0,
             command=self.back_callback if self.back_callback else self.root.quit
         )
-        self.back_button.place(x=60, y=10)
+        back_btn_corner.image = self.backImg
+        back_btn_corner.pack()
 
-        # Camera feed canvas init
+        # Keep buttons above background
+        self.bg_canvas.tag_raise(self.weather_window_id)
+        self.bg_canvas.tag_raise(self.back_window_id)
+
         self.camera_window = None
-        self.bg_canvas.bind("<Configure>", self.resize_background)
 
+        # Redraw handler for resizing
+        def redraw(event):
+            # Corner buttons with vertical margin
+            self.bg_canvas.coords(self.weather_window_id, 10, 15)
+            self.bg_canvas.coords(self.back_window_id, event.width - 10, 15)
+            self.bg_canvas.tag_raise(self.weather_window_id)
+            self.bg_canvas.tag_raise(self.back_window_id)
+
+            # Center camera feed
+            self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
+
+        self.bg_canvas.bind("<Configure>", redraw)
         # Camera feed canvas
         self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
         self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
-
-        # Back button
-#        back_btn = tk.Button(
-#            self.bg_canvas,
-#            image=self.backImg,
-#            bg="orange",
-#            cursor="hand2",
-#            command=self.back_callback
-#        )
-#        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
-
-#        self.back_btn_window = self.bg_canvas.create_window(
-#             self.bg_canvas.winfo_width() - 50, 10,
-#             anchor="ne",
-#             window=self.back_btn
-#        )
-
-        # Move it whenever window resizes
-#        def reposition_back_btn(event):
-#            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
-
-#        self.bg_canvas.bind("<Configure>", reposition_back_btn)
 
         # Camera initialization
         self.cap = cv2.VideoCapture(0)
@@ -3855,7 +4210,16 @@ class CameraApp:
         else:
             print("Camera Opened Successfully")
 
+        self.bg_canvas.bind("<Configure>", self.resize_background, add="+")
+        self.bg_canvas.bind("<Configure>", redraw, add="+")
+
         self.update_frame()
+
+    def resize_background(self, event):
+        if hasattr(self, "bg_image_original"):
+            resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized)
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
 
     def camera_ui(self):
         # Background canvas
