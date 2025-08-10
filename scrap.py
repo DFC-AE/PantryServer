@@ -2051,7 +2051,7 @@ class ExpirationApp:
         for item in self.items:
             if search_term and search_term not in item.name.lower():
                 continue  # Skip items that don't match search
-
+            
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
@@ -2409,19 +2409,34 @@ class ExpirationApp:
         except ValueError:
             messagebox.showerror("Error", "Invalid date format.")
 
+        self.save_items()
         self.refresh_views()
 
+
     def load_items(self):
+        """Load items from JSON file and ensure they are Item objects."""
+        self.items = []
+
         if os.path.exists(SAVE_FILE):
             try:
-                with open(SAVE_FILE, 'r') as f:
-                    data = json.load(f)
-                    self.items = json.load(open(SAVE_FILE, 'r'))
+                with open(SAVE_FILE, "r") as f:
+                    raw_items = json.load(f)
+
+                for data in raw_items:
+                    if isinstance(data, dict):
+                        # Convert dict to Item object
+                        self.items.append(Item.from_dict(data))
+                    elif isinstance(data, Item):
+                        # Already an Item object
+                        self.items.append(data)
+                    else:
+                        print(f"Skipping unrecognized item format: {data}")
+
             except Exception as e:
                 print("Failed to load items:", e)
                 self.items = []
-        else:
-            self.items = []
+
+
 
     def add_item_to_db(self, name, barcode, expiration_date):
         new_item = Item(name, expiration_date)
@@ -2431,22 +2446,28 @@ class ExpirationApp:
         self.populate_expiring_items()
 
     def save_items(self):
-        # Convert any dicts in self.items to Item objects
         cleaned_items = []
         for item in self.items:
-            if isinstance(item, dict):
-                # assumes expiration_date is stored as string
-                cleaned_items.append(Item(item["name"], item["expiration_date"]))
+            if isinstance(item, dict):  # Backward compatibility
+                cleaned_items.append(
+                    Item(
+                        item.get("name", ""),
+                        item.get("expiration_date", ""),
+                        item.get("nutrition_info", {})
+                    )
+                )
             else:
                 cleaned_items.append(item)
 
         self.items = cleaned_items
 
         try:
-            with open("items.json", "w") as f:
-                json.dump([item.to_dict() for item in self.items], f)
+            with open(SAVE_FILE, "w") as f:
+                json.dump([item.to_dict() for item in self.items], f, indent=2)
         except Exception as e:
-            print(f"[Error] Failed to save items.json: {e}")
+            print(f"[Error] Failed to save {SAVE_FILE}: {e}")
+
+
 
     ## Loads items from file
     def load_items_old(self):
@@ -3137,69 +3158,42 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
-    def save_new_item(self, name, barcode, expiration_date, category, right_frame):
-        # Step 1: Validate name
-        if not name.strip():
-            messagebox.showerror("Error", "Item name is required.")
+    def save_new_item(self, name, exp_date_str, nutrition_info=None):
+        """Save a new item, avoiding duplicates, and refresh the UI."""
+        name = name.strip()
+        if not name:
+            messagebox.showerror("Error", "Please enter an item name.")
             return
 
-        # Step 2: Prevent duplicate entries
-        if any(item["name"].lower() == name.lower() for item in self.items):
-            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
-            return
-
-        # Step 3: Save item as a dictionary
-        self.items.append({
-            "name": name.strip(),
-            "barcode": barcode.strip(),
-            "expiration_date": expiration_date,
-            "category": category.strip()
-        })
-        self.save_items()
-
-        # Step 4: Clear fields for next entry and reset calendar to today
-        for widget in right_frame.winfo_children():
-            widget.destroy()
-
-        tk.Label(
-            right_frame,
-            text=name,
-            font=APP_FONT_BOLD,
-            bg="white"
-        ).pack(pady=(5, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Barcode: {barcode}",
-            font=APP_FONT,
-            bg="white"
-        ).pack(pady=(0, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Expires: {expiration_date}",
-            font=APP_FONT,
-            bg="white"
-        ).pack(pady=(0, 5))
-
-        tk.Label(
-            right_frame,
-            text=f"Category: {category}",
-            font=APP_FONT,
-            bg="white"
-        ).pack(pady=(0, 5))
-
-        # Reset calendar to today
+        # Make sure exp_date_str is a proper date string
         try:
-            self.cal.selection_set(dt.date.today())
-        except Exception:
-            pass
+            exp_date = datetime.strptime(exp_date_str, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid expiration date format. Use YYYY-MM-DD.")
+            return
 
+        # Avoid duplicate names (case-insensitive)
+        if any(item.name.lower() == name.lower() for item in self.items):
+            messagebox.showwarning("Duplicate Item", f"'{name}' already exists.")
+            return
+
+        # Create and add the new item
+        new_item = Item(name, exp_date.strftime("%Y-%m-%d"), nutrition_info)
+        self.items.append(new_item)
+
+        # Save to file
+        try:
+            with open(SAVE_FILE, "w") as f:
+                json.dump([item.to_dict() for item in self.items], f, indent=2)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save item: {e}")
+            return
+
+        messagebox.showinfo("Success", f"Added {name} (expires {exp_date_str})")
+
+        # Refresh expiring list & UI
         self.populate_expiring_items()
-
-        # If the add item popup is still open, force an update
-        if hasattr(self, "add_popup_expired_listbox") and self.add_popup_expired_listbox.winfo_exists():
-            self.add_popup_expired_listbox.update_idletasks()
+        self.create_home_screen()
 
     def clear_screen(self):
         try:
