@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+### Imports ###
 import tkinter as tk
 from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, StringVar, OptionMenu, Tk, ttk, Frame, Button, Label
 from tkinter.font import Font as font
 ## For Calendar ##
 from datetime import datetime
+import datetime as dt
 from tkcalendar import Calendar, DateEntry
 import time
 from time import strftime
@@ -38,6 +40,87 @@ import webview
 ## For System Fonts ##
 import tkinter.font as tkFont
 #from playsound import playsound
+import ephem
+from datetime import date as dt_date
+import calendar
+
+## Create Root ##
+root = tk.Tk()
+root.geometry("1280x720")
+#root.geometry("1920x1080")
+#root.geometry("3180x2160")
+#root.title("Expiration Tracker")
+root.title("Pantry Server")
+
+## Variables ##
+APP_FONT = tkFont.nametofont("TkDefaultFont")
+APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
+APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
+APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
+APP_FONT.configure(size=12)
+APP_FONT_TITLE.configure(size=25)
+APP_FONT_SMALL = ("Arial", 8)
+APP_FONT_SMALL_BOLD = ("Arial", 8, "bold")
+CITY = "Shreveport, US"
+KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
+CONFIG_FILE = "config.json"
+SAVE_FILE = "items.json"
+SPOT_ID = "a25567f1dbcb4a17ab52a0732fae30c5"
+SPOT_SECRET = "3ef33e87da0f44d593ee29a00b250b28"
+
+_SPOTIFY_TOKEN = None
+_SPOTIFY_TOKEN_EXPIRES_AT = 0
+
+def get_spotify_token(client_id=None, client_secret=None):
+    global _SPOTIFY_TOKEN, _SPOTIFY_TOKEN_EXPIRES_AT
+
+    client_id = SPOT_ID
+    client_secret = SPOT_SECRET
+
+#    client_id = client_id or os.environ.get("SPOTIFY_CLIENT_ID")
+#    client_secret = client_secret or os.environ.get("SPOTIFY_CLIENT_SECRET")
+
+    if not client_id or not client_secret:
+        raise RuntimeError(
+            "Spotify credentials not found. "
+            "Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET env vars."
+        )
+
+    # Reuse cached token if still valid
+    if _SPOTIFY_TOKEN and time.time() < _SPOTIFY_TOKEN_EXPIRES_AT - 60:
+        return _SPOTIFY_TOKEN
+
+    auth_str = f"{client_id}:{client_secret}"
+    b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+    resp = requests.post(
+        "https://accounts.spotify.com/api/token",
+        headers={"Authorization": f"Basic {b64_auth_str}"},
+        data={"grant_type": "client_credentials"},
+        timeout=5
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    _SPOTIFY_TOKEN = data.get("access_token")
+    expires_in = data.get("expires_in", 3600)
+    _SPOTIFY_TOKEN_EXPIRES_AT = time.time() + expires_in
+    return _SPOTIFY_TOKEN
+
+def load_image(path, size=None, fallback_path=None):
+    try:
+        img = Image.open(path)
+        if size:
+            img = img.resize(size, Image.LANCZOS)
+    except Exception:
+        if fallback_path:
+            try:
+                img = Image.open(fallback_path)
+                if size:
+                    img = img.resize(size, Image.LANCZOS)
+            except Exception:
+                img = Image.new("RGBA", size or (100, 100), (200, 200, 200, 255))
+        else:
+            img = Image.new("RGBA", size or (100, 100), (200, 200, 200, 255))
+    return ImageTk.PhotoImage(img)
 
 ##setup Virtual Keyboard
 # Splashscreen Setup
@@ -210,26 +293,6 @@ class OnScreenKeyboard:
     def _on_close(self):
         OnScreenKeyboard._current = None
         self.window.destroy()
-
-## Create Root ##
-root = tk.Tk()
-root.geometry("1280x720")
-#root.geometry("1920x1080")
-#root.geometry("3180x2160")
-#root.title("Expiration Tracker")
-root.title("Pantry Server")
-
-## Variables ##
-APP_FONT = tkFont.nametofont("TkDefaultFont")
-APP_FONT_TITLE = tkFont.nametofont("TkDefaultFont")
-APP_FONT_BOLD = ("TkDefaultFont", 12, "bold")
-APP_FONT_TITLE_BOLD = ("TkDefaultFont", 30, "bold")
-APP_FONT.configure(size=12)
-APP_FONT_TITLE.configure(size=25)
-CITY = "Shreveport, US"
-KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
-CONFIG_FILE = "config.json"
-SAVE_FILE = "items.json"
 
 ### Import and Resize Button Images ###
 ## Button Size ##
@@ -457,8 +520,8 @@ def check_dates(days):
 ## Spotify via Requests ##
 ## Spotify Credentials ##
 #client_id = "YOUR_CLIENT_ID"
-client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
 #client_secret = "YOUR_CLIENT_SECRET"
+client_id = "a25567f1dbcb4a17ab52a0732fae30c5"
 client_secret = "3ef33e87da0f44d593ee29a00b250b28"
 
 ## Get Token ##
@@ -481,9 +544,9 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+        self.items = []  # List to hold all items
         self.load_items()
         self.clear_screen()
-        self.items = []  # List to hold all items
         self.barcode = barcode = None
         self.current_view = 'home'
         self.dark_mode = False  # Track dark mode state
@@ -499,7 +562,7 @@ class ExpirationApp:
         self.load_settings()
         self.apply_settings()
         self.create_home_screen()
-#        self.weather_ui()
+#        self.update_weather()
 
     ## Create Background ##
 #    def set_background(self):
@@ -588,7 +651,6 @@ class ExpirationApp:
                 self.bg_label.config(image=self.backgroundImg)
                 self.bg_label.image = self.backgroundImg
 
-
     def apply_settings(self):
         global APP_FONT
         APP_FONT = (self.current_font, 12)
@@ -629,6 +691,23 @@ class ExpirationApp:
             (canvas_height - new_height) // 2
         )
 
+    def enable_mousewheel_scroll(self, canvas):
+        """Allow mouse wheel scrolling on a Tkinter canvas for Windows, macOS, and Linux."""
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        # Windows & macOS
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        # Linux (scroll up/down)
+        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+#    def get_weather_icon(self):
+#        if not hasattr(self, "current_weather_icon"):
+#            self.update_weather()
+#        return self.current_weather_icon
+
     def open_in_app_browser(self, url):
         # Get the current size of the Tkinter window
         width = self.root.winfo_width()
@@ -652,7 +731,7 @@ class ExpirationApp:
 
     def open_camera_ui_old(self):
         self.clear_screen()
-        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, update_weather_func=self.update_weather)
 
     def open_camera_ui(self):
         # Make sure no other cv2 capture is still open
@@ -669,17 +748,40 @@ class ExpirationApp:
         except:
             pass
 
-        self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen)
+#        self.camera_app_instance = CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, update_weather_func=self.update_weather)
 
-    def open_weather_ui(self):
+        self.camera_app_instance = CameraApp(
+            self.root,
+            self.backgroundImg,
+            self.backImg,
+            self.create_home_screen,
+            update_weather_func=self.update_weather
+        )
+
+    def open_weather_ui(self, return_callback=None):
         self.clear_screen()
-        WeatherApp(root, backImg, self.create_home_screen)
-        #WeatherApp(self.root, self.backgroundImg, backImg, self.create_home_screen)
+
+        # Fallback to home if no callback is provided
+        if return_callback is None:
+            return_callback = self.create_home_screen
+
+        WeatherApp(self.root, backImg, return_callback)
 
     def open_music_ui(self):
         self.clear_screen()
         try:
-            MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token)
+            #MusicApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, self.spotify_token, self.set_background)
+            spotify_token = get_spotify_token()
+            self.music_app_instance = MusicApp(
+                self.root,
+                self.backgroundImg,
+                self.backImg,
+                self.create_home_screen,
+                spotify_token,
+                self.set_background,
+                update_weather_func=self.update_weather
+            )
+
         except Exception as e:
             print("Error Launching MusicApp:", e)
 
@@ -798,7 +900,7 @@ class ExpirationApp:
             #panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
             panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-            tk.Label(panel, text="Unit Converter", font=APP_FONT, bg="white").pack(pady=(10, 5))
+            tk.Label(panel, text="Unit Converter", font=APP_FONT_TITLE, bg="black", fg="white").pack(pady=(10, 5))
 
             inner = tk.Frame(panel, bg="white")
             inner.pack(padx=10, pady=10)
@@ -860,33 +962,6 @@ class ExpirationApp:
             to_unit_var.trace_add("write", convert_units)
             ingredient_var.trace_add("write", convert_units)
 
-    def create_conversion_table_panel_old(self, parent):
-        panel = tk.Frame(parent, bg="", bd=2, relief=tk.GROOVE)
-        panel.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
-
-        title = tk.Label(panel, text="Unit Conversion", font=APP_FONT, bg="white")
-        title.pack(pady=(10, 5))
-
-        content = tk.Frame(panel, bg="white")
-        content.pack(padx=10, pady=10)
-
-        self.amount_var = tk.StringVar()
-        self.unit_var = tk.StringVar(value="grams")
-        self.result_var = tk.StringVar()
-
-        tk.Entry(content, textvariable=self.amount_var, width=10).grid(row=0, column=0, padx=5)
-        ttk.Combobox(
-            content,
-            textvariable=self.unit_var,
-            values=["grams", "ounces", "sugar", "flour", "butter"],
-            width=10
-        ).grid(row=0, column=1, padx=5)
-
-        tk.Button(content, text="Convert", command=self.convert_units).grid(row=0, column=2, padx=5)
-        tk.Label(content, textvariable=self.result_var, bg="white", font=APP_FONT).grid(
-            row=1, column=0, columnspan=3, pady=10
-        )
-
     def convert_units(self):
         try:
             amount = float(self.amount_var.get())
@@ -909,17 +984,78 @@ class ExpirationApp:
         except ValueError:
             self.result_var.set("Enter a valid number")
 
+    def update_weather(self, return_callback=None, target_frame=None):
+        try:
+            city = "Shreveport,US"
+            api_key = os.environ.get("OPENWEATHER_KEY")
+            if not api_key:
+                raise RuntimeError("OPENWEATHER_KEY environment variable not set.")
+
+            url = (
+                f"http://api.openweathermap.org/data/2.5/weather"
+                f"?q={city}&appid={api_key}&units=imperial"
+            )
+
+            response = requests.get(url, timeout=5)
+            data = response.json()
+
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+
+            icon_response = requests.get(icon_url, timeout=5)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+
+            cmd = (
+                lambda: self.open_weather_ui(return_callback=return_callback)
+                if return_callback else self.open_weather_ui
+            )
+
+            parent = target_frame if target_frame else self.weather_icon_frame
+
+            weather_btn = tk.Button(
+                parent,
+                image=icon_photo,
+                bg="orange",
+                cursor="hand2",
+                borderwidth=0,
+                command=cmd
+            )
+            weather_btn.image = icon_photo
+            weather_btn.pack()
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+    def get_weather_icon(self):
+        if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
+            try:
+                # Run weather update if possible
+                self.update_weather()
+            except Exception as e:
+                print(f"[Weather Fallback] Could not update weather: {e}")
+                # Load a placeholder image
+                try:
+                    placeholder_img = Image.open("pics/icons/weather_placeholder.png")
+                    self.current_weather_icon = ImageTk.PhotoImage(placeholder_img)
+                except FileNotFoundError:
+                    # Create a blank placeholder
+                    from PIL import ImageDraw
+                    img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
+                    draw = ImageDraw.Draw(img)
+                    draw.text((10, 20), "?", fill="black")
+                    self.current_weather_icon = ImageTk.PhotoImage(img)
+        return self.current_weather_icon
+
     def create_home_screen(self, item=None):
     #    for widget in self.root.winfo_children():
     #        widget.destroy()
-
-        self.clear_screen()
-
         #def set_background(self):
      #   bg_label = tk.Label(self.root, image=self.backgroundImg)
      #   bg_label.place(x=0, y=0, relwidth=1, relheight=1)
      #   bg_label.lower()
 
+        self.clear_screen()
         self.set_background()
         self.current_view = 'home'
 
@@ -932,9 +1068,67 @@ class ExpirationApp:
                                     background='orange', foreground='yellow')
         self.clock_label.pack(pady=(10, 0))
 
-        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
-                                      bg='orange', fg='yellow')
-        self.weather_label.pack(pady=(0, 10))
+        # create a frame for the weather icon (top-left) - create once
+        if not hasattr(self, "weather_icon_frame") or not self.weather_icon_frame.winfo_exists():
+            self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+            self.weather_icon_frame.place(x=10, y=10)
+
+        # create the weather text label and pack it under the clock so it pushes content down
+        self.weather_label = tk.Label(
+            self.root,
+            text="Loading Weather...",
+            font=APP_FONT_TITLE,
+            bg="orange",
+            fg="yellow",
+            justify="center"
+        )
+        self.weather_label.pack(pady=(5, 5))
+
+        # fetch/update weather icon and text (update_weather chooses return target based on current_view)
+        self.update_weather(None)
+
+        # Create a frame for the weather button
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather()
+
+        # Add weather text under date
+#        try:
+#            city = "Shreveport,US"
+#            api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+#            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+#            response = requests.get(url)
+#            data = response.json()
+
+#            location = f"{data['name']}, {data['sys']['country']}"
+
+#            weather_text = (
+#                f"{location}\n"
+#                f"{int(data['main']['temp'])}\u00B0F "
+#                f"(feels like {int(data['main']['feels_like'])}\u00B0F), "
+#                f"{data['weather'][0]['description'].title()}\n"
+#                f"Humidity: {data['main']['humidity']}%, "
+#                f"Wind: {int(data['wind']['speed'])} mph"
+#            )
+#            weather_text = f"{int(data['main']['temp'])}\u00B0F, {data['weather'][0]['description'].title()}"
+
+#            self.weather_label = tk.Label(
+#                self.weather_lable,
+#                self.root,
+#                text=weather_text,
+#                font=APP_FONT_TITLE,
+#                bg="orange",
+#                fg="yellow"
+#            )
+#            self.weather_label.place(relx=0.5, rely=0.15, anchor="n")
+
+#        except Exception as e:
+#            print(f"[Weather Text Error] {e}")
+
+#        self.weather_label = tk.Label(self.root, font=APP_FONT_TITLE,
+#                                      bg='orange', fg='yellow')
+#        self.weather_label.pack(pady=(0, 10))
 
         # Middle frame for side panels (Expiring Soon and Conversion)
         middle_frame = tk.Frame(self.root, bg="")
@@ -954,70 +1148,6 @@ class ExpirationApp:
                 self.root.after(1000, update_clock)
 
         update_clock()
-
-        def update_weather():
-            try:
-                city = "Shreveport,US"
-                api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
-                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
-
-                response = requests.get(url)
-                data = response.json()
-
-                temp = data["main"]["temp"]
-                condition = data["weather"][0]["description"].capitalize()
-                icon_code = data["weather"][0]["icon"]
-                icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
-
-                icon_response = requests.get(icon_url)
-                icon_img = Image.open(BytesIO(icon_response.content))
-                icon_photo = ImageTk.PhotoImage(icon_img)
-
-                if not hasattr(self, "weather_icon_label") or not self.weather_icon_label.winfo_exists():
-                    #self.weather_icon_label = tk.Label(self.weather_icon_frame, bg="orange")
-                    #self.weather_icon_label.pack()
-                    self.weather_button = tk.Button(
-                         self.weather_icon_frame,
-                         image=icon_photo,
-                         bg="orange",
-                         #bd=0,                 # no border
-                         #highlightthickness=0, # no highlight border
-                         command=self.open_weather_ui
-                    )
-                    self.weather_button.image = icon_photo
-                    self.weather_button.pack()
-                else:
-                    self.weather_button.config(image=icon_photo)
-                    self.weather_button.image = icon_photo
-
-                if not hasattr(self, "weather_label") or not self.weather_label.winfo_exists():
-                    self.weather_label = tk.Label(
-                        self.root,
-                        font=APP_FONT,
-                        bg="orange",
-                        fg="yellow"
-                    )
-
-                    self.weather_label.pack(pady=(0, 10))
-                #self.update_weather()
-
-                #self.weather_icon_label.config(image=icon_photo)
-                #self.weather_icon_label.image = icon_photo  # Prevent GC
-
-                self.weather_label.config(
-                    text=f"{city.split(',')[0]}: {temp:.1f}\u00b0F, {condition}"
-                )
-
-            except tk.TclError:
-                print("Weather Widget Destroyed - Stopping Update.")
-            except Exception as e:
-                print("Weather fetch error:", e)
-                if hasattr(self, "weather_label"):
-                    self.weather_label.config(text="Weather: Unable to load")
-
-            self.root.after(600000, update_weather)
-
-        update_weather()
 
         # Enlarged calendar
         #self.cal = Calendar(self.root, selectmode='day', date_pattern="yyyy-mm-dd", background="orange", foreground="yellow", font=('calibri', 15, 'bold'), cursor="hand2")
@@ -1094,6 +1224,21 @@ class ExpirationApp:
         #refresh_btn.pack(side=tk.LEFT)
         #ToolTip(refresh_btn, "Click to Generate a New Random Recipe")
 
+
+        # Create the weather button using the shared icon
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#           self.weather_icon_frame,
+#           image=weather_icon,
+#           bg="orange",
+#           cursor="hand2",
+#           borderwidth=0,
+#           command=self.open_weather_ui
+#        )
+#        weather_btn.image = weather_icon  # prevent GC
+#        weather_btn.pack()
+#        ToolTip(weather_btn, "Click to Open the Weather App")
+
         # To unit dropdown
         self.to_unit = tk.StringVar(value="ounces")
 
@@ -1127,33 +1272,13 @@ class ExpirationApp:
         for widget in self.root.winfo_children():
             widget.lift()
 
-        def get_weather_icon(self):
-            if not hasattr(self, "current_weather_icon") or self.current_weather_icon is None:
-                try:
-                    # Run weather update if possible
-                    self.update_weather()
-                except Exception as e:
-                    print(f"[Weather Fallback] Could not update weather: {e}")
-                    # Load a placeholder image
-                    try:
-                        placeholder_img = Image.open("pics/icons/weather_placeholder.png")
-                        self.current_weather_icon = ImageTk.PhotoImage(placeholder_img)
-                    except FileNotFoundError:
-                        # Create a blank placeholder
-                        from PIL import ImageDraw
-                        img = Image.new("RGBA", (50, 50), (200, 200, 200, 255))
-                        draw = ImageDraw.Draw(img)
-                        draw.text((10, 20), "?", fill="black")
-                        self.current_weather_icon = ImageTk.PhotoImage(img)
-            return self.current_weather_icon
-
     def create_expiring_soon_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300)
         #panel.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT, bg="white")
+        title = tk.Label(panel, text="Expiring Soon", font=APP_FONT_TITLE, bg="black", fg="white")
         title.pack(pady=(10, 5))
 
         list_frame = tk.Frame(panel, bg="white")
@@ -1172,43 +1297,81 @@ class ExpirationApp:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
+        self.enable_mousewheel_scroll(canvas)
+
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def populate_expiring_items(self):
-        for widget in self.expiring_frame.winfo_children():
-            widget.destroy()
+        """Populate both home and popup expired lists, if their widgets exist."""
+        from datetime import datetime, timedelta, date
 
-        from datetime import datetime, timedelta
-        today = datetime.today()
-        soon = today + timedelta(days=3)
+        now = datetime.today()
+        soon = now + timedelta(days=3)
 
-        expiring_items = [
-            item for item in self.items
-            if item.expiration_date and item.expiration_date <= soon
-        ]
+        expiring_items = []
+        for item in self.items:
+            name = getattr(item, "name", None) or (item.get("name") if isinstance(item, dict) else None)
+            exp_date_raw = getattr(item, "expiration_date", None) or (item.get("expiration_date") if isinstance(item, dict) else None)
 
-        if not expiring_items:
-            tk.Label(self.expiring_frame, text="No items expiring soon.",
-                     font=APP_FONT, bg="white", fg="gray").pack(pady=10)
-        else:
-            for item in expiring_items:
-                name = item.name
-                expiry = item.expiration_date.strftime("%Y-%m-%d")
-                days_left = (item.expiration_date - today).days
+            if not name or not exp_date_raw:
+                continue
 
-                # Color code
-                if days_left <= 0:
-                    color = "red"
-                elif days_left == 1:
-                    color = "orange"
+            try:
+                if isinstance(exp_date_raw, str):
+                    exp_dt = datetime.strptime(exp_date_raw, "%Y-%m-%d")
+                elif isinstance(exp_date_raw, datetime):
+                    exp_dt = exp_date_raw
+                elif isinstance(exp_date_raw, date):
+                    exp_dt = datetime(exp_date_raw.year, exp_date_raw.month, exp_date_raw.day)
                 else:
-                    color = "green"
+                    continue
+            except Exception:
+                continue
 
-                label = tk.Label(self.expiring_frame,
-                                 text=f"{name} (expires in {days_left} day{'s' if days_left != 1 else ''})",
-                                 font=APP_FONT, bg="white", fg=color, anchor="w", justify="left")
-                label.pack(fill=tk.X, padx=10, pady=5)
+            days_left = (exp_dt - now).days
+            expiring_items.append((name, days_left, exp_dt))
+
+        # --- Home screen update ---
+        if hasattr(self, "expiring_frame") and self.expiring_frame.winfo_exists():
+            for widget in self.expiring_frame.winfo_children():
+                widget.destroy()
+
+            if not expiring_items:
+                tk.Label(self.expiring_frame, text="No items expiring soon.",
+                         font=APP_FONT, bg="white", fg="gray").pack(pady=10)
+            else:
+                for name, days_left, exp_dt in expiring_items:
+                    if days_left < 0:
+                        color = "red"
+                    elif days_left == 0:
+                        color = "orange"
+                    else:
+                        color = "green"
+
+                    label = tk.Label(self.expiring_frame,
+                                     text=f"{name} (expires in {abs(days_left)} day{'s' if abs(days_left) != 1 else ''})",
+                                     font=APP_FONT, bg="white", fg=color, anchor="w", justify="left")
+                    label.pack(fill=tk.X, padx=10, pady=5)
+
+        # --- Add Item page update ---
+        if hasattr(self, "add_popup_expired_listbox") and self.add_popup_expired_listbox.winfo_exists():
+            lb = self.add_popup_expired_listbox
+            lb.delete(0, tk.END)
+            if not expiring_items:
+                lb.insert(tk.END, "No items expiring soon.")
+            else:
+                for name, days_left, exp_dt in expiring_items:
+                    text = f"{name} - {abs(days_left)} day{'s' if abs(days_left) != 1 else ''}"
+                    lb.insert(tk.END, text)
+
+                    # Match home screen colors
+                    if days_left < 0:
+                        lb.itemconfig(tk.END, fg="red")
+                    elif days_left == 0:
+                        lb.itemconfig(tk.END, fg="orange")
+                    else:
+                        lb.itemconfig(tk.END, fg="green")
 
     def create_random_recipe_panel(self, parent):
         panel = tk.Frame(parent, bg="orange", bd=2, relief=tk.GROOVE, width=300, height=300)
@@ -1216,7 +1379,7 @@ class ExpirationApp:
         panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         #panel.pack_propagate(False)
 
-        title = tk.Label(panel, text="Random Recipe", font=APP_FONT, bg="white")
+        title = tk.Label(panel, text="Random Recipe", font=APP_FONT_TITLE, bg="black", fg="white")
         title.pack(pady=(10, 5))
 
         # Recipe image
@@ -1225,18 +1388,18 @@ class ExpirationApp:
 
         # Recipe name
         self.recipe_name_label = tk.Label(panel, text="", font=APP_FONT,
-                                          bg="white", wraplength=250)
+                                          bg="black", fg="white", wraplength=250)
         self.recipe_name_label.pack(pady=5)
 
         # Link to full recipe
-        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
-                                          cursor="hand2", bg="white")
-        self.recipe_link_label.pack(pady=5)
+#        self.recipe_link_label = tk.Label(panel, text="View Recipe", fg="blue",
+#                                          cursor="hand2", bg="white")
+#        self.recipe_link_label.pack(pady=5)
         #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(self.recipe_url))
-        self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
+#        self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
 
         # Refresh button
-        #refresh_btn = tk.Button(panel, cursor="hand2", image="refreshImg", command=self.load_random_recipe)
+#        refresh_btn = tk.Button(panel, cursor="hand2", image=refreshImg, command=self.load_random_recipe)
         refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
         refresh_btn.pack(pady=5)
         ToolTip(refresh_btn, "Click to Load a New Recipe")
@@ -1264,10 +1427,10 @@ class ExpirationApp:
             self.recipe_image_label.bind("<Button-1>", lambda e: self.show_full_recipe_view(self.current_recipe))
             self.recipe_image_label.config(cursor="hand2")
 
-            self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
+            ##self.recipe_link_label.config(text="View Recipe", fg="blue", cursor="hand2")
             #self.recipe_link_label.bind("<Button-1>", lambda e: webbrowser.open(instructions))
             #self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(self.recipe_url))
-            self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(instructions))
+            ##self.recipe_link_label.bind("<Button-1>", lambda e: self.open_in_app_browser(instructions))
 
             img_data = requests.get(image_url, timeout=5).content
             img = Image.open(BytesIO(img_data)).resize((200, 200))
@@ -1277,7 +1440,7 @@ class ExpirationApp:
 
         except Exception as e:
             self.recipe_name_label.config(text="Failed to load recipe.")
-            self.recipe_link_label.config(text="")
+            #self.recipe_link_label.config(text="")
             self.recipe_image_label.config(image='')
 
     def show_full_recipe_view(self, meal):
@@ -1294,20 +1457,42 @@ class ExpirationApp:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+#        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+#        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scroll_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Enable mouse wheel scrolling
+#        def _on_mousewheel(event):
+#            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+#        canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows/macOS
+#        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Linux scroll up
+#        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))   # Linux scroll down
+
+        self.enable_mousewheel_scroll(canvas)
+
+        def _on_canvas_config(event):
+            # make the inner frame match the canvas width (so children can expand)
+            canvas.itemconfig(scroll_window, width=event.width)
+
+        canvas.bind("<Configure>", _on_canvas_config)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
         # Back button
-        back_btn = tk.Button(scrollable_frame, image=self.backImg, command=self.create_home_screen, bg="white", bd=0)
-        back_btn.pack(pady=10, anchor="w", padx=10)
+        back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen,
+                     bd=0, cursor="hand2", background="orange", highlightthickness=0)
+        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        self.root.after(50, back_btn.lift)
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
         ## New ##
         # Horizontal container for image and text
-        content_frame = tk.Frame(scrollable_frame, bg="white")
-        content_frame.pack(fill=tk.X, padx=10, pady=10)
+        content_frame = tk.Frame(scrollable_frame, bg="")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
         # Meal image (LEFT)
         try:
@@ -1323,14 +1508,14 @@ class ExpirationApp:
             print("Error loading image:", e)
 
         # Text content (RIGHT)
-        text_frame = tk.Frame(content_frame, bg="white")
+        text_frame = tk.Frame(content_frame, bg="")
         text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Vertically center the text content using stretch and expand
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
 
-        text_inner = tk.Frame(text_frame, bg="white")
+        text_inner = tk.Frame(text_frame, bg="")
         text_inner.pack(expand=True)
 
         tk.Label(text_inner, text=meal["strMeal"], font=APP_FONT_BOLD,
@@ -1348,26 +1533,73 @@ class ExpirationApp:
 #        tk.Label(scrollable_frame, text=f"Category: {meal['strCategory']}   {rating}",
 #                 font=APP_FONT, bg="white").pack(pady=5)
 
-        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+#        tk.Label(scrollable_frame, text="Ingredients:", font=APP_FONT, bg="white").pack(pady=5)
+#        for i in range(1, 21):
+#            ingredient = meal.get(f"strIngredient{i}")
+#            measure = meal.get(f"strMeasure{i}")
+#            if ingredient and ingredient.strip():
+#                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
+#                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+
+        # --- Ingredients (full-width) ---
+        ingredients_frame = tk.Frame(scrollable_frame, bg="white")
+        ingredients_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=5)
+
+        tk.Label(ingredients_frame, text="Ingredients:", font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
         for i in range(1, 21):
             ingredient = meal.get(f"strIngredient{i}")
             measure = meal.get(f"strMeasure{i}")
             if ingredient and ingredient.strip():
-                tk.Label(scrollable_frame, text=f" {ingredient} - {measure}",
-                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill=tk.X, padx=20)
+                tk.Label(ingredients_frame, text=f"{ingredient} - {measure}",
+                         font=APP_FONT, bg="white", anchor="w", justify="left").pack(fill="x", padx=(5,0), pady=1)
+
+        # --- Instructions (full-width) ---
+        instructions_frame = tk.Frame(scrollable_frame, bg="white")
+        instructions_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=(10, 5))
+
+        tk.Label(instructions_frame, text="Instructions:", font=APP_FONT, bg="white", anchor="w").pack(anchor="w")
+        tk.Label(instructions_frame, text=meal.get("strInstructions", ""),
+                 wraplength=1000, justify="left", font=APP_FONT, bg="white").pack(anchor="w", pady=5)
+
+        # --- Buttons (full-width) ---
+        button_frame = tk.Frame(scrollable_frame, bg="white")
+        button_frame.pack(fill="x", pady=10, padx=20)
+
+        tk.Button(
+            button_frame,
+            text="Save to Favorites",
+            command=lambda: self.save_recipe_favorite(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Print",
+            command=lambda: self.print_recipe(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Export to PDF",
+            command=lambda: self.export_recipe_to_pdf(meal)
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(
+            button_frame,
+            text="Load Recipe URL",
+            command=lambda: self.open_in_app_browser(self.recipe_url)
+        ).pack(side=tk.LEFT, padx=5)
 
         # Instructions
-        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
-        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
-                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
+#        tk.Label(scrollable_frame, text="Instructions:", font=APP_FONT, bg="white").pack(pady=(10, 5))
+#        tk.Label(scrollable_frame, text=meal["strInstructions"], wraplength=700, justify="left",
+#                 font=APP_FONT, bg="white").pack(padx=20, pady=5)
 
         # Print & PDF export buttons
-        button_frame = tk.Frame(scrollable_frame, bg="white")
-        button_frame.pack(pady=10)
+#        button_frame = tk.Frame(scrollable_frame, bg="white")
+#        button_frame.pack(pady=10)
 
-        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Export to PDF", command=lambda: self.export_recipe_to_pdf(meal)).pack(side=tk.LEFT, padx=5)
+#        tk.Button(button_frame, text="Save to Favorites", command=lambda: self.save_recipe_favorite(meal)).pack(side=tk.LEFT, padx=5)
+#        tk.Button(button_frame, text="Print", command=lambda: self.print_recipe(meal)).pack(side=tk.LEFT, padx=5)
 
     def save_to_favorites(self, meal):
         # Save logic (e.g., append to a JSON file)
@@ -1378,54 +1610,6 @@ class ExpirationApp:
 
     def export_to_pdf(self, meal):
         print("Export to PDF for:", meal["strMeal"])
-
-    # def show_full_recipe_view_old(self):
-    #     if not hasattr(self, "current_recipe") or not self.current_recipe:
-    #         return
-
-    #     self.clear_screen()
-
-    #     meal = self.current_recipe
-    #     name = meal["strMeal"]
-    #     instructions = meal["strInstructions"]
-    #     image_url = meal["strMealThumb"]
-
-    #     # Background
-    #     bg_label = tk.Label(self.root, image=self.card_backgroundImg)
-    #     bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-    #     bg_label.lower()
-
-    #     # Title
-    #     tk.Label(self.root, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=10)
-
-    #     # Image
-    #     img_data = requests.get(image_url, timeout=5).content
-    #     img = Image.open(BytesIO(img_data)).resize((300, 300))
-    #     photo = ImageTk.PhotoImage(img)
-    #     img_label = tk.Label(self.root, image=photo, bg="white")
-    #     img_label.image = photo
-    #     img_label.pack(pady=10)
-
-    #     # Instructions (scrollable)
-    #     frame = tk.Frame(self.root)
-    #     frame.pack(pady=10, fill=tk.BOTH, expand=True)
-
-    #     canvas = tk.Canvas(frame, height=200, bg="white")
-    #     scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
-    #     scroll_frame = tk.Frame(canvas, bg="white")
-
-    #     scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    #     canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-    #     canvas.configure(yscrollcommand=scrollbar.set)
-
-    #     tk.Label(scroll_frame, text=instructions, bg="white", wraplength=700, justify="left").pack(padx=10, pady=10)
-
-    #     canvas.pack(side="left", fill="both", expand=True)
-    #     scrollbar.pack(side="right", fill="y")
-
-    #     # Back button
-    #     back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen, cursor="hand2")
-    #     back_btn.pack(pady=10)
 
     def load_settings(self):
         if os.path.exists(CONFIG_FILE):
@@ -1793,22 +1977,25 @@ class ExpirationApp:
 
         self.current_view = "card"
 
+        # Sort menu
+        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
+        sort_menu.pack(pady=10)
+
         # Search bar
         search_frame = tk.Frame(self.root, bg="")
-        search_frame.pack(pady=(10, 0))
+        search_frame.pack(pady=(10, 15))
 
         search_entry = tk.Entry(search_frame, textvariable=self.search_var, width=30)
         search_entry.pack(side=tk.LEFT, padx=(10, 5))
         search_entry.bind("<KeyRelease>", lambda event: self.create_card_view())
 
-        # Sort menu
-        sort_menu = OptionMenu(self.root, self.sort_option, "Expiration (Soonest)", "Expiration (Latest)", "Name (A-Z)", "Name (Z-A)", command=self.sort_items)
-        sort_menu.pack(pady=10)
-
         # Setup scrollable canvas
         #canvas = tk.Canvas(self.root, height=450, bg="SystemButtonFace", highlightthickness=0, bd=0)
         canvas = tk.Canvas(self.root, height=450, bg="lightgray", highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+
+        self.enable_mousewheel_scroll(canvas)
+
         #scroll_frame = tk.Frame(canvas, bg="SystemButtonFace")
         scroll_frame = tk.Frame(canvas, bg="")
 
@@ -1902,6 +2089,8 @@ class ExpirationApp:
         scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set, bg=self.root["bg"])
+
+        self.enable_mousewheel_scroll(canvas)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -2200,16 +2389,27 @@ class ExpirationApp:
         else:
             self.items = []
 
+    def add_item_to_db(self, name, barcode, expiration_date):
+        new_item = Item(name, expiration_date)
+        new_item.barcode = barcode
+        self.items.append(new_item)
+        self.save_items()
 
     def save_items(self):
+        # Convert any dicts in self.items to Item objects
+        cleaned_items = []
+        for item in self.items:
+            if isinstance(item, dict):
+                # assumes expiration_date is stored as string
+                cleaned_items.append(Item(item["name"], item["expiration_date"]))
+            else:
+                cleaned_items.append(item)
+
+        self.items = cleaned_items
+
         try:
             with open("items.json", "w") as f:
-                json.dump(
-                    [{"name": item.name, "expiration_date": item.expiration_date.strftime("%Y-%m-%d")}
-                     for item in self.items],
-                    f,
-                    indent=2
-                )
+                json.dump([item.to_dict() for item in self.items], f)
         except Exception as e:
             print(f"[Error] Failed to save items.json: {e}")
 
@@ -2260,17 +2460,45 @@ class ExpirationApp:
 
         # --- BACKGROUND SETUP ---
         self.bg_image_original = Image.open("pics/backgrounds/jars.jpg")
-        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_resized_image = ImageTk.PhotoImage(self.bg_image_original)
 
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
-        self.bg_canvas.bind("<Configure>", self.resize_background)
+        # Draw background image first
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_resized_image)
+        self.bg_canvas.tag_lower(self.bg_bg_label)
 
-        # Transparent container over background
-        self.content_frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+        # Force initial background resize so it shows immediately
+        self.bg_canvas.update_idletasks()
+        if self.bg_canvas.winfo_width() > 0 and self.bg_canvas.winfo_height() > 0:
+            initial_bg = self.bg_image_original.resize(
+                (self.bg_canvas.winfo_width(), self.bg_canvas.winfo_height()),
+                Image.LANCZOS
+            )
+            self.bg_resized_image = ImageTk.PhotoImage(initial_bg)
+            self.bg_canvas.image = self.bg_resized_image  # prevent GC
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
+            self.bg_canvas.tag_lower(self.bg_bg_label)
+
+        # Container on top of background
+        self.content_frame = tk.Frame(self.bg_canvas, bg=self.bg_canvas.cget("background"), highlightthickness=0)
         self.content_window = self.bg_canvas.create_window(0, 0, anchor="nw", window=self.content_frame)
+
+        # Dynamically resize background + frame
+        def on_canvas_resize(event):
+            if event.width > 0 and event.height > 0:
+                resized_bg = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+                self.bg_resized_image = ImageTk.PhotoImage(resized_bg)
+
+                # keep a reference to prevent garbage collection
+                self.bg_canvas.image = self.bg_resized_image
+
+                self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
+                self.bg_canvas.tag_lower(self.bg_bg_label)
+                self.bg_canvas.itemconfig(self.content_window, width=event.width, height=event.height)
+
+        self.bg_canvas.bind("<Configure>", on_canvas_resize)
 
         # --- HEADER ---
         tk.Label(self.content_frame, text="Add New Item", font=APP_FONT_TITLE_BOLD,
@@ -2280,26 +2508,46 @@ class ExpirationApp:
         main_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-        # LEFT PANEL: Expiring Soon
-        left_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10)
+        # Configure grid to have 3 equal columns (left, center, right)
+        main_frame.grid_columnconfigure(0, weight=1)  # Left panel
+        main_frame.grid_columnconfigure(1, weight=2)  # Center panel (bigger)
+        main_frame.grid_columnconfigure(2, weight=1)  # Right panel
+        main_frame.grid_rowconfigure(0, weight=1)
 
-        tk.Label(left_frame, text="Expiring Soon", font=APP_FONT_TITLE,
-                 bg="black", fg="white").pack(pady=5)
-        self.expiring_listbox = tk.Listbox(left_frame, font=APP_FONT, height=20)
-        self.expiring_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        # Left panel for Expiring Soon in Add Item screen
+        left_frame = tk.Frame(main_frame, bg="white")
+        left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
-        for item in self.get_expiring_items():
-            self.expiring_listbox.insert(tk.END, item)
+        tk.Label(left_frame, text="Expiring Soon", bg="black", fg="white").pack()
 
-        # CENTER PANEL: Calendar
+        self.add_popup_expired_listbox = tk.Listbox(left_frame, height=12)
+        self.add_popup_expired_listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+
+        # Fill it with current expiring items
+        self.populate_expiring_items()
+
+        # CENTER PANEL: Name + Barcode + Calendar
         center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        #center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        center_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
-        # Expiration date picker (unchanged)
-        tk.Label(center_frame, text="Select Expiration Date:", font=APP_FONT, justify="center").pack()
-        self.date_picker = DateEntry(self.root, date_pattern="yyyy-mm-dd")
-#        self.date_picker.pack(pady=5)
+        # Name entry
+        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="black", fg="white").pack(anchor="w", pady=(5, 2))
+        self.item_name_var = tk.StringVar()
+        name_entry = tk.Entry(center_frame, textvariable=self.item_name_var, width=30)
+        name_entry.pack(pady=(0, 10))
+        name_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, name_entry))
+
+        # Barcode entry
+        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg= "black", fg="white").pack(anchor="w", pady=(5, 2))
+        self.item_barcode_var = tk.StringVar()
+        barcode_entry = tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30)
+        barcode_entry.pack(pady=(0, 15))
+        barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, barcode_entry))
+
+        # Expiration date picker label
+        tk.Label(center_frame, text="Select Expiration Date:", bg="black", fg="white", font=APP_FONT, justify="center").pack()
+
         self.cal = Calendar(
             center_frame,
             selectmode='day',
@@ -2314,33 +2562,23 @@ class ExpirationApp:
             othermonthwebackground="lightgray",
             othermonthbackground="white"
         )
-        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20)
+        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20, fill=tk.BOTH, expand=True)
 
-        # RIGHT PANEL: Item Details
-        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
-
-        tk.Label(right_frame, text="Enter Item Name:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-        self.name_entry = tk.Entry(right_frame)
-        self.name_entry.pack(pady=5)
-        self.name_entry.bind("<Button-1>",
-                             lambda e: OnScreenKeyboard(self.content_frame, self.name_entry))
-
-        tk.Label(right_frame, text="Enter Barcode Number:", font=APP_FONT,
-                 bg="black", fg="white").pack(pady=5)
-        self.barcode_entry = tk.Entry(right_frame)
-        self.barcode_entry.pack(pady=5)
-        self.barcode_entry.bind("<Button-1>",
-                                lambda e: OnScreenKeyboard(self.content_frame, self.barcode_entry))
-
-        # Submit button
+        # Save button below calendar
         submit_btn = tk.Button(
-            right_frame, image=saveImg, cursor="hand2",
-            bg="black", fg="white", command=self.save_new_item
+            center_frame, image=saveImg, cursor="hand2",
+            bg="black", fg="white", command=lambda: self.save_new_item(right_frame)
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
+
+        # RIGHT PANEL: Details View
+        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
+        #right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+        right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
+
+        tk.Label(right_frame, text="Item Details", font=APP_FONT_TITLE,
+                 bg="black", fg="white").pack(pady=5)
 
         # Back button
         backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
@@ -2361,16 +2599,24 @@ class ExpirationApp:
 #        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
 #             weather_btn = self.weather_button
 #        else:
-#             weather_btn = tk.Button(
-#                  self.content_frame,
-#                  image=self.current_weather_icon,  # assuming you store the icon here
-#                  command=self.open_weather_ui,
-#                  bg="black",
-#                  borderwidth=0
-#                  )
+        self.weather_icon_frame = tk.Frame(self.content_frame, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+        self.update_weather(return_callback=self.add_item_popup)
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#              self.content_frame,
+#              self.weather_icon_frame,
+#              image=weather_icon,
+#              bg="orange",
+#             borderwidth=0,
+#              cursor="hand2",
+#              command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
+#        )
 #             self.weather_button = weather_btn
-
+#        self.weather_btn.image = weather_icon
+#        self.weather_button = weather_btn
 #        weather_btn.place(relx=0.5, y=10, anchor="n")
+#        self.weather_btn.place(x=10, y=10, anchor="nw")
 #        ToolTip(weather_btn, "Click to Open the Weather App")
 
         nav_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
@@ -2389,22 +2635,151 @@ class ExpirationApp:
 #        ToolTip(back_btn, "Return to Home Screen")
 
         # Weather Button (with guaranteed icon)
-        weather_icon = self.get_weather_icon()
-        weather_btn = tk.Button(
-            nav_frame,
-            image=weather_icon,
-            bg="orange",
-            command=lambda: self.open_weather_ui()
-        )
-        weather_btn.image = weather_icon  # prevent garbage collection
-        weather_btn.pack(side=tk.LEFT, padx=5)
-        ToolTip(weather_btn, "Click to Open the Weather App")
+#        weather_icon = self.get_weather_icon()
+#        weather_btn = tk.Button(
+#            nav_frame,
+#            image=weather_icon,
+#            bg="orange",
+#            command=lambda: self.open_weather_ui()
+#        )
+#        weather_btn.image = weather_icon  # prevent garbage collection
+#        weather_btn.pack(side=tk.LEFT, padx=5)
+#        ToolTip(weather_btn, "Click to Open the Weather App")
 
-    def get_expiring_items(self):
-        # Placeholder logic, replace with actual item expiration check
-        return ["Milk - 2025-08-10", "Eggs - 2025-08-12", "Yogurt - 2025-08-13"]
+        self.bg_canvas.update_idletasks()
+        self.bg_canvas.event_generate("<Configure>")
 
-    def update_weather(self):
+    def update_expired_items_display(self):
+        expired_items = self.get_expired_items()
+
+        # Update home screen widget
+        if hasattr(self, "expired_listbox"):
+            self.expired_listbox.delete(0, tk.END)
+            for item in expired_items:
+                self.expired_listbox.insert(tk.END, item)
+
+        # Update add-item popup widget
+        if hasattr(self, "add_popup_expired_listbox"):
+            self.add_popup_expired_listbox.delete(0, tk.END)
+            for item in expired_items:
+                self.add_popup_expired_listbox.insert(tk.END, item)
+
+
+    def get_expired_items(self):
+        expired = []
+        today = datetime.today().date()
+        for item in self.items:
+            exp_date = item.expiration_date  # attribute, not dict key
+            if exp_date:
+                try:
+                    if isinstance(exp_date, str):
+                        exp_dt = datetime.strptime(exp_date, "%Y-%m-%d").date()
+                    elif isinstance(exp_date, datetime):
+                        exp_dt = exp_date.date()
+                    elif isinstance(exp_date, date):
+                        exp_dt = exp_date
+                    else:
+                        continue  # unknown format, skip
+
+                    if exp_dt < today:
+                        expired.append(item.name)
+                except Exception:
+                    pass
+        return expired
+
+    def update_weather(self, return_callback=None, target_frame=None):
+        """
+        Fetch latest weather, update the top-left weather icon button and
+        update the weather text label (if present). The return_callback
+        controls where the WeatherApp returns to after closing.
+        If return_callback is None, we choose based on self.current_view.
+        """
+        try:
+            city = "Shreveport,US"
+            api_key = KEY_WEATHER
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"
+
+            response = requests.get(url, timeout=8)
+            data = response.json()
+
+            # store raw/parsed data for other UI pieces
+            self.weather_data = data
+
+            # load icon
+            icon_code = data["weather"][0]["icon"]
+            icon_url = f"http://openweathermap.org/img/wn/{icon_code}@2x.png"
+            icon_response = requests.get(icon_url, timeout=8)
+            icon_img = Image.open(BytesIO(icon_response.content)).resize((64, 64), Image.LANCZOS)
+            icon_photo = ImageTk.PhotoImage(icon_img)
+            self.current_weather_icon = icon_photo
+
+            # decide where the weather UI should return to
+            if return_callback is None:
+                # prefer explicit current_view if set
+                if getattr(self, "current_view", None) == "add_item":
+                    return_callback = getattr(self, "add_item_popup", None) or self.create_home_screen
+                else:
+                    return_callback = self.create_home_screen
+
+            cmd = lambda rc=return_callback: self.open_weather_ui(return_callback=rc)
+
+            # make sure the container exists (created once by create_home_screen)
+            if not hasattr(self, "weather_icon_frame") or not self.weather_icon_frame.winfo_exists():
+                # create a small frame in top-left for the icon (non-destructive)
+                self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+                # placing top-left; if you prefer pack/geometry change accordingly:
+                self.weather_icon_frame.place(x=10, y=10)
+
+            # create or update the button
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=cmd
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(image=icon_photo, command=cmd)
+
+            # keep a reference to prevent GC
+            self.weather_button.image = icon_photo
+
+            # update the detailed weather text label if it exists (and is alive)
+            if hasattr(self, "weather_label") and self.weather_label.winfo_exists():
+                try:
+                    self.weather_label.config(text=self.format_weather_text())
+                except Exception:
+                    # don't crash the app over label updates
+                    pass
+
+        except Exception as e:
+            print(f"[Weather Error] {e}")
+
+        # schedule next refresh (10 minutes). Use a lambda so we recalc return_callback based on current view.
+        try:
+            self.root.after(600000, lambda: self.update_weather(None))
+        except Exception:
+            pass
+
+    def format_weather_text(self):
+        d = getattr(self, "weather_data", None)
+        if not d:
+            return "Weather: loading..."
+        try:
+            loc = f"{d.get('name','')}, {d.get('sys',{}).get('country','')}"
+            temp = int(round(d['main']['temp']))
+            feels = int(round(d['main'].get('feels_like', temp)))
+            desc = d['weather'][0]['description'].title()
+            hum = d['main'].get('humidity', '?')
+            wind = int(round(d.get('wind', {}).get('speed', 0)))
+            return f"{loc} - {temp}\u00B0F (feels {feels}\u00B0F)\n{desc} - Humidity {hum}% - Wind {wind} mph"
+        except Exception:
+            return "Weather: unavailable"
+
+    def update_weather_new(self, return_callback=None):
         try:
             city = "Shreveport,US"
             api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
@@ -2420,18 +2795,27 @@ class ExpirationApp:
             icon_img = Image.open(BytesIO(icon_response.content)).resize((100, 100), Image.LANCZOS)
             icon_photo = ImageTk.PhotoImage(icon_img)
 
-            ## Create button with weather icon
-            self.weather_button = tk.Button(
-                self.weather_icon_frame,
-                image=icon_photo,
-                bg="orange",
-                #bd=0,
-                #highlightthickness=0,
-                cursor="hand2",
-                command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
-            )
+            self.current_weather_icon = icon_photo
+
+            if not hasattr(self, "weather_button") or not self.weather_button.winfo_exists():
+                self.weather_button = tk.Button(
+                    self.weather_icon_frame,
+                    image=icon_photo,
+                    bg="orange",
+                    cursor="hand2",
+                    borderwidth=0,
+                    command=(lambda: self.open_weather_ui(return_callback=return_callback)
+                             if return_callback else lambda: self.open_weather_ui())
+                )
+                self.weather_button.pack()
+            else:
+                self.weather_button.config(
+                    image=icon_photo,
+                    command=(lambda: self.open_weather_ui(return_callback=return_callback)
+                             if return_callback else lambda: self.open_weather_ui())
+                )
+
             self.weather_button.image = icon_photo
-            self.weather_button.pack()
 
         except Exception as e:
             print(f"[Weather Error] {e}")
@@ -2456,11 +2840,12 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
-    def save_new_item(self):
-        name = self.name_entry.get()
-        date = self.date_picker.get()
-        barcode = self.barcode_entry.get() if hasattr(self, 'barcode_entry') else ""
+    def save_new_item(self, right_frame):
+        name = self.item_name_var.get().strip()
+        barcode = self.item_barcode_var.get().strip()
+        expiration_date = self.cal.get_date()
 
+<<<<<<< HEAD
         nutrition_info = {}
         product_name = None
 
@@ -2475,10 +2860,13 @@ class ExpirationApp:
                     self.name_entry.delete(0, tk.END)
                     self.name_entry.insert(0, name)
         # Step 2: Validate name
+=======
+>>>>>>> refs/remotes/origin/main
         if not name:
-            messagebox.showerror("Error", "Item name required")
+            messagebox.showerror("Error", "Item name is required.")
             return
 
+<<<<<<< HEAD
         # Step 3: Create and save item
         try:
             item = Item(name, date, nutrition_info)
@@ -2488,6 +2876,52 @@ class ExpirationApp:
             self.create_home_screen()
         except Exception as e:
             messagebox.showerror("Error", f"Could not save item: {e}")
+=======
+        # Prevent duplicate entries
+        existing_items = self.items
+        #if any(item['name'].lower() == name.lower() for item in existing_items):
+        if any(item.name.lower() == name.lower() for item in existing_items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Save item
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date
+        })
+        self.save_items()
+
+        # Clear fields for next entry and reset calendar
+        self.item_name_var.set("")
+        self.item_barcode_var.set("")
+        self.cal.selection_set(dt.date.today())
+
+        # Clear right frame and show details
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame,
+            text=name,
+            font=APP_FONT_BOLD,
+            bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Barcode: {barcode}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Expires: {expiration_date}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+>>>>>>> refs/remotes/origin/main
 
     def clear_screen(self):
         try:
@@ -2958,105 +3392,172 @@ class WeatherApp:
         except Exception as e:
             print("Error updating background image:", e)
 
-
     def clear_screen(self):
-        #for widget in self.root.winfo_children():
+        self.root.unbind("<Configure>")
         for widget in self.frame.winfo_children():
             widget.destroy()
 
     def weather_ui(self):
         self.clear_screen()
 #        self.set_background()
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+        self.get_current_weather_data()
 
         # Load weather condition-based background BEFORE creating bg_label
         condition, icon_code = self.get_current_weather_condition()
         background_path = self.get_background_path_for_condition(condition, icon_code)
         self.set_background_from_path(background_path)
 
-        ## Set Background Image and Place in the Background ##
-        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
-        self.bg_label.image = self.backgroundImg
+        # 1. Load and place the background first
+        self.bg_image = Image.open("pics/backgrounds/weather.jpg")
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
-        ## Main Transparent Content Frame for Layout ##
-        content_frame = tk.Frame(self.frame, bg="", padx=10, pady=10)
-#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
-#        content_frame.pack(fill="both", expand=True)
-        content_frame.pack(expand=True)
+        self.bg_label = tk.Label(self.root, image=self.bg_photo)
+        self.bg_label.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-	## Current Weather Content Frame ##
-#        content_frame = tk.Frame(self.root, bg="white", padx=10, pady=10)
-#        content_frame.place(relx=0.5, rely=0.5, anchor="center")
+        # 2. Resize background dynamically
+        def resize_bg(event):
+            if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+                new_width = event.width
+                new_height = event.height
+                resized = self.bg_image.resize((new_width, new_height), Image.LANCZOS)
+                self.bg_photo = ImageTk.PhotoImage(resized)
+                self.bg_label.config(image=self.bg_photo)
+
+        self.root.bind("<Configure>", resize_bg)
+
+        # Sun banner in the top-left corner
+        try:
+            current_weather = self.get_current_weather_data()
+            if current_weather and "sys" in current_weather:
+                sunrise_ts = current_weather["sys"]["sunrise"]
+                sunset_ts = current_weather["sys"]["sunset"]
+                sun_frame = tk.Frame(self.root, bg="")
+                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")  # top-left position
+                self.draw_sun_banner(sun_frame, sunrise_ts, sunset_ts)
+            else:
+                print("Sunrise/Sunset data not found in API response.")
+        except Exception as e:
+            print(f"Could not draw sun banner: {e}")
+
+        # 3. Forecast frame (top)
+        self.forecast_frame = tk.Frame(self.root, bg="")
+        self.forecast_frame.pack(fill="x", pady=10)
+
+        # Inner frame to center forecast content
+        forecast_content = tk.Frame(self.forecast_frame, bg="")
+        forecast_content.pack(anchor="center")
+
+        # --- Add Sun Banner on the left side ---
+#        try:
+#            current_weather = self.get_current_weather_data()
+#            if current_weather and "sys" in current_weather:
+#                sunrise_ts = current_weather["sys"]["sunrise"]
+#                sunset_ts = current_weather["sys"]["sunset"]
+#                self.draw_sun_banner(forecast_content, sunrise_ts, sunset_ts)
+#            else:
+#                print("Sunrise/Sunset data not found in API response.")
+#        except Exception as e:
+#            print(f"Could not draw sun banner: {e}")
 
         ## Current Weather Label ##
-        #self.weather_label = tk.Label(self.root, font=APP_FONT)
-        #self.weather_label = tk.Label(content_frame, font=APP_FONT, bg="white")
-        self.weather_label = tk.Label(content_frame, font=APP_FONT)
+        self.weather_label = tk.Label(forecast_content, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
         ## Weather Icon ##
-        #self.weather_icon_label = tk.Label(self.root)
-        #self.weather_icon_label = tk.Label(content_frame, bg="white")
-        self.weather_icon_label = tk.Label(content_frame)
+        self.weather_icon_label = tk.Label(forecast_content)
         self.weather_icon_label.pack()
-
-        ## Forecast Frame ##
-        #forecast_frame = tk.Frame(self.root)
-        #forecast_frame = tk.Frame(content_frame, bg="white")
-        forecast_frame = tk.Frame(content_frame)
-        forecast_frame.pack(pady=10)
 
         self.forecast_labels = []
         for _ in range(5):
-            day_frame = tk.Frame(forecast_frame, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame = tk.Frame(forecast_content, borderwidth=1, relief="solid", padx=5, pady=5)
             day_frame.pack(side="left", padx=5)
 
-            #icon_label = tk.Label(day_frame, bg="white")
             icon_label = tk.Label(day_frame)
             icon_label.pack()
 
-            #text_label = tk.Label(day_frame, font=APP_FONT, bg="white")
             text_label = tk.Label(day_frame, font=APP_FONT)
             text_label.pack()
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
+        self.calendar_frame = tk.Frame(self.root, bg="")
+        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+
+        # 4. Bottom section: Sun banner + Moon calendar
+        bottom_frame = tk.Frame(self.calendar_frame, bg="")
+        bottom_frame.pack(fill="both", expand=True, pady=10)
+
+        # Left: Sun banner
+#        try:
+#            current_weather = self.get_current_weather_data()
+#            if current_weather and "sys" in current_weather:
+#                sunrise_ts = current_weather["sys"]["sunrise"]
+#                sunset_ts = current_weather["sys"]["sunset"]
+#                self.draw_sun_banner(bottom_frame, sunrise_ts, sunset_ts)
+#            else:
+#                print("Sunrise/Sunset data not found in API response.")
+#        except Exception as e:
+#            print(f"Could not draw sun banner: {e}")
+
+        # Right: Moon calendar
+        moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="black", highlightthickness=1)
+#        moon_frame.pack(side="left", padx=10, pady=10)
+        moon_frame.pack(expand=True, padx=10)
+
+        # Moon phase title above the calendar
+        moon_text = self.get_moon_phase()
+        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="black", fg="white")
+        moon_label.pack(pady=(0, 5))
+
+        # Moon calendar below the title
+        self.draw_moon_calendar(moon_frame)
+
+        #moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="black", highlightthickness=1)
+        #moon_frame.pack(side="left", padx=10, pady=10)
+        #self.draw_moon_calendar(moon_frame)
+
+        #moon_text = self.get_moon_phase()
+        #moon_label = tk.Label(bottom_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
+        #moon_label.pack(side="left", padx=10, pady=5)
+
+        # 4. Moon calendar frame (bottom)
+#        self.calendar_frame = tk.Frame(self.root, bg="")
+#        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+
+#        moon_frame = tk.Frame(self.calendar_frame, bg="white", highlightbackground="black", highlightthickness=1)
+#        moon_frame.pack(pady=10)
+#        self.draw_moon_calendar(moon_frame)
+
+#        moon_text = self.get_moon_phase()
+#        moon_label = tk.Label(self.calendar_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
+#        moon_label.pack(pady=5)
+
         ## Back Button ##
-        #back_btn = tk.Button(self.root, image="backImg", command=self.create_home_screen)
-        #back_btn = tk.Button(self.root, image=self.backImg, command=self.back_callback)
-        #back_btn.pack(pady=10)
-#        if callable(self.back_callback):
+        cmd = self.back_callback if callable(self.back_callback) else (self.create_home_screen if hasattr(self, "create_home_screen") else self.root.quit)
         self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
+                              background="orange",
                               #image=self.backImg,
                               image=backsmallImg,
-                                  #command=self.back_callback)
-                                  #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
+                              #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
                               command=self.back_callback)
                                   #command=lambda: self.create_home_screen(None))
-#        else:
-#            self.back_btn = tk.Button(self.root,
-#                                  cursor="hand2",
-#                                  image=self.backImg,
-                                  #command=self.back_callback)
-#                                  command=self.root.destroy)
-                                  #command=lambda: self.create_home_screen(None))
-        #self.back_btn.pack(pady=10)
-        #self.back_btn.place(relx=0.5, rely=0.95, anchor="s")
         self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
-        #self.back_btn.place(x=10, y=10, anchor="s")
-        self.back_btn.image = self.backImg
+        self.root.after(50, lambda: self.back_btn.lift())
+        #self.back_btn.image = self.backImg
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
         self.update_weather()
 
-    def update_weather(self):
+    def update_weather(self, return_callback=None, target_frame=None):
         try:
             if not hasattr(self, 'city'):
-                  self.city = "Shreveport, US"
+                  self.city = CITY
             if not hasattr(self, 'api_key'):
-                  self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                  #self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                  self.api_key = KEY_WEATHER
 
             url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
             response = requests.get(url)
@@ -3112,6 +3613,20 @@ class WeatherApp:
             if hasattr(self, "weather_label"):
                  self.weather_label.config(text="Weather: Unable to load")
 
+    def get_current_weather_data(self):
+        """Fetch and return raw current weather data from OpenWeatherMap API."""
+        global CITY, KEY_WEATHER
+        try:
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={KEY_WEATHER}&units=metric"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch current weather data: {response.status_code}")
+        except Exception as e:
+            print(f"Error fetching current weather data: {e}")
+        return None
+
     def get_icon(self, code):
         try:
             url = f"http://openweathermap.org/img/wn/{code}@2x.png"
@@ -3122,240 +3637,467 @@ class WeatherApp:
             print("Icon load failed:", e)
             return None
 
-class CameraApp_old:
-    def __init__(self, root, backgroundImg, backImg, back_callback=None):
+    def draw_sun_banner(self, parent, sunrise_ts, sunset_ts):
+        # Convert timestamps to datetime strings
+        sunrise_dt = datetime.fromtimestamp(sunrise_ts)
+        sunset_dt = datetime.fromtimestamp(sunset_ts)
+        sunrise_str = sunrise_dt.strftime("%H:%M")
+        sunset_str = sunset_dt.strftime("%H:%M")
+
+        # Calculate fraction of the day passed between sunrise and sunset
+        now = time.time()
+        if now < sunrise_ts:
+            fraction_of_day = 0
+        elif now > sunset_ts:
+            fraction_of_day = 1
+        else:
+            fraction_of_day = (now - sunrise_ts) / (sunset_ts - sunrise_ts)
+
+        fraction_of_day = max(0, min(1, fraction_of_day))
+
+        # Create canvas for banner
+        canvas_width = 150
+        canvas_height = 100
+        sun_radius = 8
+
+        sun_canvas = tk.Canvas(
+            parent,
+            width=canvas_width,
+            height=canvas_height,
+            bg="skyblue",
+            highlightthickness=0
+        )
+        sun_canvas.pack(side="left", padx=10, pady=10)
+
+        # Draw sine wave arc
+        points = []
+        for i in range(canvas_width + 1):
+            x = i
+            y = canvas_height / 2 - (canvas_height / 2.5) * math.sin(math.pi * i / canvas_width)
+            points.append((x, y))
+
+        for i in range(len(points) - 1):
+            sun_canvas.create_line(points[i], points[i + 1], fill="orange", width=2)
+
+        # Draw sun position
+        sun_x = fraction_of_day * canvas_width
+        sun_y = canvas_height / 2 - (canvas_height / 2.5) * math.sin(math.pi * fraction_of_day)
+        sun_canvas.create_oval(
+            sun_x - sun_radius, sun_y - sun_radius,
+            sun_x + sun_radius, sun_y + sun_radius,
+            fill="yellow", outline=""
+        )
+
+        # Draw sunrise/sunset labels
+        sun_canvas.create_text(5, canvas_height - 10, text=sunrise_str, anchor="w", fill="black", font=("Arial", 9, "bold"))
+        sun_canvas.create_text(canvas_width - 5, canvas_height - 10, text=sunset_str, anchor="e", fill="black", font=("Arial", 9, "bold"))
+
+        return sun_canvas
+
+    def get_moon_phase(self):
+        today = datetime.utcnow()
+        moon = ephem.Moon(today)
+        phase = moon.phase  # 0=new moon, 50=full moon
+        if phase == 0:
+            phase_name = "New Moon"
+        elif phase < 50:
+            phase_name = "Waxing Moon"
+        elif phase == 50:
+            phase_name = "Full Moon"
+        else:
+            phase_name = "Waning Moon"
+        return f"{phase_name} ({phase:.1f}%)"
+
+    def get_moon_phase_python(self):
+        # Simple moon phase calculation
+        # Source: Astronomical Algorithms by Jean Meeus (simplified)
+        now = datetime.utcnow()
+        year = now.year
+        month = now.month
+        day = now.day
+
+        if month < 3:
+            year -= 1
+            month += 12
+
+        a = int(year / 100)
+        b = 2 - a + int(a / 4)
+        jd = int(365.25 * (year + 4716)) + int(30.6001 * (month + 1)) + day + b - 1524.5
+
+        # Moon cycle reference
+        days_since_new = jd - 2451550.1
+        new_moons = days_since_new / 29.53058867
+        phase_index = (new_moons - int(new_moons)) * 29.53058867
+
+        # Phase names
+        if phase_index < 1.84566:
+            return "New Moon"
+        elif phase_index < 5.53699:
+            return "Waxing Crescent"
+        elif phase_index < 9.22831:
+            return "First Quarter"
+        elif phase_index < 12.91963:
+            return "Waxing Gibbous"
+        elif phase_index < 16.61096:
+            return "Full Moon"
+        elif phase_index < 20.30228:
+            return "Waning Gibbous"
+        elif phase_index < 23.99361:
+            return "Last Quarter"
+        elif phase_index < 27.68493:
+            return "Waning Crescent"
+        else:
+            return "New Moon"
+
+    def draw_moon_calendar(self, parent):
+        calendar_frame = tk.Frame(parent, bg="white")
+        calendar_frame.pack(pady=5, anchor="center")
+        tk.Label(calendar_frame, text="Moon Phase Calendar", font=APP_FONT_BOLD,
+                 bg="black", fg="white").pack(fill="x")
+
+        MOON_GLYPHS = {
+            "New Moon": "\U0001F311",
+            "Waxing Crescent": "\U0001F312",
+            "First Quarter": "\U0001F313",
+            "Waxing Gibbous": "\U0001F314",
+            "Full Moon": "\U0001F315",
+            "Waning Gibbous": "\U0001F316",
+            "Last Quarter": "\U0001F317",
+            "Waning Crescent": "\U0001F318"
+        }
+
+        def get_phase_name(date):
+            moon = ephem.Moon(date)
+            phase = moon.phase
+            if phase == 0:
+                return "New Moon"
+            elif phase < 7.4:
+                return "Waxing Crescent"
+            elif phase < 14.8:
+                return "First Quarter"
+            elif phase < 22.1:
+                return "Waxing Gibbous"
+            elif phase < 29.5:
+                return "Full Moon"
+            elif phase < 36.8:
+                return "Waning Gibbous"
+            elif phase < 44.1:
+                return "Last Quarter"
+            else:
+                return "Waning Crescent"
+
+        today = dt_date.today()
+        year, month = today.year, today.month
+
+        cal = calendar.Calendar(firstweekday=6)  # Sunday start
+        month_days = cal.monthdayscalendar(year, month)
+
+        cal_frame = tk.Frame(calendar_frame, bg="white")
+        cal_frame.pack(pady=5, anchor="center")
+
+        # Smaller fonts
+        day_font = ("Arial", 7, "bold")
+        cell_font = ("Arial", 8)
+
+        # Day headers
+        for idx, day_name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
+            tk.Label(cal_frame, text=day_name, font=day_font,
+                     bg="black", fg="white", width=3, height=1).grid(row=0, column=idx, padx=1, pady=1)
+
+        # Days with moon phases
+        for row_idx, week in enumerate(month_days, start=1):
+            for col_idx, day in enumerate(week):
+                if day == 0:
+                    tk.Label(cal_frame, text="", width=3, height=1,
+                             bg="white").grid(row=row_idx, column=col_idx, padx=1, pady=1)
+                else:
+                    date_obj = dt_date(year, month, day)
+                    phase_name = get_phase_name(date_obj)
+                    glyph = MOON_GLYPHS.get(phase_name, "")
+                    fg_color = "red" if date_obj == today else "black"
+                    tk.Label(cal_frame, text=f"{day}\n{glyph}",
+                             font=cell_font, width=3, height=2,
+                             bg="white", fg=fg_color).grid(row=row_idx, column=col_idx, padx=1, pady=1)
+
+class CameraApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
         self.root = root
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
+        self.update_weather_func = update_weather_func
 
+        # Frame container
         self.frame = tk.Frame(self.root)
         self.frame.place(x=0, y=0, relwidth=1, relheight=1)
 
+        # Barcode detection tracking
         self.detected = False
         self.last_data = ""
         self.entry_var = tk.StringVar()
 
-        self.detect_label = tk.Label(self.frame, text="", font=APP_FONT, bg="white", fg="green")
-        self.detect_label.place(relx=0.5, rely=0.85, anchor="center")
+        # Load background for scaling
+        self.bg_image_original = Image.open("pics/backgrounds/cam.jpg")
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
 
-        self.entry_field = tk.Entry(self.frame, textvariable=self.entry_var, font=APP_FONT)
-        self.entry_field.place(relx=0.5, rely=0.9, anchor="center")
+        # Background canvas
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+        self.bg_canvas.bind("<Configure>", self.resize_background)
 
-        self.animation_label = tk.Label(self.frame, text="Time", font=APP_FONT_TITLE, fg="green")
-        self.animation_label.place(relx=0.5, rely=0.5, anchor="center")
-        self.animation_label.lower()
+        # Weather icon frame
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
 
-        # Load original background image for resizing
-        self.backgroundImg_original = Image.open("pics/backgrounds/cam.jpg")
+        if callable(self.update_weather_func):
+            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
 
-        # Open camera
-        #self.cap = cv2.VideoCapture(0)
+        # Back button
+        self.back_button = tk.Button(
+            self.root,
+            image=self.backImg,
+            bg="orange",
+            cursor="hand2",
+            borderwidth=0,
+            command=self.back_callback if self.back_callback else self.root.quit
+        )
+        self.back_button.place(x=60, y=10)
+
+        # Camera feed canvas init
+        self.camera_window = None
+        self.bg_canvas.bind("<Configure>", self.resize_background)
+
+        # Camera feed canvas
+        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
+        self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
+
+        # Back button
+#        back_btn = tk.Button(
+#            self.bg_canvas,
+#            image=self.backImg,
+#            bg="orange",
+#            cursor="hand2",
+#            command=self.back_callback
+#        )
+#        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
+
+#        self.back_btn_window = self.bg_canvas.create_window(
+#             self.bg_canvas.winfo_width() - 50, 10,
+#             anchor="ne",
+#             window=self.back_btn
+#        )
+
+        # Move it whenever window resizes
+#        def reposition_back_btn(event):
+#            self.bg_canvas.coords(self.back_btn_window, event.width - 10, 10)
+
+#        self.bg_canvas.bind("<Configure>", reposition_back_btn)
+
+        # Camera initialization
+        self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             print("Failed to Open Camera")
         else:
             print("Camera Opened Successfully")
 
-        # Build UI (creates bg_canvas)
-        self.camera_ui()
-
-        # Start updating video feed
         self.update_frame()
 
     def camera_ui(self):
-        # Create canvas for background
+        # Background canvas
         self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
-        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        # Background image item
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.backgroundImg)
-        self.bg_canvas.bind("<Configure>", self.resize_background)
+        # Load background
+        try:
+            self.bg_image_original = Image.open("pics/backgrounds/camera_bg.jpg")
+        except Exception:
+            self.bg_image_original = Image.new("RGB", (800, 600), "gray")
 
-        # Camera view in center
-        self.camera_frame = tk.Label(self.bg_canvas, bg="black")
-        self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.camera_frame)
+        self.bg_image_tk = ImageTk.PhotoImage(self.bg_image_original)
+        self.bg_canvas_bg = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
 
-        # Back button (top right)
-        back_btn = tk.Button(
-            self.bg_canvas,
+        # Camera feed label (centered smaller window)
+        self.camera_label = tk.Label(self.bg_canvas, bg="black")
+        self.camera_window = self.bg_canvas.create_window(
+            self.bg_canvas.winfo_width() // 2,
+            self.bg_canvas.winfo_height() // 2,
+            anchor="center",
+            window=self.camera_label
+        )
+
+        # Back button - outside background canvas
+        self.back_btn = tk.Button(
+            self.root,
             image=self.backImg,
             bg="orange",
+            borderwidth=0,
+            highlightthickness=0,
             cursor="hand2",
             command=self.back_callback
         )
-        self.bg_canvas.create_window(1, 0, anchor="ne", window=back_btn)
-        ToolTip(back_btn, "Click to Return to the Main Menu")
+        self.back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+        self.root.after(50, self.back_btn.lift)
 
-    def update_frame_new(self):
-        if self.cap is not None and self.cap.isOpened():
+        # OpenCV camera
+        self.cap = cv2.VideoCapture(0)
+
+        def update_frame():
             ret, frame = self.cap.read()
             if ret:
-                # Convert OpenCV BGR to RGB
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                # --- Barcode detection ---
-                barcodes = pyzbar.decode(frame)
-                for barcode in barcodes:
-                    (x, y, w, h) = barcode.rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                # Get current camera label size
+                cam_w = self.camera_label.winfo_width()
+                cam_h = self.camera_label.winfo_height()
+                if cam_w > 0 and cam_h > 0:
+                    frame = cv2.resize(frame, (cam_w, cam_h), interpolation=cv2.INTER_AREA)
 
-                    barcode_data = barcode.data.decode("utf-8")
-                    barcode_type = barcode.type
-                    text = "{} ({})".format(barcode_data, barcode_type)
-                    cv2.putText(frame, text, (x, y - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                img = ImageTk.PhotoImage(Image.fromarray(frame))
+                self.camera_label.config(image=img)
+                self.camera_label.image = img
 
-                    # Flash effect
-                    self.flash_screen()
+            self.camera_label.after(15, update_frame)
 
-                    # Save to inventory
-                    self.save_barcode_to_inventory(barcode_data)
+        update_frame()
 
-                # --- Convert for Tkinter display ---
-                img = Image.fromarray(frame)
-                imgtk = ImageTk.PhotoImage(image=img)
-                self.canvas.imgtk = imgtk
-                self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+        # Handle resizing
+        def on_resize(event):
+            # Resize background
+            bg_resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(bg_resized)
+            self.bg_canvas.itemconfig(self.bg_canvas_bg, image=self.bg_image_tk)
 
-        self.root.after(10, self.update_frame)
+            # Resize camera feed area
+            cam_w = int(event.width * 0.7)
+            cam_h = int(event.height * 0.7)
+            self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
+            self.camera_label.config(width=cam_w, height=cam_h)
 
-    def update_frame_old(self):
-        if self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                frame = cv2.resize(frame, (self.camera_frame.winfo_width(), self.camera_frame.winfo_height()))
-                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                imgtk = ImageTk.PhotoImage(image=img)
-                self.camera_frame.imgtk = imgtk
-                self.camera_frame.config(image=imgtk)
-                frame = self.draw_overlay_rectangle(frame)
-                barcodes = decode(frame)
-                if barcodes and not self.detected:
-                    data = barcodes[0].data.decode("utf-8")
-                    self.last_data = data
-                    self.entry_var.set(data)
-                    self.detect_label.config(text=f"Detected: {data}")
-                    self.play_beep()
-                    self.animate_check()
-                    self.detected = True
-                    #threading.Timer(2, self.reset_detection).start()
-                    self.frame.after(2000, self.reset_detection)
+            self.back_btn.lift()
 
-                for barcode in barcodes:
-                    (x, y, w, h) = barcode.rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        self.bg_canvas.bind("<Configure>", on_resize)
 
-                cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                img = Image.fromarray(cv2image)
-                imgtk = ImageTk.PhotoImage(image=img)
-                #self.video_label.configure(image=imgtk)
-                #self.video_label.image = imgtk
+    def update_frame_with_barcode(self):
+        # Capture frame from camera
+        ret, frame = self.cap.read()
+        if not ret:
+            self.bg_canvas.after(10, self.update_frame_with_barcode)
+            return
 
-                # Clear previous canvas image if it exists
-                if hasattr(self, 'canvas_img_id'):
-                    self.canvas.delete(self.canvas_img_id)
+        # Barcode detection
+        barcodes = pyzbar.decode(frame)
+        for barcode in barcodes:
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            barcode_data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
 
-                # Draw new frame image on canvas at top-left corner
-                self.canvas_img_id = self.canvas.create_image(0, 0, anchor='nw', image=imgtk)
-                self.canvas.imgtk = imgtk
+            if barcode_data != self.last_data:
+                self.last_data = barcode_data
+                print(f"[SCAN] Found {barcode_type}: {barcode_data}")
+                self.flash_screen()
+                self.save_scanned_barcode(barcode_data)
 
-        self.frame.after(10, self.update_frame)
+        # Convert frame for Tkinter
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        imgtk = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
 
-class CameraApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback=None):
-        self.root = root
-        self.backgroundImg = backgroundImg
-        self.backImg = backImg
-        self.back_callback = back_callback or self.create_home_screen  # fallback if not given
+        # Display frame on canvas
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+        self.canvas.imgtk = imgtk  # Keep reference
 
-        # ===== Frame covering the entire window =====
-        self.frame = tk.Frame(self.root)
-        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        # Repeat
+        self.bg_canvas.after(10, self.update_frame_with_barcode)
 
-        # ===== Canvas for background =====
-        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0, bd=0)
-        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+    def flash_screen(self):
+        """Quick flash effect when barcode detected."""
+        self.bg_canvas.config(bg="white")
+        self.bg_canvas.after(100, lambda: self.bg_canvas.config(bg=""))
 
-        # Load background image (fallback to provided backgroundImg if file not found)
-        try:
-            self.bg_image_original = Image.open("pics/backgrounds/cam.jpg")
-        except FileNotFoundError:
-            self.bg_image_original = backgroundImg  # use passed-in image
-
-        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
-
-        # ===== Camera feed label (inside Canvas) =====
-        self.canvas = tk.Label(self.bg_canvas, bg="black")
-        self.camera_window = self.bg_canvas.create_window(
-            self.root.winfo_width() // 2,
-            self.root.winfo_height() // 2,
-            anchor="center",
-            window=self.canvas
-        )
-
-        # ===== Back button (floating in top-right) =====
-        self.back_btn = tk.Button(
-            self.bg_canvas,
-            image=self.backImg,
-            bg="orange",
-            cursor="hand2",
-            command=self.close
-        )
-        self.back_btn_window = self.bg_canvas.create_window(
-            self.root.winfo_width() - 10,
-            10,
-            anchor="ne",
-            window=self.back_btn
-        )
-        ToolTip(self.back_btn, "Click to Return to the Main Menu")
-
-        # ===== Bind resizing =====
-        self.bg_canvas.bind("<Configure>", self.resize_background)
-
-        # ===== Camera =====
-        self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # Use V4L2 driver for Linux
-        if not self.cap.isOpened():
-            print("Failed to open camera, retrying...")
-            self.cap.release()
-            self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
-
-        if not self.cap.isOpened():
-            print("Camera is busy or unavailable")
-        else:
-            print("Camera Opened Successfully")
-
-        self.update_frame()
+    def save_scanned_barcode(self, data):
+        """Save scanned barcode to inventory."""
+        print(f"[INVENTORY] Saving barcode: {data}")
+        # Replace with your actual save logic
 
     def resize_background(self, event):
-        """Resize background, center camera feed, and reposition back button."""
         new_width = event.width
         new_height = event.height
 
-        # Resize background image
-        resized_bg = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
-        self.bg_image = ImageTk.PhotoImage(resized_bg)
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original.resize((new_width, new_height), Image.LANCZOS))
         self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
 
-        # Resize and center camera feed
-        cam_width = int(new_width * 0.6)
-        cam_height = int(new_height * 0.6)
-        self.bg_canvas.coords(self.camera_window, new_width // 2, new_height // 2)
-        self.canvas.config(width=cam_width, height=cam_height)
-
-        # Always float back button in top-right
-        self.bg_canvas.coords(self.back_btn_window, new_width - 10, 10)
+        if self.camera_window is not None:
+            self.bg_canvas.coords(self.camera_window, new_width // 2, int(new_height * 0.4))
 
     def update_frame(self):
-        """Grab frame from camera and update feed."""
         ret, frame = self.cap.read()
-        if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (self.canvas.winfo_width(), self.canvas.winfo_height()))
-            img = ImageTk.PhotoImage(Image.fromarray(frame))
-            self.canvas.config(image=img)
-            self.canvas.image = img
+        if not ret:
+            print("Failed to grab frame")
+            self.root.after(10, self.update_frame)
+            return
+
+        # Barcode detection
+        barcodes = pyzbar.decode(frame)
+        for barcode in barcodes:
+            (x, y, w, h) = barcode.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+            barcode_data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+            text = f"{barcode_data} ({barcode_type})"
+            cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 255, 0), 2)
+
+            # Flash effect
+            self.canvas.config(bg="white")
+            self.root.after(100, lambda: self.canvas.config(bg="black"))
+
+            # Save detected item to inventory
+            self.save_scanned_item(barcode_data)
+
+        # Convert frame to ImageTk for display
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        imgtk = ImageTk.PhotoImage(image=Image.fromarray(frame))
+        self.canvas.imgtk = imgtk
+        self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+
         self.root.after(10, self.update_frame)
+
+    def save_scanned_item(self, barcode_data):
+        # Placeholder: Save barcode to inventory database
+        print(f"Scanned and saved item: {barcode_data}")
+        # You can add DB insertion logic here
+
+    def save_to_inventory(self, barcode_data):
+        """Save scanned barcode into the main inventory."""
+        try:
+            # Fill barcode entry if available in your main app
+            if hasattr(self.root, "barcode_entry"):
+                self.root.barcode_entry.delete(0, tk.END)
+                self.root.barcode_entry.insert(0, barcode_data)
+
+            # If ExpirationApp method exists, call it
+            if hasattr(self.root, "save_item"):
+                self.root.save_item()
+                print(f"Barcode {barcode_data} saved via save_item()")
+            else:
+                if not hasattr(self.root, "inventory"):
+                    self.root.inventory = []
+                    self.root.inventory.append({
+                    "barcode": barcode_data,
+                    "date_added": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                print(f"Barcode {barcode_data} added to themporary inventory")
+
+        except Exception as e:
+                print(f"[Error] Failed to save {barcode_data} to inventory: {e}")
+
+    def release_camera(self):
+        """Release camera when done."""
+        if self.cap.isOpened():
+            self.cap.release()
 
     def close(self):
         """Release camera and go back."""
@@ -3373,39 +4115,6 @@ class CameraApp:
         """Fallback main menu method if not provided."""
         if callable(self.back_callback):
             self.back_callback()
-
-    def update_frame(self):
-        if self.cap is not None and self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                # Convert OpenCV BGR to RGB
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                # --- Barcode detection ---
-                barcodes = pyzbar.decode(frame)
-                for barcode in barcodes:
-                    (x, y, w, h) = barcode.rect
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-                    barcode_data = barcode.data.decode("utf-8")
-                    barcode_type = barcode.type
-                    text = "{} ({})".format(barcode_data, barcode_type)
-                    cv2.putText(frame, text, (x, y - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                    # Flash effect
-                    self.flash_screen()
-
-                    # Save to inventory
-                    self.save_barcode_to_inventory(barcode_data)
-
-                # --- Convert for Tkinter display ---
-                img = Image.fromarray(frame)
-                imgtk = ImageTk.PhotoImage(image=img)
-                self.canvas.imgtk = imgtk
-                self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
-
-        self.root.after(10, self.update_frame)
 
     def draw_overlay_rectangle(self, frame):
         h, w, _ = frame.shape
@@ -3446,14 +4155,6 @@ class CameraApp:
 
         # Play sound in a thread to avoid freezing UI
         #threading.Thread(target=lambda: playsound("beep.wav")).start()
-
-    def flash_screen(self):
-        self.frame.config(bg="yellow")
-        self.root.after(100, lambda: self.frame.config(bg="white"))
-
-    def save_barcode_to_inventory(self, code):
-        # TODO: Implement actual saving logic here
-        print(f"Barcode saved: {code}")
 
     def animate_check(self):
         self.animation_label.lift()
@@ -3608,7 +4309,12 @@ class SpotifyApp:
         #self.update_now_playing()
         threading.Thread(target=self.load_music_data, daemon=True).start()
 
-    def get_spotify_token(client_id, client_secret):
+    def get_spotify_token(client_id, client_secret=None):
+        #global _SPOTIFY_TOKEN, _SPOTIFY_TOKEN_EXPIRES_AT
+
+        #client_id = "your_client_id_here"
+        #client_secret = "your_client_secret_here"
+
         auth_str = f"{client_id}:{client_secret}"
         b64_auth = base64.b64encode(auth_str.encode()).decode()
 
@@ -3831,12 +4537,16 @@ def show_youtube_in_app(url, app_root):
 
 ## Music Page ##
 class MusicApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback, token):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback, update_weather_func=None):
         self.root = root
+#        self.set_background = set_background_callback
+#        self.set_background("pics/backgrounds/music.jpg")
         self.backgroundImg = backgroundImg
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
+        self.set_background = set_background_callback
+        self.update_weather_func = update_weather_func
         self.nprImg = ImageTk.PhotoImage(Image.open("pics/icons/npr.png").resize((100, 100)))
         self.podImg = ImageTk.PhotoImage(Image.open("pics/icons/podcast.png").resize((100, 100)))
         self.bg_label_music = None
@@ -3844,12 +4554,32 @@ class MusicApp:
         self.frame.pack(fill=tk.BOTH, expand=True)
 
 #        self.set_background()
-        self.set_background_image("pics/backgrounds/music.jpg")
+#        self.set_background_image("pics/backgrounds/music_bg.jpg")
         self.create_music_screen()
 
 #        self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
 #        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 #        self.bg_label.lower()
+
+        # Create weather icon frame (top-left)
+        self.weather_icon_frame = tk.Frame(self.root, bg="orange")
+        self.weather_icon_frame.place(x=10, y=10)
+
+        # Draw the weather button if update_weather_func is provided
+#        if callable(self.update_weather_func):
+#            self.update_weather_func(self.back_callback, target_frame=self.weather_icon_frame)
+
+#        if callable(self.update_weather_func):
+#           self.update_weather_func(
+#                return_callback=self.back_callback,
+#                target_frame=self.weather_icon_frame
+#           )
+
+        if callable(self.update_weather_func):
+           self.update_weather_func(
+                return_callback=self.open_music_again,
+                target_frame=self.weather_icon_frame
+           )
 
         self.npr_player = None
         self.npr_playing = False
@@ -3859,10 +4589,31 @@ class MusicApp:
 
         self.create_ui()
 
-    def set_background_new(self, path=None):
+    def open_music_again(self):
+        # Clear whatever is on the root (like WeatherApp) before reopening MusicApp
+        if hasattr(self.root, 'clear_screen'):
+            # If root is actually your ExpirationApp instance
+            self.root.clear_screen()
+        else:
+            # Fallback: destroy all children of root
+            for widget in self.root.winfo_children():
+                widget.destroy()
+
+        # Re-create the music screen
+        self.__init__(
+            self.root,
+            self.backgroundImg,
+            self.backImg,
+            self.back_callback,
+            self.token,
+            self.set_background,
+            self.update_weather_func
+        )
+
+    def set_background(self, path=None):
         try:
             if path is None:
-                path = self.current_background or "pics/backgrounds/back.jpg"
+                path = self.current_background or "pics/backgrounds/music.jpg"
 
             # Fix: If user picked a named theme like 'black', turn it into a real path
             if not os.path.exists(path) and not path.endswith(".jpg"):
@@ -3879,9 +4630,9 @@ class MusicApp:
         except Exception as e:
             print(f"Error loading background image: {e}")
 
-    def set_background(self):
-        self.bg_image_original = Image.open("pics/backgrounds/back.jpg")  # Or whichever image applies
-        self.bg_label = tk.Label(self.frame)  # Assuming self.frame is your container
+    def set_background_old(self):
+        self.bg_image_original = Image.open("pics/backgrounds/music.jpg")
+        self.bg_label = tk.Label(self.frame)
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
         self.bg_label.lower()
 
@@ -3921,7 +4672,7 @@ class MusicApp:
 
     def create_music_screen(self):
         self.clear_screen()
-        self.set_background_image("pics/backgrounds/music.jpg")
+        self.set_background("pics/backgrounds/music.jpg")
 
         # Remove home screen background if still visible
         if hasattr(self, "bg_label") and self.bg_label:
@@ -3934,7 +4685,7 @@ class MusicApp:
         # Custom music background
         music_bg_path = "pics/backgrounds/music.jpg"
         if not os.path.exists(music_bg_path):
-            music_bg_path = "pics/backgrounds/day_clear.jpg"  # fallback
+            music_bg_path = "pics/backgrounds/back.jpg"
 
         try:
             image = Image.open(music_bg_path)
@@ -4071,9 +4822,10 @@ class MusicApp:
         #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
         #podcast_btn.pack(pady=(2, 0))
 
-        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0)
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0, bg="orange", highlightcolor="yellow", highlightbackground="yellow")
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         back_btn.lift()
+        ToolTip(back_btn, "Click to Return to the Previous Screen")
 
         ## Spotify Horizontal Scrollbar ##
         track_container = tk.Frame(self.frame, bg="white")
