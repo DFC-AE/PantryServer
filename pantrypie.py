@@ -3363,13 +3363,16 @@ class WeatherApp:
             print("Error updating background image:", e)
 
     def clear_screen(self):
-        #for widget in self.root.winfo_children():
+        self.root.unbind("<Configure>")
         for widget in self.frame.winfo_children():
             widget.destroy()
 
     def weather_ui(self):
         self.clear_screen()
 #        self.set_background()
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+        self.get_current_weather_data()
 
         # Load weather condition-based background BEFORE creating bg_label
         condition, icon_code = self.get_current_weather_condition()
@@ -3385,13 +3388,28 @@ class WeatherApp:
 
         # 2. Resize background dynamically
         def resize_bg(event):
-            new_width = event.width
-            new_height = event.height
-            resized = self.bg_image.resize((new_width, new_height), Image.LANCZOS)
-            self.bg_photo = ImageTk.PhotoImage(resized)
-            self.bg_label.config(image=self.bg_photo)
+            if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+                new_width = event.width
+                new_height = event.height
+                resized = self.bg_image.resize((new_width, new_height), Image.LANCZOS)
+                self.bg_photo = ImageTk.PhotoImage(resized)
+                self.bg_label.config(image=self.bg_photo)
 
         self.root.bind("<Configure>", resize_bg)
+
+        # Sun banner in the top-left corner
+        try:
+            current_weather = self.get_current_weather_data()
+            if current_weather and "sys" in current_weather:
+                sunrise_ts = current_weather["sys"]["sunrise"]
+                sunset_ts = current_weather["sys"]["sunset"]
+                sun_frame = tk.Frame(self.root, bg="")
+                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")  # top-left position
+                self.draw_sun_banner(sun_frame, sunrise_ts, sunset_ts)
+            else:
+                print("Sunrise/Sunset data not found in API response.")
+        except Exception as e:
+            print(f"Could not draw sun banner: {e}")
 
         # 3. Forecast frame (top)
         self.forecast_frame = tk.Frame(self.root, bg="")
@@ -3399,7 +3417,19 @@ class WeatherApp:
 
         # Inner frame to center forecast content
         forecast_content = tk.Frame(self.forecast_frame, bg="")
-        forecast_content.pack(anchor="center")  # centers the content
+        forecast_content.pack(anchor="center")
+
+        # --- Add Sun Banner on the left side ---
+#        try:
+#            current_weather = self.get_current_weather_data()
+#            if current_weather and "sys" in current_weather:
+#                sunrise_ts = current_weather["sys"]["sunrise"]
+#                sunset_ts = current_weather["sys"]["sunset"]
+#                self.draw_sun_banner(forecast_content, sunrise_ts, sunset_ts)
+#            else:
+#                print("Sunrise/Sunset data not found in API response.")
+#        except Exception as e:
+#            print(f"Could not draw sun banner: {e}")
 
         ## Current Weather Label ##
         self.weather_label = tk.Label(forecast_content, font=APP_FONT)
@@ -3422,18 +3452,60 @@ class WeatherApp:
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
-        # 4. Moon calendar frame (bottom)
         self.calendar_frame = tk.Frame(self.root, bg="")
         self.calendar_frame.pack(fill="both", expand=True, pady=10)
 
-        moon_frame = tk.Frame(self.calendar_frame, bg="white", highlightbackground="black", highlightthickness=1)
-        moon_frame.pack(pady=10)
+        # 4. Bottom section: Sun banner + Moon calendar
+        bottom_frame = tk.Frame(self.calendar_frame, bg="")
+        bottom_frame.pack(fill="both", expand=True, pady=10)
+
+        # Left: Sun banner
+#        try:
+#            current_weather = self.get_current_weather_data()
+#            if current_weather and "sys" in current_weather:
+#                sunrise_ts = current_weather["sys"]["sunrise"]
+#                sunset_ts = current_weather["sys"]["sunset"]
+#                self.draw_sun_banner(bottom_frame, sunrise_ts, sunset_ts)
+#            else:
+#                print("Sunrise/Sunset data not found in API response.")
+#        except Exception as e:
+#            print(f"Could not draw sun banner: {e}")
+
+        # Right: Moon calendar
+        moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="black", highlightthickness=1)
+#        moon_frame.pack(side="left", padx=10, pady=10)
+        moon_frame.pack(expand=True, padx=10)
+
+        # Moon phase title above the calendar
+        moon_text = self.get_moon_phase()
+        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="black", fg="white")
+        moon_label.pack(pady=(0, 5))
+
+        # Moon calendar below the title
         self.draw_moon_calendar(moon_frame)
 
-        moon_text = self.get_moon_phase()
-        moon_label = tk.Label(self.calendar_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
-        moon_label.pack(pady=5)
+        #moon_frame = tk.Frame(bottom_frame, bg="white", highlightbackground="black", highlightthickness=1)
+        #moon_frame.pack(side="left", padx=10, pady=10)
+        #self.draw_moon_calendar(moon_frame)
+
+        #moon_text = self.get_moon_phase()
+        #moon_label = tk.Label(bottom_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
+        #moon_label.pack(side="left", padx=10, pady=5)
+
+        # 4. Moon calendar frame (bottom)
+#        self.calendar_frame = tk.Frame(self.root, bg="")
+#        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+
+#        moon_frame = tk.Frame(self.calendar_frame, bg="white", highlightbackground="black", highlightthickness=1)
+#        moon_frame.pack(pady=10)
+#        self.draw_moon_calendar(moon_frame)
+
+#        moon_text = self.get_moon_phase()
+#        moon_label = tk.Label(self.calendar_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
+#        moon_label.pack(pady=5)
+
         ## Back Button ##
+        cmd = self.back_callback if callable(self.back_callback) else (self.create_home_screen if hasattr(self, "create_home_screen") else self.root.quit)
         self.back_btn = tk.Button(self.frame,
                               cursor="hand2",
                               background="orange",
@@ -3443,8 +3515,8 @@ class WeatherApp:
                               command=self.back_callback)
                                   #command=lambda: self.create_home_screen(None))
         self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
-        self.back_btn.lift()
-        self.back_btn.image = self.backImg
+        self.root.after(50, lambda: self.back_btn.lift())
+        #self.back_btn.image = self.backImg
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
         self.update_weather()
@@ -3452,9 +3524,10 @@ class WeatherApp:
     def update_weather(self, return_callback=None, target_frame=None):
         try:
             if not hasattr(self, 'city'):
-                  self.city = "Shreveport, US"
+                  self.city = CITY
             if not hasattr(self, 'api_key'):
-                  self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                  #self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
+                  self.api_key = KEY_WEATHER
 
             url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
             response = requests.get(url)
@@ -3510,6 +3583,20 @@ class WeatherApp:
             if hasattr(self, "weather_label"):
                  self.weather_label.config(text="Weather: Unable to load")
 
+    def get_current_weather_data(self):
+        """Fetch and return raw current weather data from OpenWeatherMap API."""
+        global CITY, KEY_WEATHER
+        try:
+            url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={KEY_WEATHER}&units=metric"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch current weather data: {response.status_code}")
+        except Exception as e:
+            print(f"Error fetching current weather data: {e}")
+        return None
+
     def get_icon(self, code):
         try:
             url = f"http://openweathermap.org/img/wn/{code}@2x.png"
@@ -3519,6 +3606,63 @@ class WeatherApp:
         except Exception as e:
             print("Icon load failed:", e)
             return None
+
+    def draw_sun_banner(self, parent, sunrise_ts, sunset_ts):
+        # Convert timestamps to datetime strings
+        sunrise_dt = datetime.fromtimestamp(sunrise_ts)
+        sunset_dt = datetime.fromtimestamp(sunset_ts)
+        sunrise_str = sunrise_dt.strftime("%H:%M")
+        sunset_str = sunset_dt.strftime("%H:%M")
+
+        # Calculate fraction of the day passed between sunrise and sunset
+        now = time.time()
+        if now < sunrise_ts:
+            fraction_of_day = 0
+        elif now > sunset_ts:
+            fraction_of_day = 1
+        else:
+            fraction_of_day = (now - sunrise_ts) / (sunset_ts - sunrise_ts)
+
+        fraction_of_day = max(0, min(1, fraction_of_day))
+
+        # Create canvas for banner
+        canvas_width = 150
+        canvas_height = 100
+        sun_radius = 8
+
+        sun_canvas = tk.Canvas(
+            parent,
+            width=canvas_width,
+            height=canvas_height,
+            bg="skyblue",
+            highlightthickness=0
+        )
+        sun_canvas.pack(side="left", padx=10, pady=10)
+
+        # Draw sine wave arc
+        points = []
+        for i in range(canvas_width + 1):
+            x = i
+            y = canvas_height / 2 - (canvas_height / 2.5) * math.sin(math.pi * i / canvas_width)
+            points.append((x, y))
+
+        for i in range(len(points) - 1):
+            sun_canvas.create_line(points[i], points[i + 1], fill="orange", width=2)
+
+        # Draw sun position
+        sun_x = fraction_of_day * canvas_width
+        sun_y = canvas_height / 2 - (canvas_height / 2.5) * math.sin(math.pi * fraction_of_day)
+        sun_canvas.create_oval(
+            sun_x - sun_radius, sun_y - sun_radius,
+            sun_x + sun_radius, sun_y + sun_radius,
+            fill="yellow", outline=""
+        )
+
+        # Draw sunrise/sunset labels
+        sun_canvas.create_text(5, canvas_height - 10, text=sunrise_str, anchor="w", fill="black", font=("Arial", 9, "bold"))
+        sun_canvas.create_text(canvas_width - 5, canvas_height - 10, text=sunset_str, anchor="e", fill="black", font=("Arial", 9, "bold"))
+
+        return sun_canvas
 
     def get_moon_phase(self):
         today = datetime.utcnow()
