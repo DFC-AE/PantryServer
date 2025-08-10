@@ -1944,10 +1944,11 @@ class ExpirationApp:
             self.create_card_view()
         elif self.current_view == "list":
             self.create_list_view()
+        
 
     def show_detail_view(self, item):
         self.current_item = item
-        self.clear_screen()
+        # self.clear_screen()
         self.set_background()
         days = item.days_until_expired()
 
@@ -2473,7 +2474,6 @@ class ExpirationApp:
                     name = product_name  #Force overwrite with product name
                     self.name_entry.delete(0, tk.END)
                     self.name_entry.insert(0, name)
-
         # Step 2: Validate name
         if not name:
             messagebox.showerror("Error", "Item name required")
@@ -2484,7 +2484,8 @@ class ExpirationApp:
             item = Item(name, date, nutrition_info)
             self.items.append(item)
             self.save_items()
-            self.refresh_views()
+
+            self.create_home_screen()
         except Exception as e:
             messagebox.showerror("Error", f"Could not save item: {e}")
 
