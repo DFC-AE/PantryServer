@@ -2275,6 +2275,105 @@ class ExpirationApp:
 
     def update_frame(self):
         if not hasattr(self, 'cpt') or not self.cpt.isOpened():
+            return
+
+        ret, frame = self.cpt.read()
+        if not ret:
+            print("Failed to Grab Frame")
+            self.cpt.release()
+            return
+
+        upscale_factor = 2  # Try 2x or 3x
+        frame_upscaled = cv2.resize(frame, (0, 0), fx=upscale_factor, fy=upscale_factor)
+
+        barcodes = decode(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+
+        # Keep track of last scanned barcodes to avoid rapid reprocessing
+        if not hasattr(self, "last_scanned"):
+            self.last_scanned = {}
+
+        cooldown_seconds = 5  # ignore same barcode for 5 seconds
+
+        for barcode in barcodes:
+            data = barcode.data.decode("utf-8")
+            barcode_type = barcode.type
+
+            # --- Cooldown check ---
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            if data in self.last_scanned:
+                if (now - self.last_scanned[data]).total_seconds() < cooldown_seconds:
+                    continue  # skip processing this barcode again too soon
+
+            # --- Duplicate check (in saved items) ---
+            if any(item.get("barcode") == data for item in self.items):
+                print(f"Barcode {data} already in list, skipping save.")
+                self.last_scanned[data] = now
+                continue
+
+            # Update last scanned timestamp
+            self.last_scanned[data] = now
+
+            # Fill in the UI fields
+            self.barcode_entry.delete(0, tk.END)
+            self.barcode_entry.insert(0, data)
+            self.barcode_label.config(text=f"Detected: {data}")
+            self.beep_and_flash()
+            print(f"Detected Barcode: {barcode_type} - {data}")
+
+            # --- Auto-fetch product details ---
+            import requests
+            try:
+                url = f"https://world.openfoodfacts.org/api/v0/product/{data}.json"
+                resp = requests.get(url, timeout=5)
+                if resp.status_code == 200:
+                    product_data = resp.json()
+                    if product_data.get("status") == 1:
+                        product = product_data["product"]
+
+                        # Auto-fill name
+                        if "product_name" in product and product["product_name"]:
+                            self.name_entry.delete(0, tk.END)
+                            self.name_entry.insert(0, product["product_name"])
+
+                        # Auto-fill nutrition info if available
+                        if "nutriments" in product:
+                            self.nutrition_entry.delete(0, tk.END)
+                            self.nutrition_entry.insert(0, str(product["nutriments"]))
+            except Exception as e:
+                print(f"Product lookup failed: {e}")
+
+            # --- Default expiration date (today + 7 days) ---
+            if not self.expiration_entry.get().strip():
+                default_exp = (now + timedelta(days=7)).strftime("%Y-%m-%d")
+                self.expiration_entry.delete(0, tk.END)
+                self.expiration_entry.insert(0, default_exp)
+
+            # --- Auto-save item ---
+            if self.name_entry.get().strip() and self.expiration_entry.get().strip():
+                self.save_new_item(
+                    name=self.name_entry.get(),
+                    barcode=self.barcode_entry.get(),
+                    expiration_date=self.expiration_entry.get(),
+                    nutrition_info=self.nutrition_entry.get()
+                )
+
+        # Convert to ImageTk
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_rgb)
+        self.imgtk = ImageTk.PhotoImage(image=img_pil)
+        self.video_label.configure(image=self.imgtk)
+
+        ## Only Update if Camera Label Still Exists ##
+        if hasattr(self, 'camera_label') and self.camera_label.winfo_exists():
+            self.camera_label.imgtk = imgtk  # prevent garbage collection
+            self.camera_label.config(image=imgtk)
+
+        # Schedule the next frame
+        self.root.after(10, self.update_frame)
+
+    def update_frame_old(self):
+        if not hasattr(self, 'cpt') or not self.cpt.isOpened():
            return
 
         ret, frame = self.cpt.read()
