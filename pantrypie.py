@@ -3506,7 +3506,7 @@ class WeatherApp:
 
         ## Back Button ##
         cmd = self.back_callback if callable(self.back_callback) else (self.create_home_screen if hasattr(self, "create_home_screen") else self.root.quit)
-        self.back_btn = tk.Button(self.frame,
+        self.back_btn = tk.Button(self.root,
                               cursor="hand2",
                               background="orange",
                               #image=self.backImg,
