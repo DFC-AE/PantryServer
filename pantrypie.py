@@ -2051,7 +2051,7 @@ class ExpirationApp:
         for item in self.items:
             if search_term and search_term not in item.name.lower():
                 continue  # Skip items that don't match search
-            
+
             color = item.get_color()
             days = item.days_until_expired()
             text = f"{item.name} - Expires in {check_dates(days)} days" if days >= 0 else f"{item.name} - Expired"
@@ -2409,40 +2409,19 @@ class ExpirationApp:
         except ValueError:
             messagebox.showerror("Error", "Invalid date format.")
 
-        self.save_items()
         self.refresh_views()
 
-
     def load_items(self):
-        """Load items from JSON file and ensure they are Item objects."""
-        self.items = []
-
         if os.path.exists(SAVE_FILE):
             try:
-<<<<<<< HEAD:scrap.py
-                with open(SAVE_FILE, "r") as f:
-                    raw_items = json.load(f)
-
-                for data in raw_items:
-                    if isinstance(data, dict):
-                        # Convert dict to Item object
-                        self.items.append(Item.from_dict(data))
-                    elif isinstance(data, Item):
-                        # Already an Item object
-                        self.items.append(data)
-                    else:
-                        print(f"Skipping unrecognized item format: {data}")
-
-=======
                 with open(SAVE_FILE, 'r') as f:
                     data = json.load(f)
                     self.items = [Item.from_dict(d) for d in data]
->>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
             except Exception as e:
                 print("Failed to load items:", e)
                 self.items = []
-
-
+        else:
+            self.items = []
 
     def add_item_to_db(self, name, barcode, expiration_date):
         new_item = Item(name, expiration_date)
@@ -2451,28 +2430,22 @@ class ExpirationApp:
         self.save_items()
 
     def save_items(self):
+        # Convert any dicts in self.items to Item objects
         cleaned_items = []
         for item in self.items:
-            if isinstance(item, dict):  # Backward compatibility
-                cleaned_items.append(
-                    Item(
-                        item.get("name", ""),
-                        item.get("expiration_date", ""),
-                        item.get("nutrition_info", {})
-                    )
-                )
+            if isinstance(item, dict):
+                # assumes expiration_date is stored as string
+                cleaned_items.append(Item(item["name"], item["expiration_date"]))
             else:
                 cleaned_items.append(item)
 
         self.items = cleaned_items
 
         try:
-            with open(SAVE_FILE, "w") as f:
-                json.dump([item.to_dict() for item in self.items], f, indent=2)
+            with open("items.json", "w") as f:
+                json.dump([item.to_dict() for item in self.items], f)
         except Exception as e:
-            print(f"[Error] Failed to save {SAVE_FILE}: {e}")
-
-
+            print(f"[Error] Failed to save items.json: {e}")
 
     ## Loads items from file
     def load_items_old(self):
@@ -3160,13 +3133,6 @@ class ExpirationApp:
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
     ## Saves item to list ##
-<<<<<<< HEAD:scrap.py
-    def save_new_item(self, name, exp_date_str, nutrition_info=None):
-        """Save a new item, avoiding duplicates, and refresh the UI."""
-        name = name.strip()
-        if not name:
-            messagebox.showerror("Error", "Please enter an item name.")
-=======
     def save_new_item_good(self, name, barcode, expiration_date, category, right_frame):
         #self.item_name_var.set(name)
         #self.item_barcode_var.set(barcode)
@@ -3341,42 +3307,60 @@ class ExpirationApp:
         # Step 1: Validate name
         if not name.strip():
             messagebox.showerror("Error", "Item name is required.")
->>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
             return
 
-        # Make sure exp_date_str is a proper date string
+        # Step 2: Prevent duplicate entries
+        if any(item["name"].lower() == name.lower() for item in self.items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Step 3: Save item as a dictionary
+        self.items.append({
+            "name": name.strip(),
+            "barcode": barcode.strip(),
+            "expiration_date": expiration_date,
+            "category": category.strip()
+        })
+        self.save_items()
+
+        # Step 4: Clear fields for next entry and reset calendar to today
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+        tk.Label(
+            right_frame,
+            text=name,
+            font=APP_FONT_BOLD,
+            bg="white"
+        ).pack(pady=(5, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Barcode: {barcode}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 2))
+
+        tk.Label(
+            right_frame,
+            text=f"Expires: {expiration_date}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+
+        tk.Label(
+            right_frame,
+            text=f"Category: {category}",
+            font=APP_FONT,
+            bg="white"
+        ).pack(pady=(0, 5))
+
+        # Reset calendar to today
         try:
-            exp_date = datetime.strptime(exp_date_str, "%Y-%m-%d")
-        except ValueError:
-            messagebox.showerror("Error", "Invalid expiration date format. Use YYYY-MM-DD.")
-            return
+            self.cal.selection_set(dt.date.today())
+        except Exception:
+            pass
 
-<<<<<<< HEAD:scrap.py
-        # Avoid duplicate names (case-insensitive)
-        if any(item.name.lower() == name.lower() for item in self.items):
-            messagebox.showwarning("Duplicate Item", f"'{name}' already exists.")
-            return
-
-        # Create and add the new item
-        new_item = Item(name, exp_date.strftime("%Y-%m-%d"), nutrition_info)
-        self.items.append(new_item)
-
-        # Save to file
-        try:
-            with open(SAVE_FILE, "w") as f:
-                json.dump([item.to_dict() for item in self.items], f, indent=2)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save item: {e}")
-            return
-
-        messagebox.showinfo("Success", f"Added {name} (expires {exp_date_str})")
-
-        # Refresh expiring list & UI
-        self.populate_expiring_items()
-        self.create_home_screen()
-
-=======
->>>>>>> e69fbca8cae28589e75eb9d30ad0ca9bf1b3b157:pantrypie.py
     def clear_screen(self):
         try:
           if hasattr(self, "camera_loop_id"):
