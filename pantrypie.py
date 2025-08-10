@@ -795,7 +795,7 @@ class ExpirationApp:
             self.backgroundImg,
             self.backImg,
             self.create_home_screen,
-            update_weather_func=self.update_weather
+            update_weather_func=self.update_weather_icon
         )
 
     def open_weather_ui(self, return_callback=None):
@@ -2523,7 +2523,6 @@ class ExpirationApp:
         # --- Corner weather frame (top-left) ---
         self.corner_weather_frame = tk.Frame(self.bg_canvas, highlightthickness=0, bd=0)
         self.weather_window_id = self.bg_canvas.create_window(10, 10, anchor="nw", window=self.corner_weather_frame)
-        self.bg_canvas.tag_raise(self.weather_window_id)
 
         # Populate live weather glyph in top-left
         self.update_weather_icon(self.corner_weather_frame, icon_size=36)
@@ -2645,6 +2644,9 @@ class ExpirationApp:
             if not hasattr(self, "_overlay_images"):
                 self._overlay_images = []
             self._overlay_images.append(photo)
+
+        self.bg_canvas.tag_raise(self.weather_window_id)
+        self.bg_canvas.tag_raise(self.back_window_id)
 
         # --- Redraw everything on resize ---
         def redraw(event):
@@ -4121,7 +4123,7 @@ class WeatherApp:
                              font=cell_font, width=3, height=2,
                              bg="white", fg=fg_color).grid(row=row_idx, column=col_idx, padx=1, pady=1)
 
-class CameraApp:
+class CameraApp_OLD:
     def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
         self.root = root
         self.backgroundImg = backgroundImg
@@ -4204,6 +4206,97 @@ class CameraApp:
             print("Camera Opened Successfully")
 
         self.update_frame()
+
+class CameraApp:
+    def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
+        self.root = root
+        self.backgroundImg = backgroundImg
+        self.backImg = backImg
+        self.back_callback = back_callback
+        self.update_weather_func = update_weather_func
+
+        # Frame container
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Barcode detection tracking
+        self.detected = False
+        self.last_data = ""
+        self.entry_var = tk.StringVar()
+
+        # Load background for scaling
+        self.bg_image_original = Image.open("pics/backgrounds/cam.jpg")
+        self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+
+        # Background canvas
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image)
+        self.bg_canvas.bind("<Configure>", self.resize_background)
+
+        # Weather icon frame (top-left with margin)
+        self.corner_weather_frame = tk.Frame(self.bg_canvas, bg="orange", highlightthickness=0, bd=0)
+        self.weather_window_id = self.bg_canvas.create_window(10, 15, anchor="nw", window=self.corner_weather_frame)
+        if callable(self.update_weather_func):
+            self.update_weather_func(self.corner_weather_frame, icon_size=36)
+
+        # Back button frame (top-right with margin)
+        self.corner_back_frame = tk.Frame(self.bg_canvas, bg="orange", highlightthickness=0, bd=0)
+        self.back_window_id = self.bg_canvas.create_window(
+            self.bg_canvas.winfo_width() - 10, 15, anchor="ne", window=self.corner_back_frame
+        )
+
+        back_btn_corner = tk.Button(
+            self.corner_back_frame,
+            image=self.backImg,
+            cursor="hand2",
+            bg="#FFA500",
+            highlightthickness=0,
+            bd=0,
+            command=self.back_callback if self.back_callback else self.root.quit
+        )
+        back_btn_corner.image = self.backImg
+        back_btn_corner.pack()
+
+        # Keep buttons above background
+        self.bg_canvas.tag_raise(self.weather_window_id)
+        self.bg_canvas.tag_raise(self.back_window_id)
+
+        self.camera_window = None
+
+        # Redraw handler for resizing
+        def redraw(event):
+            # Corner buttons with vertical margin
+            self.bg_canvas.coords(self.weather_window_id, 10, 15)
+            self.bg_canvas.coords(self.back_window_id, event.width - 10, 15)
+            self.bg_canvas.tag_raise(self.weather_window_id)
+            self.bg_canvas.tag_raise(self.back_window_id)
+
+            # Center camera feed
+            self.bg_canvas.coords(self.camera_window, event.width // 2, event.height // 2)
+
+        self.bg_canvas.bind("<Configure>", redraw)
+        # Camera feed canvas
+        self.canvas = tk.Canvas(self.bg_canvas, width=640, height=480, bg="black", highlightthickness=0)
+        self.camera_window = self.bg_canvas.create_window(0, 0, anchor="center", window=self.canvas)
+
+        # Camera initialization
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("Failed to Open Camera")
+        else:
+            print("Camera Opened Successfully")
+
+        self.bg_canvas.bind("<Configure>", self.resize_background, add="+")
+        self.bg_canvas.bind("<Configure>", redraw, add="+")
+
+        self.update_frame()
+
+    def resize_background(self, event):
+        if hasattr(self, "bg_image_original"):
+            resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized)
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
 
     def camera_ui(self):
         # Background canvas
