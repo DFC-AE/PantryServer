@@ -2845,11 +2845,7 @@ class ExpirationApp:
         # Save button below calendar
         submit_btn = tk.Button(
             center_frame, image=saveImg, cursor="hand2",
-<<<<<<< HEAD
             bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(right_frame)
-=======
-            bg="black", fg="white", command=lambda: self.save_new_item(self.name_entry).pack()
->>>>>>> brents
         )
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
@@ -3162,54 +3158,6 @@ class ExpirationApp:
             self.create_home_screen()
         except Exception as e:
             messagebox.showerror("Error", f"Could not save item: {e}")
-<<<<<<< HEAD
-=======
-
-        # Prevent duplicate entries
-        existing_items = self.items
-        #if any(item['name'].lower() == name.lower() for item in existing_items):
-        if any(item.name.lower() == name.lower() for item in existing_items):
-            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
-            return
-
-        # Save item
-        self.items.append({
-            "name": name,
-            "barcode": barcode,
-            "expiration_date": expiration_date
-        })
-        self.save_items()
-
-        # Clear fields for next entry and reset calendar
-        self.item_name_var.set("")
-        self.item_barcode_var.set("")
-        self.cal.selection_set(dt.date.today())
-
-        # Clear right frame and show details
-        for widget in right_frame.winfo_children():
-            widget.destroy()
-
-        tk.Label(
-            right_frame,
-            text=name,
-            font=APP_FONT_BOLD,
-            bg="white"
-        ).pack(pady=(5, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Barcode: {barcode}",
-            font=APP_FONT,
-            bg="white"
-        ).pack(pady=(0, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Expires: {expiration_date}",
-            font=APP_FONT,
-            bg="white"
-        ).pack(pady=(0, 5))
->>>>>>> c16736948d1b1b863f85327e41a25b6592c213d0
 
     def clear_screen(self):
         try:
