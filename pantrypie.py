@@ -2571,22 +2571,22 @@ class ExpirationApp:
         self.populate_expiring_items()
 
         # --- Center panel widgets ---
-        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Add Name:", font=APP_FONT, fg="white").pack()
         name_entry = tk.Entry(self.center_panel, font=APP_FONT,
                               highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         name_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Add Barcode:", font=APP_FONT, fg="white").pack()
         barcode_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         barcode_entry.pack(fill=tk.X, pady=5)
 
-        tk.Label(self.center_panel, text="Category:", font=APP_FONT, bg="#2E2E2E", fg="white").pack()
+        tk.Label(self.center_panel, text="Details:", font=APP_FONT, fg="white").pack()
         details_entry = tk.Entry(self.center_panel, font=APP_FONT,
                                  highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat")
         details_entry.pack(fill=tk.X, pady=5)
 
-        cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
+        self.cal = Calendar(self.center_panel, selectmode='day', date_pattern="yyyy-mm-dd",
                        font=APP_FONT,
                        #background="#FFFFFF",
                        background="orange",
@@ -2595,7 +2595,7 @@ class ExpirationApp:
                        normalbackground="#FFFFFF",
                        weekendbackground="lightgray",
                        othermonthbackground="#FFFFFF")
-        cal.pack(pady=15)
+        self.cal.pack(pady=15)
 
         # --- Right panel widgets ---
         tk.Label(self.right_panel, text="Detail View",
@@ -2605,21 +2605,6 @@ class ExpirationApp:
             highlightthickness=0, bd=0, bg="#FFFFFF", fg="#2E2E2E", relief="flat", width=30
         )
         self.detail_text.pack(pady=10)
-
-        tk.Button(self.center_panel, image=saveImg,
-                      background="#2E2E2E",
-                      highlightcolor="orange",
-                      command=lambda: self.save_new_item(
-                      name_entry.get().strip(),
-                      barcode_entry.get().strip(),
-                      cal.get_date(),
-                      details_entry.get().strip(),
-                      self.right_panel,
-       #               name_entry,
-      #                barcode_entry,
-     #                 details_entry,
-    #                  cal
-                  )).pack(pady=5)
 
         # --- Draw frosted glass helper ---
         def draw_frosted_glass(x1, y1, x2, y2, radius=20, alpha=0.6):
@@ -2728,6 +2713,18 @@ class ExpirationApp:
         # Bind resize
         self.bg_canvas.bind("<Configure>", redraw)
 
+        submit_btn = tk.Button(self.center_panel, image=saveImg,
+                      background="#2E2E2E",
+                      highlightcolor="orange",
+                      command=lambda: self.save_new_item(
+                      name_entry.get(),
+                      barcode_entry.get(),
+                      self.cal.get_date(),
+                      details_entry.get()
+                  ))
+        submit_btn.pack(pady=10)
+        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
+
         # Force first draw
         class DummyEvent:
             pass
@@ -2735,207 +2732,6 @@ class ExpirationApp:
         dummy_event.width = self.bg_canvas.winfo_width()
         dummy_event.height = self.bg_canvas.winfo_height()
         redraw(dummy_event)
-
-    def add_item_popup_old(self):
-        # Clear existing widgets
-        for widget in self.root.winfo_children():
-            widget.destroy()
-
-        # --- BACKGROUND SETUP ---
-        self.bg_image_original = Image.open("pics/backgrounds/jars.jpg")
-        self.bg_resized_image = ImageTk.PhotoImage(self.bg_image_original)
-
-        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
-        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
-
-        # Draw background image first
-        self.bg_bg_label = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_resized_image)
-        self.bg_canvas.tag_lower(self.bg_bg_label)
-
-        # Force initial background resize so it shows immediately
-        self.bg_canvas.update_idletasks()
-        if self.bg_canvas.winfo_width() > 0 and self.bg_canvas.winfo_height() > 0:
-            initial_bg = self.bg_image_original.resize(
-                (self.bg_canvas.winfo_width(), self.bg_canvas.winfo_height()),
-                Image.LANCZOS
-            )
-            self.bg_resized_image = ImageTk.PhotoImage(initial_bg)
-            self.bg_canvas.image = self.bg_resized_image  # prevent GC
-            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
-            self.bg_canvas.tag_lower(self.bg_bg_label)
-
-        # Container on top of background
-        self.content_frame = tk.Frame(self.bg_canvas, bg=self.bg_canvas.cget("background"), highlightthickness=0)
-        self.content_window = self.bg_canvas.create_window(0, 0, anchor="nw", window=self.content_frame)
-
-        # Dynamically resize background + frame
-        def on_canvas_resize(event):
-            if event.width > 0 and event.height > 0:
-                resized_bg = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
-                self.bg_resized_image = ImageTk.PhotoImage(resized_bg)
-
-                # keep a reference to prevent garbage collection
-                self.bg_canvas.image = self.bg_resized_image
-
-                self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_resized_image)
-                self.bg_canvas.tag_lower(self.bg_bg_label)
-                self.bg_canvas.itemconfig(self.content_window, width=event.width, height=event.height)
-
-        self.bg_canvas.bind("<Configure>", on_canvas_resize)
-
-        # --- HEADER ---
-        tk.Label(self.content_frame, text="Expiration Tracker", font=APP_FONT_TITLE_BOLD,
-                 bg="#2E2E2E", fg="white").pack(pady=10)
-
-        # --- MAIN LAYOUT ---
-        main_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-
-        # Configure grid to have 3 equal columns (left, center, right)
-        main_frame.grid_columnconfigure(0, weight=1)  # Left panel
-        main_frame.grid_columnconfigure(1, weight=2)  # Center panel (bigger)
-        main_frame.grid_columnconfigure(2, weight=1)  # Right panel
-        main_frame.grid_rowconfigure(0, weight=1)
-
-        # RIGHT PANEL: Details View
-        right_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        #right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
-        right_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
-
-        tk.Label(right_frame, text="Item Details", font=APP_FONT_TITLE,
-                 bg="#2E2E2E", fg="white").pack(pady=5)
-
-        # Left panel for Expiring Soon in Add Item screen
-        left_frame = tk.Frame(main_frame, bg="white")
-        left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
-
-        tk.Label(left_frame, text="Expiring Soon", bg="#2E2E2E", fg="white").pack()
-
-        self.add_popup_expired_listbox = tk.Listbox(left_frame, height=12)
-        self.add_popup_expired_listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-
-        # Fill it with current expiring items
-        self.populate_expiring_items()
-
-        # CENTER PANEL: Name + Barcode + Calendar
-        center_frame = tk.Frame(main_frame, bg="", highlightthickness=0)
-        #center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
-        center_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
-
-        # Name entry
-        tk.Label(center_frame, text="Item Name:", font=APP_FONT, bg="#2E2E2E", fg="white").pack(anchor="w", pady=(5, 2))
-        self.item_name_var = tk.StringVar()
-        name_entry = tk.Entry(center_frame, textvariable=self.item_name_var, width=30)
-        name_entry.pack(pady=(0, 10))
-        name_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, name_entry))
-
-        # Barcode entry
-        tk.Label(center_frame, text="Barcode:", font=APP_FONT, bg= "#2E2E2E", fg="white").pack(anchor="w", pady=(5, 2))
-        self.item_barcode_var = tk.StringVar()
-        barcode_entry = tk.Entry(center_frame, textvariable=self.item_barcode_var, width=30)
-        barcode_entry.pack(pady=(0, 15))
-        barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.content_frame, barcode_entry))
-
-        # Expiration date picker label
-        tk.Label(center_frame, text="Select Expiration Date:", bg="#2E2E2E", fg="white", font=APP_FONT, justify="center").pack()
-
-        self.cal = Calendar(
-            center_frame,
-            selectmode='day',
-            date_pattern="yyyy-mm-dd",
-            font=APP_FONT,
-            background="orange",
-            disabledbackground="orange",
-            bordercolor="orange",
-            headersbackground="orange",
-            normalbackground="white",
-            weekendbackground="lightyellow",
-            othermonthwebackground="lightgray",
-            othermonthbackground="white"
-        )
-        self.cal.pack(padx=10, pady=10, ipadx=20, ipady=20, fill=tk.BOTH, expand=True)
-
-        # Save button below calendar
-        submit_btn = tk.Button(
-            center_frame, image=saveImg, cursor="hand2",
-            bg="#2E2E2E", fg="white", command=lambda: self.save_new_item(
-                name_entry.get().strip(),
-                barcode_entry.get().strip(),
-                self.cal.get_date(),
-                details_entry.get().strip(),
-                right_frame)
-        )
-        submit_btn.pack(pady=10)
-        ToolTip(submit_btn, "Click to Save the Item to the Inventory")
-
-        # Back button
-        backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png").resize((50, 50)))
-        back_btn = tk.Button(
-            self.content_frame,
-            image=backImg,
-            bg="orange",
-            bd=0,
-            highlightthickness=0,
-            command=lambda: self.create_home_screen(None)
-        )
-        back_btn.image = backImg
-        back_btn.place(relx=0.98, rely=0.02, anchor="ne")
-        ToolTip(back_btn, "Click to Return to the Previous Screen")
-
-#        if not hasattr(self, "current_weather_icon"):
-#             self.update_weather()
-#        if hasattr(self, "weather_button") and self.weather_button.winfo_exists():
-#             weather_btn = self.weather_button
-#        else:
-        self.weather_icon_frame = tk.Frame(self.content_frame, bg="orange")
-        self.weather_icon_frame.place(x=10, y=10)
-        self.update_weather(return_callback=self.add_item_popup)
-#        weather_icon = self.get_weather_icon()
-#        weather_btn = tk.Button(
-#              self.content_frame,
-#              self.weather_icon_frame,
-#              image=weather_icon,
-#              bg="orange",
-#             borderwidth=0,
-#              cursor="hand2",
-#              command=lambda: self.open_weather_ui(return_callback=self.add_item_popup)
-#        )
-#             self.weather_button = weather_btn
-#        self.weather_btn.image = weather_icon
-#        self.weather_button = weather_btn
-#        weather_btn.place(relx=0.5, y=10, anchor="n")
-#        self.weather_btn.place(x=10, y=10, anchor="nw")
-#        ToolTip(weather_btn, "Click to Open the Weather App")
-
-        nav_frame = tk.Frame(self.content_frame, bg="", highlightthickness=0)
-        nav_frame.pack(pady=10)
-
-#        # Back Button
-#        back_btn = tk.Button(
-#            nav_frame,
-#            image=backImg,
-#            font=APP_FONT,
-#            bg="orange",
-#            fg="white",
-#            command=self.create_home_screen
-#        )
-#        back_btn.pack(side=tk.LEFT, padx=5)
-#        ToolTip(back_btn, "Return to Home Screen")
-
-        # Weather Button (with guaranteed icon)
-#        weather_icon = self.get_weather_icon()
-#        weather_btn = tk.Button(
-#            nav_frame,
-#            image=weather_icon,
-#            bg="orange",
-#            command=lambda: self.open_weather_ui()
-#        )
-#        weather_btn.image = weather_icon  # prevent garbage collection
-#        weather_btn.pack(side=tk.LEFT, padx=5)
-#        ToolTip(weather_btn, "Click to Open the Weather App")
-
-        self.bg_canvas.update_idletasks()
-        self.bg_canvas.event_generate("<Configure>")
 
     def create_detail_view_panel(self, parent):
         # TODO: implement detail view
@@ -3132,28 +2928,107 @@ class ExpirationApp:
         self.container_frame = tk.Frame(self.root)
         self.container_frame.pack(fill=tk.BOTH, expand=True)
 
-    ## Saves item to list ##
-    def save_new_item(self, name, barcode, expiration_date, category, right_frame):
-        # Step 1: Validate name
-        if not name.strip():
+    def save_new_item(self, name, barcode, expiration_date, category):
+        # Clean inputs
+        name = name.strip()
+        barcode = barcode.strip()
+        category = category.strip()
+
+        # Validate name
+        if not name:
             messagebox.showerror("Error", "Item name is required.")
             return
 
-        # Step 2: Prevent duplicate entries
-        if any(item["name"].lower() == name.lower() for item in self.items):
+        # Prevent duplicate entries
+        if any(item["name"].lower() == name.lower() for item in self.items if isinstance(item, dict)):
             messagebox.showwarning("Duplicate", f"'{name}' already exists.")
             return
 
-        # Step 3: Save item as a dictionary
-        self.items.append({
-            "name": name.strip(),
-            "barcode": barcode.strip(),
+        # Create new dictionary item
+        new_item = {
+            "name": name,
+            "barcode": barcode,
             "expiration_date": expiration_date,
-            "category": category.strip()
+            "category": category
+        }
+        self.items.append(new_item)
+        self.save_items()
+
+        # Reset fields and calendar
+        self.cal.selection_set(dt.date.today())
+
+        # Update right panel (clear then repopulate)
+        for widget in self.right_panel.winfo_children():
+            widget.destroy()
+
+        tk.Label(self.right_panel, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=(5, 2))
+        tk.Label(self.right_panel, text=f"Barcode: {barcode}", font=APP_FONT, bg="white").pack(pady=(0, 2))
+        tk.Label(self.right_panel, text=f"Expires: {expiration_date}", font=APP_FONT, bg="white").pack(pady=(0, 5))
+        tk.Label(self.right_panel, text=f"Category: {category}", font=APP_FONT, bg="white").pack(pady=(0, 5))
+
+        # Confirmation
+        messagebox.showinfo("Success", f"'{name}' has been added.")
+
+    ## Saves item to list ##
+    def save_new_item_old(self, name, barcode, expiration_date, category):
+#        self.item_name_var.set(name)
+#        self.item_barcode_var.set(barcode)
+#        self.cal.selection_set(expiration_date)
+        name = self.item_name_var.get().strip()
+        barcode = self.item_barcode_var.get().strip()
+        expiration_date = self.cal.get_date()
+        category = self.item_details_var.get().strip()
+
+        nutrition_info = {}
+        product_name = None
+
+        # Step 1: Fetch nutrition and product name if barcode exists
+        if barcode:
+            fetched_info = self.fetch_open_food_facts(barcode)
+            if fetched_info:
+                nutrition_info = fetched_info
+                product_name = fetched_info.get("Product Name", "")
+                if product_name and product_name != "Unknown":
+                    name = product_name  #Force overwrite with product name
+                    self.name_entry.delete(0, tk.END)
+                    self.name_entry.insert(0, name)
+        # Step 2: Validate name
+        if not name:
+            messagebox.showerror("Error", "Item name is required.")
+            return
+
+        # Step 3: Create and save item
+        try:
+            item = Item(name, date, nutrition_info)
+            self.items.append(item)
+            self.save_items()
+
+            self.create_home_screen()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save item: {e}")
+
+        # Prevent duplicate entries
+        existing_items = self.items
+        #if any(item['name'].lower() == name.lower() for item in existing_items):
+        if any(item.name.lower() == name.lower() for item in existing_items):
+            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+            return
+
+        # Save item
+        self.items.append({
+            "name": name,
+            "barcode": barcode,
+            "expiration_date": expiration_date,
+            "category": category
         })
         self.save_items()
 
-        # Step 4: Clear fields for next entry and reset calendar to today
+        # Clear fields for next entry and reset calendar
+        self.item_name_var.set("")
+        self.item_barcode_var.set("")
+        self.cal.selection_set(dt.date.today())
+
+        # Clear right frame and show details
         for widget in right_frame.winfo_children():
             widget.destroy()
 
@@ -3177,7 +3052,6 @@ class ExpirationApp:
             font=APP_FONT,
             bg="white"
         ).pack(pady=(0, 5))
-
         tk.Label(
             right_frame,
             text=f"Category: {category}",
@@ -3185,11 +3059,14 @@ class ExpirationApp:
             bg="white"
         ).pack(pady=(0, 5))
 
-        # Reset calendar to today
-        try:
-            self.cal.selection_set(dt.date.today())
-        except Exception:
-            pass
+    def populate_right_panel(self, name, barcode, expiration_date, category):
+         for widget in self.right_panel.winfo_children():
+             widget.destroy()
+
+         tk.Label(self.right_panel, text=name, font=APP_FONT_BOLD, bg="white").pack(pady=(5, 2))
+         tk.Label(self.right_panel, text=f"Barcode: {barcode}", font=APP_FONT, bg="white").pack(pady=(0, 2))
+         tk.Label(self.right_panel, text=f"Expires: {expiration_date}", font=APP_FONT, bg="white").pack(pady=(0, 5))
+         tk.Label(self.right_panel, text=f"Category: {category}", font=APP_FONT, bg="white").pack(pady=(0, 5))
 
     def clear_screen(self):
         try:
