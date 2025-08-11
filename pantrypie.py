@@ -2074,13 +2074,13 @@ class ExpirationApp:
 #                                  command=lambda: [self.stop_camera(), self.create_tracker_ui(None)])
 #        card_back_btn.pack(pady=10)
         card_back_btn = tk.Button(self.root, image=backImg,
-                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_home_screen(item))
+                                  cursor="hand2", bg="orange", command=lambda: self.create_home_screen(item))
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
         # Card View Button
         list_btn = tk.Button(self.root, image=listImg,
-                             cursor="hand2", bg="#dddddd", command=self.create_list_view)
+                             cursor="hand2", bg="orange", command=self.create_list_view)
         list_btn.place(x=10, y=10)
         ToolTip(list_btn, "Click to View Items in a List")
 
@@ -2149,13 +2149,14 @@ class ExpirationApp:
 #        back_btn = tk.Button(self.root, cursor="hand2", image=backImg, command=lambda: self.create_tracker_ui(None))
 #        back_btn.pack(pady=10)
         card_back_btn = tk.Button(self.root, image=backImg,
-                                  cursor="hand2", bg="#dddddd", command=lambda: self.create_home_screen(item))
+                                  #cursor="hand2", bg="#dddddd", command=lambda: self.create_home_screen(item))
+                                  cursor="hand2", bg="orange", command=lambda: self.create_home_screen(item))
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
         # Card View Button
         card_btn = tk.Button(self.root, image=cardImg,
-                             cursor="hand2", bg="#dddddd", command=self.create_card_view)
+                             cursor="hand2", bg="orange", command=self.create_card_view)
         card_btn.place(x=10, y=10)
         ToolTip(card_btn, "Click to View Items in Cards")
 
@@ -2167,7 +2168,6 @@ class ExpirationApp:
             self.create_card_view()
         elif self.current_view == "list":
             self.create_list_view()
-        
 
     def show_detail_view(self, item):
         self.current_item = item
