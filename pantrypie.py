@@ -2967,7 +2967,7 @@ class ExpirationApp:
         tk.Label(self.right_panel, text=f"Category: {category}", font=APP_FONT, bg="white").pack(pady=(0, 5))
 
         # Confirmation
-        messagebox.showinfo("Success", f"'{name}' has been added.")
+        #messagebox.showinfo("Success", f"'{name}' has been added.")
 
     ## Saves item to list ##
     def save_new_item_old(self, name, barcode, expiration_date, category):
