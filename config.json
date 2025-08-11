@@ -2,5 +2,6 @@
   "font": "Arial",
   "background": "pics/backgrounds\\back.jpg",
   "icon": "Icon1.png",
-  "dark_mode": true
+  "dark_mode": true,
+  "bg_color": "#808040"
 }
