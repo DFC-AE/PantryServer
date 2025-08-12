@@ -806,7 +806,7 @@ class ExpirationApp:
         if return_callback is None:
             return_callback = self.create_home_screen
 
-        WeatherApp(self.root, backImg, return_callback)
+        WeatherApp(self.root, backImg, return_callback, self.bg_color)
 
     def open_music_ui(self):
         self.clear_screen()
@@ -820,7 +820,8 @@ class ExpirationApp:
                 self.create_home_screen,
                 spotify_token,
                 self.set_background,
-                update_weather_func=self.update_weather
+                update_weather_func=self.update_weather,
+                bg_color=self.bg_color
             )
 
         except Exception as e:
@@ -2859,7 +2860,8 @@ class ExpirationApp:
             WeatherApp(
                 root=self.root,
                 backImg=self.backImg,
-                back_callback=return_callback)
+                back_callback=return_callback,
+                bg_color=self.bg_color)
         except Exception as e:
             print(f"[Error] Failed to open WeatherApp: {e}")
 
@@ -3234,31 +3236,28 @@ weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
 weather_label.pack(pady=20)
 
 class WeatherApp:
-    #def __init__(self, root, backgroundImg, backImg, back_callback=None):
-    def __init__(self, root, backImg, back_callback=None):
+    def __init__(self, root, backImg, back_callback=None, bg_color="#2E2E2E"):
         self.root = root
         self.root.title("Weather Forecast")
         self.backImg = backImg
         self.back_callback = back_callback
-	## Frame For Weather App Content ##
-        self.frame = tk.Frame(self.root)
-        #self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_color = bg_color  # store color for later use
+
+        # Frame for Weather App content
+        self.frame = tk.Frame(self.root, bg=self.bg_color)
         self.frame.pack(fill="both", expand=True)
         self.frame.bind("<Configure>", lambda event: self.update_background_image())
 
         self.set_background()
 
-	## Back Button Image ##
+        # Back button image
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
         self.back_callback = back_callback
 
         self.city = CITY
         self.api_key = KEY_WEATHER
-        #self.city = "Shreveport, US"
-        #self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 
         self.weather_ui()
-        #self.update_weather()
 
     def set_background(self):
 #    def set_background(self, path=None):
@@ -4658,7 +4657,7 @@ def show_youtube_in_app(url, app_root):
 
 ## Music Page ##
 class MusicApp:
-    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback, update_weather_func=None):
+    def __init__(self, root, backgroundImg, backImg, back_callback, token, set_background_callback, update_weather_func=None, bg_color="#2E2E2E"):
         self.root = root
 #        self.set_background = set_background_callback
 #        self.set_background("pics/backgrounds/music.jpg")
@@ -4673,6 +4672,7 @@ class MusicApp:
         self.bg_label_music = None
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
+        self.bg_color = bg_color
 
 #        self.set_background()
 #        self.set_background_image("pics/backgrounds/music_bg.jpg")
