@@ -558,6 +558,8 @@ class ExpirationApp:
             "weather": "pics/backgrounds/weather.jpg"
         }
 
+        #self.pages = list(self.default_backgrounds.keys())
+
         # Store user-selected paths per page (from settings)
         self.custom_backgrounds = {}
         if os.path.exists("custom_backgrounds.json"):
@@ -595,7 +597,87 @@ class ExpirationApp:
 #        background.place(x=0, y=0, relwidth=1, relheight=1)
 #        background.lower()
 
-    def set_background(self, page_name, path=None):
+    def load_custom_backgrounds(self):
+        try:
+            with open("custom_backgrounds.json", "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+
+    def save_custom_backgrounds(self):
+        with open("custom_backgrounds.json", "w") as f:
+            json.dump(self.custom_backgrounds, f)
+
+    def set_background(self, page_name):
+        try:
+            path = self.custom_backgrounds.get(page_name, self.default_backgrounds.get(page_name))
+
+            if not os.path.exists(path):
+                print(f"[Background warning] Missing {page_name} background, using fallback.")
+                path = self.default_backgrounds.get(page_name)
+
+            self.bg_image_original = Image.open(path)
+            self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+
+            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
+                self.bg_label = tk.Label(self.root)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+            self.bg_label.config(image=self.bg_image)
+            self.root.bind("<Configure>", self.resize_background)
+        except Exception as e:
+            print(f"[Background error on {page_name}] {e}")
+
+    # Settings page per-page dropdowns
+    #pages = list(self.default_backgrounds.keys())
+
+    #for idx, page in enumerate(pages):
+    #    tk.Label(frame, text=f"{page.capitalize()} Background:", font=(self.current_font, 14),
+    #             bg=self.bg_color).grid(row=idx, column=0, sticky="w")
+
+    #    var = tk.StringVar(value=self.custom_backgrounds.get(page, self.default_backgrounds[page]))
+
+    #    # Keep a reference to each page's var
+    #    if not hasattr(self, "bg_vars"):
+    #        self.bg_vars = {}
+    #    self.bg_vars[page] = var
+
+    #    bg_menu = tk.OptionMenu(frame, var, *os.listdir("pics/backgrounds"))
+    #    bg_menu.grid(row=idx, column=1, sticky="ew")
+
+    def save_settings_and_apply(self):
+        for page, var in self.bg_vars.items():
+            self.custom_backgrounds[page] = os.path.join("pics/backgrounds", var.get())
+
+        self.save_custom_backgrounds()
+        self.apply_settings()
+
+    def build_settings_page(self, frame):
+        """Build the per-page background settings section."""
+        self.pages = list(self.default_backgrounds.keys())
+
+        for idx, page in enumerate(self.pages):
+            tk.Label(
+                frame,
+                text=f"{page.capitalize()} Background:",
+                font=(self.current_font, 14),
+                bg=self.bg_color
+            ).grid(row=idx, column=0, sticky="w")
+
+            var = tk.StringVar(
+                value=self.custom_backgrounds.get(page, self.default_backgrounds[page])
+            )
+
+            # Keep a reference to each page's var
+            if not hasattr(self, "bg_vars"):
+                self.bg_vars = {}
+            self.bg_vars[page] = var
+
+            bg_menu = tk.OptionMenu(frame, var, *os.listdir("pics/backgrounds"))
+            bg_menu.grid(row=idx, column=1, sticky="ew")
+
+    def set_background_new(self, page_name, path=None):
         try:
             valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
 
@@ -644,7 +726,7 @@ class ExpirationApp:
         except Exception as e:
             print(f"[Background resize error] {e}")
 
-    def set_background_new(self, page_name, path=None):
+    def set_background_mid(self, page_name, path=None):
         try:
             valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
 
@@ -846,6 +928,24 @@ class ExpirationApp:
         self.create_home_screen()
 
     def resize_background(self, event):
+        if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
+            new_width = event.width
+            new_height = event.height
+            resized = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized)
+            self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
+            self.bg_canvas.coords(self.bg_bg_label, 0, 0)
+            self.bg_canvas.coords(self.content_window, 0, 0)
+
+        elif hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+            if hasattr(self, "bg_image_original") and self.bg_image_original:
+                new_width = event.width
+                new_height = event.height
+                resized = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+                self.bg_image = ImageTk.PhotoImage(resized)
+                self.bg_label.config(image=self.bg_image)
+
+    def resize_background_trash(self, event):
         if hasattr(self, "bg_image_original") and self.bg_image_original:
             new_width = event.width
             new_height = event.height
@@ -855,6 +955,9 @@ class ExpirationApp:
             self.bg_canvas.coords(self.bg_bg_label, 0, 0)
             # Keep content frame at top left
             self.bg_canvas.coords(self.content_window, 0, 0)
+        elif hasattr(self, "bg_label") and self.bg_label.winfo_exists():
+            self.bg_label.config(image=self.bg_image)
+
 
     def resize_background_old(self, event):
         if not hasattr(self, "bg_image_original"):
@@ -1726,6 +1829,7 @@ class ExpirationApp:
 
     def open_settings_page(self):
         self.clear_screen()
+
         self.set_background("settings")
 
         # Apply dynamic background based on current setting or default
@@ -1785,6 +1889,39 @@ class ExpirationApp:
         self.bg_thumbnails = []  # Keep references so images don't get garbage collected
         backgrounds_dir = "pics/backgrounds"
         image_files = [f for f in os.listdir(backgrounds_dir) if f.lower().endswith((".jpg", ".png"))]
+
+        #frame = tk.Frame(self.root, bg=self.bg_color)
+        frame = tk.Frame(self.root, bg="")
+        frame.pack(fill="both", expand=True)
+
+        # Build the dropdowns for page backgrounds
+        self.build_settings_page(frame)
+
+        #pages = list(self.default_backgrounds.keys())
+
+        #for idx, page in enumerate(pages):
+        #    tk.Label(
+        #        frame,
+        #        text=f"{page.capitalize()} Background:",
+        #        font=(self.current_font, 14),
+        #        bg=self.bg_color
+        #    ).grid(row=idx, column=0, sticky="w")
+
+        #    var = tk.StringVar(
+        #        value=self.custom_backgrounds.get(page, self.default_backgrounds[page])
+        #    )
+
+        #    # Keep a reference to each page's var
+        #    if not hasattr(self, "bg_vars"):
+        #        self.bg_vars = {}
+        #    self.bg_vars[page] = var
+
+        #    bg_menu = tk.OptionMenu(
+        #        frame,
+        #        var,
+        #        *os.listdir("pics/backgrounds")
+        #    )
+        #    bg_menu.grid(row=idx, column=1, sticky="ew")
 
         def on_select_background(img_path):
             self.bg_var.set(img_path)
@@ -1859,6 +1996,17 @@ class ExpirationApp:
                 self.set_background(img_path)
 
     def save_settings_and_apply(self):
+        selected_bg = self.bg_var.get()
+        if selected_bg != self.current_bg:
+            self.current_bg = selected_bg
+            self.set_background(f"pics/backgrounds/{selected_bg}.jpg")
+
+        # Save selected background to settings.json
+        settings = {"background": selected_bg}
+        with open("settings.json", "w") as f:
+            json.dump(settings, f)
+
+    def save_settings_and_apply_old(self):
         self.current_font = self.font_var.get()
         self.current_background = self.bg_var.get()
         self.current_icon = self.icon_var.get()
