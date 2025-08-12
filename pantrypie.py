@@ -1736,7 +1736,7 @@ class ExpirationApp:
             if not os.path.isabs(background_path):
                 background_path = os.path.join("pics/backgrounds", background_path)
 
-        self.set_background(background_path)
+        #self.set_background(background_path)
 
         # Title
         tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
