@@ -545,6 +545,28 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+
+        # Store default paths for each page
+        self.default_backgrounds = {
+            "home": "pics/backgrounds/home.jpg",
+            "cam": "pics/backgrounds/cam.jpg",
+            "card": "pics/backgrounds/card.jpg",
+            "list": "pics/backgrounds/list.jpg",
+            "music": "pics/backgrounds/music.jpg",
+            "settings": "pics/backgrounds/settings.jpg",
+            "tracker": "pics/backgrounds/tracker.jpg",
+            "weather": "pics/backgrounds/weather.jpg"
+        }
+
+        # Store user-selected paths per page (from settings)
+        self.custom_backgrounds = {}
+        if os.path.exists("custom_backgrounds.json"):
+            try:
+                with open("custom_backgrounds.json", "r") as f:
+                    self.custom_backgrounds = json.load(f)
+            except Exception as e:
+                print(f"[Warning] Could not load custom backgrounds: {e}")
+
         self.items = []  # List to hold all items
         self.load_items()
         self.clear_screen()
@@ -573,26 +595,52 @@ class ExpirationApp:
 #        background.place(x=0, y=0, relwidth=1, relheight=1)
 #        background.lower()
 
-    def set_background(self, path=None):
-        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
-
-        if path is None:
-            path = self.bg_var.get() if hasattr(self, 'bg_var') else getattr(self, 'current_background', "pics/backgrounds/back.jpg")
-
-        # If path is just a filename, resolve full path
-        if not os.path.isabs(path) and not path.startswith("pics/backgrounds") and not path in valid_colors:
-            path = os.path.join("pics/backgrounds", path)
-
-        # If it's a known color, just set window background
-        if path in valid_colors:
-            self.root.configure(bg=path)
-            return
-
+    def set_background(self, page_name, path=None):
         try:
-            self.bg_image_original = Image.open(path)
-            self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
 
-            # Create or recreate bg_label if needed
+            # Determine final path to use
+            if not path:
+                path = self.custom_backgrounds.get(page_name, self.default_backgrounds.get(page_name))
+
+            if path in valid_colors:
+                self.root.configure(bg=path)
+                return
+
+            # If it's only a filename, resolve to full path
+            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
+                path = os.path.join("pics/backgrounds", path)
+
+            # If .jpg missing, try .png automatically
+            if not os.path.exists(path):
+                base, ext = os.path.splitext(path)
+                if ext.lower() == ".jpg":
+                    png_path = base + ".png"
+                    if os.path.exists(png_path):
+                        path = png_path
+
+            if not os.path.exists(path):
+                print(f"[Background warning] No background found for {path}, using default.")
+                path = self.default_backgrounds.get(page_name, "pics/backgrounds/default.jpg")
+
+            # Create cache dict if it doesn't exist
+            if not hasattr(self, "bg_cache"):
+                self.bg_cache = {}
+
+            # If we already have this background cached for this page, use it
+            if page_name in self.bg_cache:
+                self.bg_image_original, self.bg_image = self.bg_cache[page_name]
+            else:
+                # Load and resize image to current window size
+                img = Image.open(path)
+                img = img.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
+                self.bg_image_original = img
+                self.bg_image = ImageTk.PhotoImage(img)
+                self.bg_cache[page_name] = (self.bg_image_original, self.bg_image)
+
+            self.current_background = path
+
+            # Create label if needed
             if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
                 self.bg_label = tk.Label(self.root)
                 self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -600,8 +648,64 @@ class ExpirationApp:
 
             self.bg_label.config(image=self.bg_image)
 
-        except FileNotFoundError:
-            print(f"[Background error] File not found: {path}")
+            # Bind resize event to update background dynamically
+            def _resize_bg(event):
+                resized_img = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+                self.bg_image = ImageTk.PhotoImage(resized_img)
+                self.bg_label.config(image=self.bg_image)
+
+            self.root.bind("<Configure>", _resize_bg)
+
+        except Exception as e:
+            print(f"[Background error on {page_name}] {e}")
+            self.root.configure(bg="#2E2E2E")
+
+    def set_background_new(self, page_name, path=None):
+        try:
+            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+            if not path:
+                path = self.custom_backgrounds.get(page_name) or self.default_backgrounds.get(page_name)
+
+            if not path:
+                print(f"[Background warning] No background found for {page_name}, using default.")
+                path = "pics/backgrounds/home.jpg"
+
+            if path in valid_colors:
+                self.root.configure(bg=path)
+                return
+
+            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
+                path = os.path.join("pics/backgrounds", path)
+
+            if not os.path.exists(path):
+                print(f"[Background warning] Missing background for {page_name}, using fallback.")
+                path = "pics/backgrounds/home.jpg"
+
+            # Load original image for resizing
+            self.bg_image_original = Image.open(path)
+            self.current_background = path
+
+            # Create label if needed
+            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
+                self.bg_label = tk.Label(self.root)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+            # Function to resize background dynamically
+            def resize_bg(event=None):
+                resized = self.bg_image_original.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
+                self.bg_image = ImageTk.PhotoImage(resized)
+                self.bg_label.config(image=self.bg_image)
+
+            # Bind resize event
+            self.root.bind("<Configure>", resize_bg)
+
+            # Initial draw
+            resize_bg()
+
+        except Exception as e:
+            print(f"[Background error on {page_name}] {e}")
             self.root.configure(bg="#2E2E2E")
 
     def set_background_old(self, path=None):
@@ -626,8 +730,8 @@ class ExpirationApp:
         except Exception as e:
             print("Background error:", e)
             #self.root.configure(bg=self.bg_color)
-            self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
-
+            #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+#            self.set_background("")
 
         # Bind resize only once
         if not hasattr(self, "_resize_bound") or not self._resize_bound:
@@ -1129,7 +1233,7 @@ class ExpirationApp:
             widget.destroy()
         self.clear_screen()
         self.current_view = 'home'
-        self.set_background()  # <-- This sets the background image
+        self.set_background("home")
 
         fg_color = "white" if self.bg_color.lower() in ["#2e2e2e", "black"] else "#2E2E2E"
 
@@ -1572,6 +1676,7 @@ class ExpirationApp:
 
     def open_settings_page(self):
         self.clear_screen()
+        self.set_background("settings")
 
         # Apply dynamic background based on current setting or default
         background_path = self.current_background
@@ -1708,6 +1813,15 @@ class ExpirationApp:
         self.current_background = self.bg_var.get()
         self.current_icon = self.icon_var.get()
         self.dark_mode = self.dark_mode_var.get()
+
+        # Store custom background for the current view/page
+        if hasattr(self, "current_view") and hasattr(self, "custom_backgrounds"):
+            self.custom_backgrounds[self.current_view] = self.current_background
+            try:
+                with open("custom_backgrounds.json", "w") as f:
+                    json.dump(self.custom_backgrounds, f, indent=4)
+            except Exception as e:
+                print(f"[Error] Could not save custom backgrounds: {e}")
 
         self.save_settings_to_file()
         self.apply_settings()
@@ -1902,18 +2016,25 @@ class ExpirationApp:
         self.clear_screen()
         #self.root.configure(bg=self.bg_color)
         #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        self.set_background("card")
 
         # Background handling
-        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+        #valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
 
-        if hasattr(self, "bg_var"):
-            bg_choice = self.bg_var.get()
-        elif hasattr(self, "current_background"):
-            bg_choice = self.current_background
-        else:
-            bg_choice = "#2E2E2E"  # default fallback
+        #if hasattr(self, "bg_var"):
+        #    bg_choice = self.bg_var.get()
+        #elif hasattr(self, "current_background"):
+        #    bg_choice = self.current_background
+        #else:
+        #    bg_choice = "#2E2E2E"  # default fallback
 
-        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+
+        bg_path = getattr(self, "card_view_bg", None)
+        if hasattr(self, "bg_var") and self.bg_var.get():
+            bg_path = self.bg_var.get()
+
+        self.set_background(bg_path)
 
         self.current_view = "card"
 
@@ -1991,17 +2112,27 @@ class ExpirationApp:
         self.clear_screen()
         #self.root.configure(bg=self.bg_color)
         #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        self.set_background("list")
+
+        bg_path = getattr(self, "list_view_bg", None)
+
+        # If settings page changed bg_var, override
+        if hasattr(self, "bg_var") and self.bg_var.get():
+            bg_path = self.bg_var.get()
+
+        # Set the background (image or color)
+        self.set_background(bg_path)
 
         valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
 
-        if hasattr(self, "bg_var"):
-            bg_choice = self.bg_var.get()
-        elif hasattr(self, "current_background"):
-            bg_choice = self.current_background
-        else:
-            bg_choice = "#2E2E2E"  # default fallback
+        #if hasattr(self, "bg_var"):
+        #    bg_choice = self.bg_var.get()
+        #elif hasattr(self, "current_background"):
+        #    bg_choice = self.current_background
+        #else:
+        #    bg_choice = "#2E2E2E"  # default fallback
 
-        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
 
         self.current_view = "list"
 
@@ -2084,7 +2215,8 @@ class ExpirationApp:
     def show_detail_view(self, item):
         self.clear_screen()
         #self.root.configure(bg=self.bg_color)
-        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+        self.set_background("back_toon.png")
 
         main_frame = tk.Frame(self.root, bg=self.bg_color)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -4733,7 +4865,8 @@ class MusicApp:
         self.root = root
 #        self.set_background = set_background_callback
 #        self.set_background("pics/backgrounds/music.jpg")
-        self.backgroundImg = backgroundImg
+#        self.backgroundImg = backgroundImg
+        self.set_background("music")
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
