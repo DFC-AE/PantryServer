@@ -607,6 +607,55 @@ class ExpirationApp:
                 self.root.configure(bg=path)
                 return
 
+            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
+                path = os.path.join("pics/backgrounds", path)
+
+            if not os.path.exists(path):
+                print(f"[Background warning] No background found for {path}, using default.")
+                path = self.default_backgrounds.get(page_name, "pics/backgrounds/default.jpg")
+
+            # Load and store original image for resizing
+            self.bg_image_original = Image.open(path)
+            self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+            self.current_background = path
+
+            # Create label if needed
+            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
+                self.bg_label = tk.Label(self.root)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+            self.bg_label.config(image=self.bg_image)
+
+            # Bind resizing to shared method
+            self.root.bind("<Configure>", self._resize_background)
+
+        except Exception as e:
+            print(f"[Background error on {page_name}] {e}")
+            self.root.configure(bg="#2E2E2E")
+
+    def _resize_background(self, event):
+        try:
+            if hasattr(self, 'bg_image_original'):
+                resized_img = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+                self.bg_image = ImageTk.PhotoImage(resized_img)
+                if hasattr(self, "bg_label"):
+                    self.bg_label.config(image=self.bg_image)
+        except Exception as e:
+            print(f"[Background resize error] {e}")
+
+    def set_background_new(self, page_name, path=None):
+        try:
+            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+            # Determine final path to use
+            if not path:
+                path = self.custom_backgrounds.get(page_name, self.default_backgrounds.get(page_name))
+
+            if path in valid_colors:
+                self.root.configure(bg=path)
+                return
+
             # If it's only a filename, resolve to full path
             if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
                 path = os.path.join("pics/backgrounds", path)
