@@ -1255,7 +1255,8 @@ class ExpirationApp:
         self.update_weather(None)
 
         # Middle frame for side panels (Expiring Soon and Conversion)
-        middle_frame = tk.Frame(self.root, bg=self.bg_color)
+        #middle_frame = tk.Frame(self.root, bg=self.bg_color)
+        middle_frame = tk.Frame(self.root, bg="")
         middle_frame.pack(fill=tk.BOTH, expand=True)
 
         self.create_expiring_soon_panel(middle_frame)
