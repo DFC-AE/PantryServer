@@ -653,7 +653,104 @@ class ExpirationApp:
         self.save_custom_backgrounds()
         self.apply_settings()
 
+    def _build_image_optionmenu(self, parent, var, folder, filenames, thumb_size=(100, 60), on_select=None):
+        mb = tk.Menubutton(parent, text=os.path.basename(var.get()) or "Choose...", relief="raised", bg=self.bg_color)
+        menu = tk.Menu(mb, tearoff=0)
+        mb.configure(menu=menu)
+
+        # Persistent storage for images and menus
+        if not hasattr(self, "_thumb_cache"):
+            self._thumb_cache = {}
+        if not hasattr(self, "_menus"):
+            self._menus = []
+        self._menus.append(menu)
+
+        for name in filenames:
+            path = os.path.join(folder, name)
+            try:
+                img = Image.open(path).resize(thumb_size, Image.LANCZOS)
+            except Exception:
+                img = Image.new("RGB", thumb_size, (200, 200, 200))
+            photo = ImageTk.PhotoImage(img)
+
+            # Store reference so it stays alive
+            self._thumb_cache[path] = photo
+
+            def _choose(p=path):
+                var.set(p)
+                mb.config(text=os.path.basename(p))
+                if on_select:
+                    on_select(p)
+
+            # Note: label needs at least 1 space before filename for compound to work nicely on some Tk builds
+            menu.add_command(label=" " + name, image=photo, compound="left", command=_choose)
+
+        return mb
+
     def build_settings_page(self, frame):
+        self.pages = list(self.default_backgrounds.keys())
+        thumb_size = (100, 60)
+        self.bg_previews = {}
+
+        bg_folder = "pics/backgrounds"
+        filenames = sorted([
+            f for f in os.listdir(bg_folder)
+            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+        ])
+
+        for idx, page in enumerate(self.pages):
+            tk.Label(
+                frame,
+                text=f"{page.capitalize()} Background:",
+                font=(self.current_font, 14),
+                bg=self.bg_color
+            ).grid(row=idx, column=0, sticky="w", padx=5, pady=2)
+
+            # Always store a *full path* in the StringVar
+            current_path = self.custom_backgrounds.get(page, self.default_backgrounds[page])
+            var = tk.StringVar(value=current_path)
+
+            if not hasattr(self, "bg_vars"):
+                self.bg_vars = {}
+            self.bg_vars[page] = var
+
+            # --- Preview image on the right (you already had this) ---
+            if os.path.exists(current_path):
+                preview_img = Image.open(current_path).resize(thumb_size, Image.LANCZOS)
+            else:
+                preview_img = Image.new("RGB", thumb_size, (200, 200, 200))
+            preview_tk = ImageTk.PhotoImage(preview_img)
+            self.bg_previews[page] = preview_tk
+
+            preview_label = tk.Label(frame, image=preview_tk, bg=self.bg_color)
+            preview_label.grid(row=idx, column=2, padx=5, pady=2)
+
+            # --- When a new item is chosen, update the preview ---
+            def make_update(lbl=preview_label, p=page):
+                def _update(new_path):
+                    try:
+                        img = Image.open(new_path).resize(thumb_size, Image.LANCZOS)
+                    except Exception:
+                        img = Image.new("RGB", thumb_size, (200, 200, 200))
+                    img_tk = ImageTk.PhotoImage(img)
+                    lbl.config(image=img_tk)
+                    self.bg_previews[p] = img_tk
+                return _update
+
+            update_cb = make_update()
+
+            # --- Image dropdown with thumbnail + filename ---
+            img_menu = self._build_image_optionmenu(
+                parent=frame,
+                var=var,
+                folder=bg_folder,
+                filenames=filenames,
+                thumb_size=thumb_size,
+                on_select=update_cb
+            )
+            img_menu.grid(row=idx, column=1, sticky="ew", padx=5, pady=2)
+
+    def build_settings_page_old(self, frame):
         """Build the per-page background settings section with previews."""
         self.pages = list(self.default_backgrounds.keys())
 
@@ -2049,15 +2146,11 @@ class ExpirationApp:
                 self.set_background(img_path)
 
     def save_settings_and_apply(self):
-        selected_bg = self.bg_var.get()
-        if selected_bg != self.current_bg:
-            self.current_bg = selected_bg
-            self.set_background(f"pics/backgrounds/{selected_bg}.jpg")
-
-        # Save selected background to settings.json
-        settings = {"background": selected_bg}
-        with open("settings.json", "w") as f:
-            json.dump(settings, f)
+        for page, var in self.bg_vars.items():
+            # var already holds a full path set by the image menu
+            self.custom_backgrounds[page] = var.get()
+        self.save_custom_backgrounds()
+        self.apply_settings()
 
     def save_settings_and_apply_old(self):
         self.current_font = self.font_var.get()
