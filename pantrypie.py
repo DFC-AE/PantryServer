@@ -654,6 +654,59 @@ class ExpirationApp:
         self.apply_settings()
 
     def build_settings_page(self, frame):
+        """Build the per-page background settings section with previews."""
+        self.pages = list(self.default_backgrounds.keys())
+
+        thumb_size = (100, 60)
+        self.bg_previews = {}
+
+        for idx, page in enumerate(self.pages):
+            tk.Label(
+                frame,
+                text=f"{page.capitalize()} Background:",
+                font=(self.current_font, 14),
+                bg=self.bg_color
+            ).grid(row=idx, column=0, sticky="w", padx=5, pady=2)
+
+            var = tk.StringVar(
+                value=self.custom_backgrounds.get(page, self.default_backgrounds[page])
+            )
+
+            if not hasattr(self, "bg_vars"):
+                self.bg_vars = {}
+            self.bg_vars[page] = var
+
+            # --- Create preview image ---
+            img_path = var.get()
+            if os.path.exists(img_path):
+                preview_img = Image.open(img_path).resize(thumb_size, Image.LANCZOS)
+            else:
+                preview_img = Image.new("RGB", thumb_size, (200, 200, 200))
+
+            preview_tk = ImageTk.PhotoImage(preview_img)
+            self.bg_previews[page] = preview_tk
+
+            preview_label = tk.Label(frame, image=preview_tk, bg=self.bg_color)
+            preview_label.grid(row=idx, column=1, padx=5, pady=2)
+
+            # --- Dropdown ---
+            bg_menu = tk.OptionMenu(frame, var, *os.listdir("pics/backgrounds"))
+            bg_menu.grid(row=idx, column=2, sticky="ew", padx=5, pady=2)
+
+            # Update preview on change
+            def update_preview(*args, p=page, v=var, lbl=preview_label):
+                path = v.get()
+                if os.path.exists(path):
+                    img = Image.open(path).resize(thumb_size, Image.LANCZOS)
+                else:
+                    img = Image.new("RGB", thumb_size, (200, 200, 200))
+                img_tk = ImageTk.PhotoImage(img)
+                lbl.config(image=img_tk)
+                self.bg_previews[p] = img_tk
+
+            var.trace_add("write", update_preview)
+
+    def build_settings_page_old(self, frame):
         """Build the per-page background settings section."""
         self.pages = list(self.default_backgrounds.keys())
 
