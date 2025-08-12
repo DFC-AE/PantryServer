@@ -574,6 +574,37 @@ class ExpirationApp:
 #        background.lower()
 
     def set_background(self, path=None):
+        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+        if path is None:
+            path = self.bg_var.get() if hasattr(self, 'bg_var') else getattr(self, 'current_background', "pics/backgrounds/back.jpg")
+
+        # If path is just a filename, resolve full path
+        if not os.path.isabs(path) and not path.startswith("pics/backgrounds") and not path in valid_colors:
+            path = os.path.join("pics/backgrounds", path)
+
+        # If it's a known color, just set window background
+        if path in valid_colors:
+            self.root.configure(bg=path)
+            return
+
+        try:
+            self.bg_image_original = Image.open(path)
+            self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
+
+            # Create or recreate bg_label if needed
+            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
+                self.bg_label = tk.Label(self.root)
+                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.bg_label.lower()
+
+            self.bg_label.config(image=self.bg_image)
+
+        except FileNotFoundError:
+            print(f"[Background error] File not found: {path}")
+            self.root.configure(bg="#2E2E2E")
+
+    def set_background_old(self, path=None):
         if not path:
             path = getattr(self, "current_background", "back")
         if path == "back":
@@ -594,7 +625,9 @@ class ExpirationApp:
             self.bg_label.lower()
         except Exception as e:
             print("Background error:", e)
-            self.root.configure(bg=self.bg_color)
+            #self.root.configure(bg=self.bg_color)
+            self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+
 
         # Bind resize only once
         if not hasattr(self, "_resize_bound") or not self._resize_bound:
@@ -1544,8 +1577,9 @@ class ExpirationApp:
         background_path = self.current_background
         if background_path == "back":
             background_path = "pics/backgrounds/settings.jpg"
-        elif not os.path.exists(background_path) and not background_path.endswith(".jpg"):
-            background_path = f"pics/backgrounds/{background_path}.jpg"
+        elif not os.path.exists(background_path):
+            if not os.path.isabs(background_path):
+                background_path = os.path.join("pics/backgrounds", background_path)
 
         self.set_background(background_path)
 
@@ -1599,6 +1633,7 @@ class ExpirationApp:
 
         def on_select_background(img_path):
             self.bg_var.set(img_path)
+            #self.bg_var.set(os.path.basename(img_path))
             self.preview_settings()
 
         for img_file in image_files:
@@ -1646,28 +1681,27 @@ class ExpirationApp:
         dark = self.dark_mode_var.get()
 
         fg_color = "white" if dark else "#2E2E2E"
-
-        # Only use color names for preview_label background
         valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+        # Always use safe background for label
         if bg_choice in valid_colors:
             label_bg = bg_choice
         else:
-            label_bg = "white"  # fallback to white if not a color
+            label_bg = "white"
 
         self.preview_label.config(
             font=(font_choice, 16),
             bg=label_bg,
             fg=fg_color,
-            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}"
+            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}",
+            image=""
         )
 
-        # If the background is an image path, show it in the main window preview
-        if os.path.exists(bg_choice):
-            self.set_background(bg_choice)
-        elif bg_choice.endswith(".jpg") and os.path.exists(f"pics/backgrounds/{bg_choice}"):
-            self.set_background(f"pics/backgrounds/{bg_choice}")
-        elif bg_choice in valid_colors:
-            self.root.configure(bg=bg_choice)
+        # Apply image background only if it's a file
+        if bg_choice not in valid_colors:
+            img_path = os.path.join("pics/backgrounds", bg_choice)
+            if os.path.exists(img_path):
+                self.set_background(img_path)
 
     def save_settings_and_apply(self):
         self.current_font = self.font_var.get()
@@ -1752,13 +1786,24 @@ class ExpirationApp:
         dark = self.dark_mode_var.get()
 
         fg_color = "white" if dark else "#2E2E2E"
+        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+        # Always safe label background (fallback to white if not in valid colors)
+        label_bg = bg_choice if bg_choice in valid_colors else "white"
 
         self.preview_label.config(
             font=(font_choice, 16),
-            bg=bg_choice,
+            bg=label_bg,  # <-- safe now
             fg=fg_color,
-            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}"
+            text=f"Font: {font_choice}\nBackground: {bg_choice}\nDark Mode: {'On' if dark else 'Off'}",
+            image=""
         )
+
+        # If the background is an image path, show it in the main window preview
+        if bg_choice not in valid_colors:
+            img_path = os.path.join("pics/backgrounds", bg_choice)
+            if os.path.exists(img_path):
+                self.set_background(img_path)
 
     def save_settings(self):
         self.current_font = self.font_var.get()
@@ -1855,7 +1900,20 @@ class ExpirationApp:
     ## Create Card view ##
     def create_card_view(self, item=None):
         self.clear_screen()
-        self.root.configure(bg=self.bg_color)
+        #self.root.configure(bg=self.bg_color)
+        #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+
+        # Background handling
+        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+        if hasattr(self, "bg_var"):
+            bg_choice = self.bg_var.get()
+        elif hasattr(self, "current_background"):
+            bg_choice = self.current_background
+        else:
+            bg_choice = "#2E2E2E"  # default fallback
+
+        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
 
         self.current_view = "card"
 
@@ -1931,7 +1989,19 @@ class ExpirationApp:
 
     def create_list_view(self, item=None):
         self.clear_screen()
-        self.root.configure(bg=self.bg_color)
+        #self.root.configure(bg=self.bg_color)
+        #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
+
+        valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
+
+        if hasattr(self, "bg_var"):
+            bg_choice = self.bg_var.get()
+        elif hasattr(self, "current_background"):
+            bg_choice = self.current_background
+        else:
+            bg_choice = "#2E2E2E"  # default fallback
+
+        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
 
         self.current_view = "list"
 
@@ -2013,7 +2083,8 @@ class ExpirationApp:
 
     def show_detail_view(self, item):
         self.clear_screen()
-        self.root.configure(bg=self.bg_color)
+        #self.root.configure(bg=self.bg_color)
+        self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
 
         main_frame = tk.Frame(self.root, bg=self.bg_color)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -2677,7 +2748,8 @@ class ExpirationApp:
     def apply_bg_color_to_app(self):
         # Only set root bg color if not on home screen with background image
         if not (self.current_view == 'home' and hasattr(self, 'backgroundImg')):
-            self.root.configure(bg=self.bg_color)
+            #self.root.configure(bg=self.bg_color)
+            self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
         # Recursively update all widgets except item buttons/labels
         def update_widget_colors(widget):
             try:
@@ -4737,8 +4809,10 @@ class MusicApp:
                 path = self.current_background or "pics/backgrounds/music.jpg"
 
             # Fix: If user picked a named theme like 'black', turn it into a real path
-            if not os.path.exists(path) and not path.endswith(".jpg"):
-                path = f"pics/backgrounds/{path}.jpg"
+            if not os.path.exists(path):
+                 # If it's not an absolute path, make it relative to backgrounds folder
+                if not os.path.isabs(path):
+                    path = os.path.join("pics/backgrounds", path)
 
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Background image not found: {path}")
@@ -4750,15 +4824,6 @@ class MusicApp:
             # create bg_label, resize, bind etc.
         except Exception as e:
             print(f"Error loading background image: {e}")
-
-    def set_background_old(self):
-        self.bg_image_original = Image.open("pics/backgrounds/music.jpg")
-        self.bg_label = tk.Label(self.frame)
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()
-
-        self.update_background_image()
-        self.root.bind("<Configure>", self.on_resize)
 
     def on_resize(self, event):
         self.update_background_image()
