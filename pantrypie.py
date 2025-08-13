@@ -2185,7 +2185,7 @@ class ExpirationApp:
 
         # Floating Back Button (root-level, not in grid)
         backImg_original = Image.open("pics/icons/back.png")
-        back_btn = tk.Button(
+        self.back_btn = tk.Button(
             self.root,
             bg="orange",
             bd=0,
@@ -2193,40 +2193,73 @@ class ExpirationApp:
             cursor="hand2",
             command=lambda: self.create_home_screen(None)
         )
-        back_btn.is_icon_button = True
+        self.back_btn.is_icon_button = True
 
         def place_back_button(event=None):
+            if not hasattr(self, "back_btn") or not self.back_btn.winfo_exists():
+                return
             btn_size = min(int(self.root.winfo_width() * 0.05), 80)
             img_resized = backImg_original.resize((btn_size, btn_size), Image.LANCZOS)
             backImg_tk = ImageTk.PhotoImage(img_resized)
-            back_btn.config(image=backImg_tk)
-            back_btn.image = backImg_tk
-            back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+            self.back_btn.config(image=backImg_tk)
+            self.back_btn.image = backImg_tk
+            self.back_btn.place(relx=0.98, rely=0.02, anchor="ne")
 
         self.root.bind("<Configure>", place_back_button, add="+")
 
-        # Floating Save Button
-        saveImg_original = Image.open("pics/icons/save.png")
-        save_btn = tk.Button(
+        # --- Save button creation ---
+        saveImg_original = Image.open("pics/icons/save.png")  # Adjust path if needed
+        btn_size = min(int(self.root.winfo_width() * 0.05), 80)
+        saveImg_resized = saveImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+        saveImg_tk = ImageTk.PhotoImage(saveImg_resized)
+
+        self.save_btn = tk.Button(
             self.root,
-            bg="orange",
-            bd=0,
-            highlightthickness=0,
+            image=saveImg_tk,
             cursor="hand2",
+            bg="#FFA500",
+            highlightthickness=0,
+            bd=0,
             command=self.save_settings_and_apply
         )
-        save_btn.is_icon_button = True
+        self.save_btn.image = saveImg_tk
+        self.save_btn.is_icon_button = True
 
         def place_save_button(event=None):
+            if not hasattr(self, "save_btn") or not self.save_btn.winfo_exists():
+                return
             btn_size = min(int(self.root.winfo_width() * 0.05), 80)
-            img_resized = saveImg_original.resize((btn_size, btn_size), Image.LANCZOS)
-            saveImg_tk = ImageTk.PhotoImage(img_resized)
-            save_btn.config(image=saveImg_tk)
-            save_btn.image = saveImg_tk
-            save_btn.place(relx=0.02, rely=0.02, anchor="nw")
-            save_btn.lift()
+            saveImg_resized = saveImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+            saveImg_tk = ImageTk.PhotoImage(saveImg_resized)
+            self.save_btn.config(image=saveImg_tk)
+            self.save_btn.image = saveImg_tk
+            self.save_btn.place(relx=0.98, rely=0.15, anchor="ne")  # Slightly below back button
 
         self.root.bind("<Configure>", place_save_button, add="+")
+
+
+        # Floating Save Button
+#        saveImg_original = Image.open("pics/icons/save.png")
+#        save_btn = tk.Button(
+#            self.root,
+#            bg="orange",
+#            bd=0,
+#            highlightthickness=0,
+#            cursor="hand2",
+#            command=self.save_settings_and_apply
+#        )
+#        save_btn.is_icon_button = True
+
+#        def place_save_button(event=None):
+#            btn_size = min(int(self.root.winfo_width() * 0.05), 80)
+#            img_resized = saveImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+#            saveImg_tk = ImageTk.PhotoImage(img_resized)
+#            save_btn.config(image=saveImg_tk)
+#            save_btn.image = saveImg_tk
+#            save_btn.place(relx=0.02, rely=0.02, anchor="nw")
+#            save_btn.lift()
+
+#        self.root.bind("<Configure>", place_save_button, add="+")
 
         # Font selection
 #        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg=self.bg_color).grid(row=0, column=0, sticky="w")
@@ -2338,16 +2371,16 @@ class ExpirationApp:
         self.preview_label.grid(row=4, column=0, columnspan=2, pady=20)
 
         # Buttons
-        button_frame = tk.Frame(frame, bg=self.bg_color)
-        button_frame.grid(row=5, column=0, columnspan=2, pady=10)
+        #button_frame = tk.Frame(frame, bg=self.bg_color)
+        #button_frame.grid(row=5, column=0, columnspan=2, pady=10)
 
-        save_btn = tk.Button(button_frame, text="Save", command=self.save_settings_and_apply, bg=self.icon_bg_color)
-        save_btn.is_icon_button = True
-        save_btn.pack(side=tk.LEFT, padx=10)
+        #save_btn = tk.Button(button_frame, text="Save", command=self.save_settings_and_apply, bg=self.icon_bg_color)
+        #save_btn.is_icon_button = True
+        #save_btn.pack(side=tk.LEFT, padx=10)
 
-        cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen, bg=self.icon_bg_color)
-        cancel_btn.is_icon_button = True
-        cancel_btn.pack(side=tk.LEFT, padx=10)
+        #cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen, bg=self.icon_bg_color)
+        #cancel_btn.is_icon_button = True
+        #cancel_btn.pack(side=tk.LEFT, padx=10)
 
     def clear_screen(self):
         for widget in self.root.winfo_children():
