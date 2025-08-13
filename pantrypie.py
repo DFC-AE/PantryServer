@@ -383,49 +383,49 @@ img_weather = Image.open("pics/icons/weather.png")
 img_weather = img_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 weatherImg = ImageTk.PhotoImage(img_weather)
 ## Weather Background Image ##
-img_back_weather = Image.open("pics/backgrounds/weather.jpg")
+img_back_weather = Image.open("pics/backgrounds/weather/weather.jpg")
 img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 ## Clear Weather Background Image ##
-img_back_day_clear = Image.open("pics/backgrounds/day_clear.jpg")
+img_back_day_clear = Image.open("pics/backgrounds/weather/day_clear.jpg")
 img_back_day_clear = img_back_day_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_cleardayImg = ImageTk.PhotoImage(img_back_day_clear)
-img_back_night_clear = Image.open("pics/backgrounds/night_clear.jpg")
+img_back_night_clear = Image.open("pics/backgrounds/weather/night_clear.jpg")
 img_back_night_clear = img_back_night_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_clearnightImg = ImageTk.PhotoImage(img_back_night_clear)
 ## Cloudy Weather Background Image ##
-img_back_day_cloudy = Image.open("pics/backgrounds/day_cloudy.jpg")
+img_back_day_cloudy = Image.open("pics/backgrounds/weather/day_cloud.jpg")
 img_back_day_cloudy = img_back_day_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_cloudydayImg = ImageTk.PhotoImage(img_back_day_cloudy)
-img_back_night_cloudy = Image.open("pics/backgrounds/night_cloudy.jpg")
+img_back_night_cloudy = Image.open("pics/backgrounds/weather/night_cloud.jpg")
 img_back_night_cloudy = img_back_night_cloudy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_cloudynightImg = ImageTk.PhotoImage(img_back_night_cloudy)
 ## Rainy Weather Background Image ##
-img_back_day_rainy = Image.open("pics/backgrounds/day_rainy.jpg")
+img_back_day_rainy = Image.open("pics/backgrounds/weather/day_rain.jpg")
 img_back_day_rainy = img_back_day_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_rainydayImg = ImageTk.PhotoImage(img_back_day_rainy)
-img_back_night_rainy = Image.open("pics/backgrounds/night_rainy.jpg")
+img_back_night_rainy = Image.open("pics/backgrounds/weather/night_rain.jpg")
 img_back_night_rainy = img_back_night_rainy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_rainynightImg = ImageTk.PhotoImage(img_back_night_rainy)
 ## Stormy Weather Background Image ##
-img_back_day_stormy = Image.open("pics/backgrounds/day_stormy.jpg")
+img_back_day_stormy = Image.open("pics/backgrounds/weather/day_thunderstorm.jpg")
 img_back_day_stormy = img_back_day_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_stormydayImg = ImageTk.PhotoImage(img_back_day_stormy)
-img_back_night_stormy = Image.open("pics/backgrounds/night_stormy.jpg")
+img_back_night_stormy = Image.open("pics/backgrounds/weather/night_thunderstorm.jpg")
 img_back_night_stormy = img_back_night_stormy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_stormynightImg = ImageTk.PhotoImage(img_back_night_stormy)
 ## Snowy Weather Background Image ##
-img_back_day_snowy = Image.open("pics/backgrounds/day_snowy.jpg")
+img_back_day_snowy = Image.open("pics/backgrounds/weather/day_snow.jpg")
 img_back_day_snowy = img_back_day_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_snowydayImg = ImageTk.PhotoImage(img_back_day_snowy)
-img_back_night_snowy = Image.open("pics/backgrounds/night_snowy.jpg")
+img_back_night_snowy = Image.open("pics/backgrounds/weather/night_snow.jpg")
 img_back_night_snowy = img_back_night_snowy.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_snowynightImg = ImageTk.PhotoImage(img_back_night_snowy)
 ## Misty Weather Background Image ##
-img_back_day_misty = Image.open("pics/backgrounds/day_misty.jpg")
+img_back_day_misty = Image.open("pics/backgrounds/weather/day_mist.jpg")
 img_back_day_misty = img_back_day_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_mistydayImg = ImageTk.PhotoImage(img_back_day_misty)
-img_back_night_misty = Image.open("pics/backgrounds/night_misty.jpg")
+img_back_night_misty = Image.open("pics/backgrounds/weather/night_mist.jpg")
 img_back_night_misty = img_back_night_misty.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_mistynightImg = ImageTk.PhotoImage(img_back_night_misty)
 ## Weather Back Button Image ##
@@ -816,6 +816,31 @@ class ExpirationApp:
             if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
         ])
 
+        # === App Background Color Selector ===
+        bg_color_label = tk.Label(
+            frame,
+            text="App Background Color:",
+            font=(self.current_font, 14),
+            bg=self.bg_color
+        )
+        bg_color_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+
+        self.bg_color_var = tk.StringVar(value=self.bg_color)
+
+        bg_color_menu = tk.OptionMenu(
+            frame,
+            self.bg_color_var,
+            "#f0f0f0", "white", "#2E2E2E", "lightgray", "orange", "black"
+        )
+        bg_color_menu.config(width=20)
+        bg_color_menu.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        def update_bg_color(*args):
+            self.bg_color = self.bg_color_var.get()
+            self.apply_bg_color()
+
+        self.bg_color_var.trace_add("write", update_bg_color)
+
         # === Icon Background Color Selector ===
         icon_color_label = tk.Label(
             frame,
@@ -907,6 +932,20 @@ class ExpirationApp:
         )
         icon_color_btn.is_icon_button = True
         icon_color_btn.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+    def apply_bg_color(self):
+        """Apply self.bg_color to all Labels and Buttons."""
+        for widget in self.root.winfo_children():
+            self._apply_bg_recursive(widget)
+
+    def _apply_bg_recursive(self, widget):
+        try:
+            widget.configure(bg=self.bg_color)
+        except tk.TclError:
+            pass  # not all widgets accept bg
+
+        for child in widget.winfo_children():
+            self._apply_bg_recursive(child)
 
     def build_settings_page_old(self, frame):
         """Build the per-page background settings section with previews."""
@@ -1233,7 +1272,15 @@ class ExpirationApp:
     def apply_settings(self):
         global APP_FONT
         APP_FONT = (self.current_font, 12)
-        self.create_home_screen()
+    #    self.create_home_screen()
+        for widget in self.root.winfo_children():
+            self.apply_widget_bg_color(widget)
+
+    def apply_widget_bg_color(self, widget):
+        if isinstance(widget, (tk.Label, tk.Button)):
+            widget.config(bg=self.bg_color)
+        for child in widget.winfo_children():
+            self.apply_widget_bg_color(child)
 
     def resize_background(self, event):
         if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
@@ -2237,8 +2284,7 @@ class ExpirationApp:
 
         self.root.bind("<Configure>", place_save_button, add="+")
 
-
-        # Floating Save Button
+        # Floating Save Button Left Side
 #        saveImg_original = Image.open("pics/icons/save.png")
 #        save_btn = tk.Button(
 #            self.root,
@@ -2542,10 +2588,11 @@ class ExpirationApp:
         self.current_background = self.bg_var.get()
         self.current_icon = self.icon_var.get()
         self.dark_mode = self.dark_mode_var.get()
+        #self.bg_color = self.bg_color
 
         # Apply and save to config file
-        self.apply_settings()
         self.save_settings_to_file()
+        self.apply_settings()
         self.create_home_screen()
 
     ## Create Tracker Screen ##
@@ -3614,11 +3661,12 @@ class ExpirationApp:
                 self.weather_button = tk.Button(
                     self.weather_icon_frame,
                     image=icon_photo,
-                    bg="orange",
+                    bg=self.icon_bg_color,
                     cursor="hand2",
                     borderwidth=0,
                     command=cmd
                 )
+                self.weather_button.is_icon_button = True
                 self.weather_button.pack()
             else:
                 self.weather_button.config(image=icon_photo, command=cmd)
@@ -3627,12 +3675,11 @@ class ExpirationApp:
             self.weather_button.image = icon_photo
 
             # update the detailed weather text label if it exists (and is alive)
-            if hasattr(self, "weather_label") and self.weather_label.winfo_exists():
+            if getattr(self, "weather_label", None) and self.weather_label.winfo_exists():
                 try:
-                    self.weather_label.config(text=self.format_weather_text())
-                except Exception:
-                    # don't crash the app over label updates
-                    pass
+                    self.weather_label.config(text=self.format_weather_text(), bg=self.bg_color)
+                except Exception as e:
+                    print(f"[Weather Label Update Error] {e}")
 
         except Exception as e:
             print(f"[Weather Error] {e}")
@@ -4094,7 +4141,8 @@ class WeatherApp:
         self.frame.pack(fill="both", expand=True)
         self.frame.bind("<Configure>", lambda event: self.update_background_image())
 
-        self.set_background()
+        weather_data = self.get_current_weather_condition()
+        self.set_weather_background(weather_data)
 
         # Back button image
         self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
@@ -4105,11 +4153,11 @@ class WeatherApp:
 
         self.weather_ui()
 
-    def set_background(self):
+    def set_background_old(self):
 #    def set_background(self, path=None):
 #        if path is None:
 #            path = self.current_background or "pics/backgrounds/back.jpg"
-        default_path = "pics/backgrounds/weather.jpg"
+        default_path = "pics/backgrounds/weather/weather.jpg"
         background_path = default_path
 
         try:
@@ -4145,15 +4193,19 @@ class WeatherApp:
                 "tornado": "stormy"
             }
 
-            condition_key = condition_map.get(condition, icon_code, "weather")
-            if is_night:
-                # Apply your preferred naming pattern
-                if condition_key == "cloudy":
-                    condition_key = "night_cloudy"
-                elif condition_key == "snowy":
-                    condition_key = "night_snowy"
-                else:
-                    condition_key = f"night_{condition_key}"
+            condition_key = condition_map.get(condition, "weather")
+            prefix = "night_" if is_night else "day_"
+            if not condition_key.startswith(prefix) and condition_key != "weather":
+               condition_key = prefix + condition_key
+
+           # if is_night:
+           #     # Apply your preferred naming pattern
+           #     if condition_key == "cloudy":
+           #         condition_key = "night_cloudy"
+           #     elif condition_key == "snowy":
+           #         condition_key = "night_snowy"
+           #     else:
+           #         condition_key = f"night_{condition_key}"
 
             background_path = f"pics/backgrounds/{condition_key}.jpg"
 
@@ -4170,14 +4222,70 @@ class WeatherApp:
             self.bg_image_original = Image.open(default_path).copy()
             self.update_background_image()
 
+    def set_weather_background(self, weather_data):
+        try:
+            # Extract description and decide day/night by sunrise/sunset
+            descr = weather_data["description"].lower().strip()
+            now = datetime.now().timestamp()
+            sunrise = weather_data["sys"]["sunrise"]
+            sunset = weather_data["sys"]["sunset"]
+            period = "day" if sunrise <= now <= sunset else "night"
+
+            background_map = {
+                "clear sky": {"day": "pics/backgrounds/weather/day_clear.jpg", "night": "pics/backgrounds/weather/night_clear.jpg"},
+                "few clouds": {"day": "pics/backgrounds/weather/day_few_clouds.jpg", "night": "pics/backgrounds/weather/night_few_clouds.jpg"},
+                "scattered clouds": {"day": "pics/backgrounds/weather/day_scattered_clouds.jpg", "night": "pics/backgrounds/weather/night_scattered_clouds.jpg"},
+                "broken clouds": {"day": "pics/backgrounds/weather/day_broken_clouds.jpg", "night": "pics/backgrounds/weather/night_broken_clouds.jpg"},
+                "overcast clouds": {"day": "pics/backgrounds/weather/day_overcast.jpg", "night": "pics/backgrounds/weather/night_overcast.jpg"},
+                "light rain": {"day": "pics/backgrounds/weather/day_rain_light.jpg", "night": "pics/backgrounds/weather/night_rain_light.jpg"},
+                "moderate rain": {"day": "pics/backgrounds/weather/day_rain.jpg",       "night": "pics/backgrounds/weather/night_rain.jpg"},
+                "heavy intensity rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
+                "very heavy rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
+                "shower rain": {"day": "pics/backgrounds/weather/day_shower_rain.jpg", "night": "pics/backgrounds/weather/night_shower_rain.jpg"},
+                "light snow": {"day": "pics/backgrounds/weather/day_snow_light.jpg", "night": "pics/backgrounds/weather/night_snow_light.jpg"},
+                "snow": {"day": "pics/backgrounds/weather/day_snow.jpg", "night": "pics/backgrounds/weather/night_snow.jpg"},
+                "mist": {"day": "pics/backgrounds/weather/day_mist.jpg", "night": "pics/backgrounds/weather/night_mist.jpg"},
+                "smoke": {"day": "pics/backgrounds/weather/day_smoke.jpg", "night": "pics/backgrounds/weather/night_smoke.jpg"},
+                "haze": {"day": "pics/backgrounds/weather/day_haze.jpg", "night": "pics/backgrounds/weather/night_haze.jpg"},
+                "fog": {"day": "pics/backgrounds/weather/day_fog.jpg", "night": "pics/backgrounds/weather/night_fog.jpg"},
+                "sand": {"day": "pics/backgrounds/weather/day_sand.jpg", "night": "pics/backgrounds/weather/night_sand.jpg"},
+                "dust": {"day": "pics/backgrounds/weather/day_dust.jpg", "night": "pics/backgrounds/weather/night_dust.jpg"},
+                "volcanic ash": {"day": "pics/backgrounds/weather/day_ash.jpg", "night": "pics/backgrounds/weather/night_ash.jpg"},
+                "squalls": {"day": "pics/backgrounds/weather/day_squall.jpg", "night": "pics/backgrounds/weather/night_squall.jpg"},
+                "tornado": {"day": "pics/backgrounds/weather/day_tornado.jpg", "night": "pics/backgrounds/weather/night_tornado.jpg"},
+                "thunderstorm": {"day": "pics/backgrounds/weather/day_thunderstorm.jpg", "night": "pics/backgrounds/weather/night_thunderstorm.jpg"},
+                "drizzle": {"day": "pics/backgrounds/weather/day_drizzle.jpg", "night": "pics/backgrounds/weather/night_drizzle.jpg"}
+            }
+
+            if descr in background_map:
+                bg = background_map[descr][period]
+            else:
+                main = weather_data["condition"]
+                bg = background_map.get(main.lower(), {}).get(period, "pics/backgrounds/weather/weather.jpg")
+
+            # Finally, load and set the image
+            if os.path.exists(bg):
+                img = Image.open(bg).resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
+                self.bg_image_tk = ImageTk.PhotoImage(img)
+                if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
+                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+                else:
+                    self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+                    self.bg_canvas.pack(fill="both", expand=True)
+                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+            else:
+                print(f"[Weather] Missing bg image for '{descr}' {period}")
+        except Exception as e:
+            print(f"[Weather background error] {e}")
+
     def on_resize(self, event):
         if hasattr(self, "bg_image_original"):
             resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
             self.backgroundImg = ImageTk.PhotoImage(resized)
-            if hasattr(self, "bg_label"):
-                self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
-                self.bg_label.lower()
+            #if hasattr(self, "bg_label"):
+                #self.bg_label.config(image=self.backgroundImg)
+                #self.bg_label.image = self.backgroundImg
+                #self.bg_label.lower()
 
     def update_background_image(self):
         if hasattr(self, 'bg_image_original'):
@@ -4188,15 +4296,15 @@ class WeatherApp:
             self.backgroundImg = ImageTk.PhotoImage(resized_image)
 
             # Create bg_label if it doesn't exist
-            if not hasattr(self, 'bg_label'):
-                self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+            #if not hasattr(self, 'bg_label'):
+            #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
+            #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-            self.bg_label.config(image=self.backgroundImg)
-            self.bg_label.image = self.backgroundImg
+            #self.bg_label.config(image=self.backgroundImg)
+            #self.bg_label.image = self.backgroundImg
 
             # Always send background to the very back
-            self.bg_label.lower()
+            #self.bg_label.lower()
 
     def update_background_image_new(self):
         if hasattr(self, 'bg_image_original'):
@@ -4280,6 +4388,86 @@ class WeatherApp:
         response.raise_for_status()
         data = response.json()
 
+        return {
+            "condition": data["weather"][0]["main"].lower(),
+            "icon": data["weather"][0]["icon"],
+            "temp": data["main"]["temp"],
+            "feels_like": data["main"]["feels_like"],
+            "humidity": data["main"]["humidity"],
+            "wind_speed": data["wind"]["speed"],
+            "description": data["weather"][0]["description"].lower()
+#            "sys": data.get("sys", {})
+        }
+
+    def get_current_weather_condition_trip(self):
+        if not hasattr(self, 'city'):
+            self.city = CITY
+        if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}&units=metric"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        # Extract the basics
+        condition = data['weather'][0]['main']
+        icon_code = data['weather'][0]['icon']
+
+        # Return everything: condition, icon, and full API data
+        return condition, icon_code, data
+
+    def get_current_weather_condition_json(self):
+         if not hasattr(self, 'city'):
+            self.city = CITY
+         if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+         url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}&units=metric"
+         response = requests.get(url)
+         response.raise_for_status()
+         return response.json()
+
+    def get_current_weather_condition_new(self):
+        if not hasattr(self, 'city'):
+            self.city = CITY
+        if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        condition = data['weather'][0]['main']
+        icon_code = data['weather'][0]['icon']
+#        return condition, icon_code
+        return data
+
+    def get_current_weather_condition_full(self):
+        if not hasattr(self, 'city'):
+            self.city = CITY
+        if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        return data
+
+    def get_current_weather_condition_old(self):
+        if not hasattr(self, 'city'):
+            self.city = CITY
+        if not hasattr(self, 'api_key'):
+            self.api_key = KEY_WEATHER
+
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
         condition = data['weather'][0]['main']
         icon_code = data['weather'][0]['icon']
         return condition, icon_code
@@ -4340,13 +4528,13 @@ class WeatherApp:
             resized_image = self.bg_image_original.resize((window_width, window_height), Image.LANCZOS)
             self.backgroundImg = ImageTk.PhotoImage(resized_image)
 
-            if hasattr(self, 'bg_label'):
-                self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
-            else:
-                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-                self.bg_label.place(relwidth=1, relheight=1)
-                self.bg_label.image = self.backgroundImg
+#            if hasattr(self, 'bg_label'):
+#                self.bg_label.config(image=self.backgroundImg)
+#                self.bg_label.image = self.backgroundImg
+#            else:
+#                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
+#                self.bg_label.place(relwidth=1, relheight=1)
+#                self.bg_label.image = self.backgroundImg
 
         except Exception as e:
             print("Error updating background image:", e)
@@ -4364,7 +4552,10 @@ class WeatherApp:
         self.get_current_weather_data()
 
         # Load weather condition-based background BEFORE creating bg_label
-        condition, icon_code = self.get_current_weather_condition()
+        #condition, icon_code = self.get_current_weather_condition()
+        weather_data = self.get_current_weather_condition()
+        condition = weather_data["condition"]
+        icon_code = weather_data["icon"]
         background_path = self.get_background_path_for_condition(condition, icon_code)
         self.set_background_from_path(background_path)
 
@@ -4585,6 +4776,7 @@ class WeatherApp:
         except Exception as e:
             print(f"Error fetching current weather data: {e}")
         return None
+
 
     def get_icon(self, code):
         try:
