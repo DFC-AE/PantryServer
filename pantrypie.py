@@ -2096,22 +2096,35 @@ class ExpirationApp:
 
         self.set_background("settings")
 
-        # Apply dynamic background based on current setting or default
-        background_path = self.current_background
-        if background_path == "back":
-            background_path = "pics/backgrounds/settings.jpg"
-        elif not os.path.exists(background_path):
-            if not os.path.isabs(background_path):
-                background_path = os.path.join("pics/backgrounds", background_path)
+        # Floating Back Button (root-level, not in grid)
+        backImg_original = Image.open("pics/icons/back.png")
+        back_btn = tk.Button(
+            self.root,
+            bg="orange",
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+            command=lambda: self.create_home_screen(None)
+        )
 
-        #self.set_background(background_path)
+        def place_back_button(event=None):
+            btn_size = min(int(self.root.winfo_width() * 0.05), 80)
+            img_resized = backImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+            backImg_tk = ImageTk.PhotoImage(img_resized)
+            back_btn.config(image=backImg_tk)
+            back_btn.image = backImg_tk
+            back_btn.place(relx=0.98, rely=0.02, anchor="ne")
+
+        self.root.bind("<Configure>", place_back_button, add="+")
 
         # Title
         tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
                  bg=self.bg_color, pady=10).pack()
 
         frame = tk.Frame(self.root, padx=20, pady=20, bg="")
-        frame.pack(fill=tk.BOTH, expand=True)
+        frame.pack(fill=tk.Y, expand=False)
+
+        self.build_settings_page(frame)
 
         # Font selection
 #        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg=self.bg_color).grid(row=0, column=0, sticky="w")
@@ -2231,6 +2244,13 @@ class ExpirationApp:
 
         cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen)
         cancel_btn.pack(side=tk.LEFT, padx=10)
+
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            # keep background label if it exists
+            if hasattr(self, "bg_label") and widget == self.bg_label:
+                continue
+            widget.destroy()
 
     def preview_settings(self, *args):
         font_choice = self.font_var.get()
