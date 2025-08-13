@@ -2092,9 +2092,23 @@ class ExpirationApp:
         self.create_home_screen()
 
     def open_settings_page(self):
+        # Prevent opening twice if already on settings
+        if getattr(self, "_current_page", None) == "settings":
+            return
+        self._current_page = "settings"
+
         self.clear_screen()
 
         self.set_background("settings")
+
+        # Title
+        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
+                 bg=self.bg_color, pady=10).pack(anchor="n")
+
+        frame = tk.Frame(self.root, padx=20, pady=20, bg="")
+        frame.pack(fill=tk.Y, expand=False)
+
+        self.build_settings_page(frame)
 
         # Floating Back Button (root-level, not in grid)
         backImg_original = Image.open("pics/icons/back.png")
@@ -2117,14 +2131,27 @@ class ExpirationApp:
 
         self.root.bind("<Configure>", place_back_button, add="+")
 
-        # Title
-        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
-                 bg=self.bg_color, pady=10).pack()
+        # Floating Save Button
+        saveImg_original = Image.open("pics/icons/save.png")
+        save_btn = tk.Button(
+            self.root,
+            bg="orange",
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+            command=self.save_settings_and_apply
+        )
 
-        frame = tk.Frame(self.root, padx=20, pady=20, bg="")
-        frame.pack(fill=tk.Y, expand=False)
+        def place_save_button(event=None):
+            btn_size = min(int(self.root.winfo_width() * 0.05), 80)
+            img_resized = saveImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+            saveImg_tk = ImageTk.PhotoImage(img_resized)
+            save_btn.config(image=saveImg_tk)
+            save_btn.image = saveImg_tk
+            save_btn.place(relx=0.02, rely=0.02, anchor="nw")
+            save_btn.lift()
 
-        self.build_settings_page(frame)
+        self.root.bind("<Configure>", place_save_button, add="+")
 
         # Font selection
 #        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg=self.bg_color).grid(row=0, column=0, sticky="w")
