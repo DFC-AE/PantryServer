@@ -6,6 +6,11 @@ from tkinter import simpledialog, messagebox, Button, Canvas, Label, Scrollbar, 
 from tkinter.font import Font as font
 ## For Calendar ##
 from datetime import datetime
+#now = datetime.now()
+#if 6 <= now.hour < 18:
+#    period = "day"
+#else:
+#    period = "night"
 import datetime as dt
 from tkcalendar import Calendar, DateEntry
 import time
@@ -4234,7 +4239,8 @@ class WeatherApp:
             main = weather_data.get("condition", "").lower()
             icon_code = weather_data.get("icon", "")
 
-            period = "day" if sunrise <= now <= sunset else "night"
+            #period = "day" if sunrise <= now <= sunset else "night"
+            period = "night" if icon_code.endswith("n") else "day"
 
             description_map = {
                 "clear sky": {"day": "day_clear_sky", "night": "night_clear_sky"},
