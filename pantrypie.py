@@ -4225,58 +4225,134 @@ class WeatherApp:
     def set_weather_background(self, weather_data):
         try:
             # Extract description and decide day/night by sunrise/sunset
-            descr = weather_data["description"].lower().strip()
-            now = datetime.now().timestamp()
+#            descr = weather_data["description"].lower().strip()
+#            now = datetime.now().timestamp()
             sunrise = weather_data["sys"]["sunrise"]
             sunset = weather_data["sys"]["sunset"]
+
+            descr = weather_data.get("description", "").lower()
+            main = weather_data.get("condition", "").lower()
+            icon_code = weather_data.get("icon", "")
+
             period = "day" if sunrise <= now <= sunset else "night"
 
-            background_map = {
-                "clear sky": {"day": "pics/backgrounds/weather/day_clear.jpg", "night": "pics/backgrounds/weather/night_clear.jpg"},
-                "few clouds": {"day": "pics/backgrounds/weather/day_few_clouds.jpg", "night": "pics/backgrounds/weather/night_few_clouds.jpg"},
-                "scattered clouds": {"day": "pics/backgrounds/weather/day_scattered_clouds.jpg", "night": "pics/backgrounds/weather/night_scattered_clouds.jpg"},
-                "broken clouds": {"day": "pics/backgrounds/weather/day_broken_clouds.jpg", "night": "pics/backgrounds/weather/night_broken_clouds.jpg"},
-                "overcast clouds": {"day": "pics/backgrounds/weather/day_overcast.jpg", "night": "pics/backgrounds/weather/night_overcast.jpg"},
-                "light rain": {"day": "pics/backgrounds/weather/day_rain_light.jpg", "night": "pics/backgrounds/weather/night_rain_light.jpg"},
-                "moderate rain": {"day": "pics/backgrounds/weather/day_rain.jpg",       "night": "pics/backgrounds/weather/night_rain.jpg"},
-                "heavy intensity rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
-                "very heavy rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
-                "shower rain": {"day": "pics/backgrounds/weather/day_shower_rain.jpg", "night": "pics/backgrounds/weather/night_shower_rain.jpg"},
-                "light snow": {"day": "pics/backgrounds/weather/day_snow_light.jpg", "night": "pics/backgrounds/weather/night_snow_light.jpg"},
-                "snow": {"day": "pics/backgrounds/weather/day_snow.jpg", "night": "pics/backgrounds/weather/night_snow.jpg"},
-                "mist": {"day": "pics/backgrounds/weather/day_mist.jpg", "night": "pics/backgrounds/weather/night_mist.jpg"},
-                "smoke": {"day": "pics/backgrounds/weather/day_smoke.jpg", "night": "pics/backgrounds/weather/night_smoke.jpg"},
-                "haze": {"day": "pics/backgrounds/weather/day_haze.jpg", "night": "pics/backgrounds/weather/night_haze.jpg"},
-                "fog": {"day": "pics/backgrounds/weather/day_fog.jpg", "night": "pics/backgrounds/weather/night_fog.jpg"},
-                "sand": {"day": "pics/backgrounds/weather/day_sand.jpg", "night": "pics/backgrounds/weather/night_sand.jpg"},
-                "dust": {"day": "pics/backgrounds/weather/day_dust.jpg", "night": "pics/backgrounds/weather/night_dust.jpg"},
-                "volcanic ash": {"day": "pics/backgrounds/weather/day_ash.jpg", "night": "pics/backgrounds/weather/night_ash.jpg"},
-                "squalls": {"day": "pics/backgrounds/weather/day_squall.jpg", "night": "pics/backgrounds/weather/night_squall.jpg"},
-                "tornado": {"day": "pics/backgrounds/weather/day_tornado.jpg", "night": "pics/backgrounds/weather/night_tornado.jpg"},
-                "thunderstorm": {"day": "pics/backgrounds/weather/day_thunderstorm.jpg", "night": "pics/backgrounds/weather/night_thunderstorm.jpg"},
-                "drizzle": {"day": "pics/backgrounds/weather/day_drizzle.jpg", "night": "pics/backgrounds/weather/night_drizzle.jpg"}
+            description_map = {
+                "clear sky": {"day": "day_clear_sky", "night": "night_clear_sky"},
+                "few clouds": {"day": "day_few_clouds", "night": "night_few_clouds"},
+                "scattered clouds": {"day": "day_scattered_clouds", "night": "night_scattered_clouds"},
+                "broken clouds": {"day": "day_broken_clouds", "night": "night_broken_clouds"},
+                "overcast clouds": {"day": "day_overcast", "night": "night_overcast"},
+                "light rain": {"day": "day_rain_light", "night": "night_rain_light"},
+                "moderate rain": {"day": "day_rain", "night": "night_rain"},
+                "heavy intensity rain": {"day": "day_rain_heavy", "night": "night_rain_heavy"},
+                "very heavy rain": {"day": "day_rain_heavy", "night": "night_rain_heavy"},
+                "extreme rain": {"day": "day_rain_extreme", "night": "night_rain_extreme"},
+                "freezing rain": {"day": "day_freezing_rain", "night": "night_freezing_rain"},
+                "light shower rain": {"day": "day_shower_rain_light", "night": "night_shower_rain_light"},
+                "shower rain": {"day": "day_shower_rain", "night": "night_shower_rain"},
+                "heavy shower rain": {"day": "day_shower_rain_heavy", "night": "night_shower_rain_heavy"},
+                "ragged shower rain": {"day": "day_shower_rain_ragged", "night": "night_shower_rain_ragged"},
+                "shower drizzle": {"day": "day_shower_drizzle", "night": "night_shower_drizzle"},
+                "light snow": {"day": "day_snow_light", "night": "night_snow_light"},
+                "snow": {"day": "day_snow", "night": "night_snow"},
+                "heavy snow": {"day": "day_snow_heavy", "night": "night_snow_heavy"},
+                "sleet": {"day": "day_sleet", "night": "night_sleet"},
+                "shower sleet": {"day": "day_sleet_shower", "night": "night_sleet_shower"},
+                "rain and snow": {"day": "day_rain_snow", "night": "night_rain_snow"},
+                "light rain and snow": {"day": "day_rain_snow_light", "night": "night_rain_snow_light"},
+                "shower snow": {"day": "day_shower_snow", "night": "night_shower_snow"},
+                "heavy shower snow": {"day": "day_shower_snow_heavy", "night": "night_shower_snow_heavy"},
+                "thunderstorm with light rain": {"day": "day_thunder_rain_light", "night": "night_thunder_rain_light"},
+                "thunderstorm with rain": {"day": "day_thunder_rain", "night": "night_thunder_rain"},
+                "thunderstorm with heavy rain": {"day": "day_thunder_rain_heavy", "night": "night_thunder_rain_heavy"},
+                "light thunderstorm": {"day": "day_thunder_light", "night": "night_thunder_light"},
+                "thunderstorm": {"day": "day_thunderstorm", "night": "night_thunderstorm"},
+                "heavy thunderstorm": {"day": "day_thunderstorm_heavy", "night": "night_thunderstorm_heavy"},
+                "ragged thunderstorm": {"day": "day_thunderstorm_ragged", "night": "night_thunderstorm_ragged"},
+                "thunderstorm with drizzle": {"day": "day_thunder_drizzle", "night": "night_thunder_drizzle"},
+                "thunderstorm with heavy drizzle": {"day": "day_thunder_drizzle_heavy", "night": "night_thunder_drizzle_heavy"},
+                "mist": {"day": "day_mist", "night": "night_mist"},
+                "smoke": {"day": "day_smoke", "night": "night_smoke"},
+                "haze": {"day": "day_haze", "night": "night_haze"},
+                "fog": {"day": "day_fog", "night": "night_fog"},
+                "sand/dust whirls": {"day": "day_dust", "night": "night_dust"},
+                "sand": {"day": "day_sand", "night": "night_sand"},
+                "dust": {"day": "day_dust", "night": "night_dust"},
+                "volcanic ash": {"day": "day_ash", "night": "night_ash"},
+                "squalls": {"day": "day_squall", "night": "night_squall"},
+                "tornado": {"day": "day_tornado", "night": "night_tornado"},
             }
 
-            if descr in background_map:
-                bg = background_map[descr][period]
+            # Determine background path
+            if descr in description_map:
+                background_path = f"pics/backgrounds/weather/{description_map[descr][period]}.jpg"
+            elif main in description_map:
+                background_path = f"pics/backgrounds/weather/{description_map[main][period]}.jpg"
             else:
-                main = weather_data["condition"]
-                bg = background_map.get(main.lower(), {}).get(period, "pics/backgrounds/weather/weather.jpg")
+                background_path = "pics/backgrounds/weather/weather.jpg"  # default
 
-            # Finally, load and set the image
-            if os.path.exists(bg):
-                img = Image.open(bg).resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
-                self.bg_image_tk = ImageTk.PhotoImage(img)
-                if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
-                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
-                else:
-                    self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
-                    self.bg_canvas.pack(fill="both", expand=True)
-                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
-            else:
-                print(f"[Weather] Missing bg image for '{descr}' {period}")
+            print(f"Using weather background: {background_path}")
+            self.set_background_from_path(background_path)
+
         except Exception as e:
             print(f"[Weather background error] {e}")
+            fallback_path = "pics/backgrounds/weather/weather.jpg"
+            print(f"Falling back to default: {fallback_path}")
+            self.set_background_from_path(fallback_path)
+
+#            descr = weather_data["description"]
+#            if descr in description_map:
+#               bg_name = description_map[descr][period]
+#               background_path = f"pics/backgrounds/weather/{bg_name}.jpg"
+#            else:
+#               background_path = "pics/backgrounds/weather/weather.jpg"
+
+#            background_map = {
+#                "clear sky": {"day": "pics/backgrounds/weather/day_clear.jpg", "night": "pics/backgrounds/weather/night_clear.jpg"},
+#                "few clouds": {"day": "pics/backgrounds/weather/day_few_clouds.jpg", "night": "pics/backgrounds/weather/night_few_clouds.jpg"},
+#                "scattered clouds": {"day": "pics/backgrounds/weather/day_scattered_clouds.jpg", "night": "pics/backgrounds/weather/night_scattered_clouds.jpg"},
+#                "broken clouds": {"day": "pics/backgrounds/weather/day_broken_clouds.jpg", "night": "pics/backgrounds/weather/night_broken_clouds.jpg"},
+#                "overcast clouds": {"day": "pics/backgrounds/weather/day_overcast.jpg", "night": "pics/backgrounds/weather/night_overcast.jpg"},
+#                "light rain": {"day": "pics/backgrounds/weather/day_rain_light.jpg", "night": "pics/backgrounds/weather/night_rain_light.jpg"},
+#                "moderate rain": {"day": "pics/backgrounds/weather/day_rain.jpg",       "night": "pics/backgrounds/weather/night_rain.jpg"},
+#                "heavy intensity rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
+#                "very heavy rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
+#                "shower rain": {"day": "pics/backgrounds/weather/day_shower_rain.jpg", "night": "pics/backgrounds/weather/night_shower_rain.jpg"},
+#                "light snow": {"day": "pics/backgrounds/weather/day_snow_light.jpg", "night": "pics/backgrounds/weather/night_snow_light.jpg"},
+#                "snow": {"day": "pics/backgrounds/weather/day_snow.jpg", "night": "pics/backgrounds/weather/night_snow.jpg"},
+#                "mist": {"day": "pics/backgrounds/weather/day_mist.jpg", "night": "pics/backgrounds/weather/night_mist.jpg"},
+#                "smoke": {"day": "pics/backgrounds/weather/day_smoke.jpg", "night": "pics/backgrounds/weather/night_smoke.jpg"},
+#                "haze": {"day": "pics/backgrounds/weather/day_haze.jpg", "night": "pics/backgrounds/weather/night_haze.jpg"},
+#                "fog": {"day": "pics/backgrounds/weather/day_fog.jpg", "night": "pics/backgrounds/weather/night_fog.jpg"},
+#                "sand": {"day": "pics/backgrounds/weather/day_sand.jpg", "night": "pics/backgrounds/weather/night_sand.jpg"},
+#                "dust": {"day": "pics/backgrounds/weather/day_dust.jpg", "night": "pics/backgrounds/weather/night_dust.jpg"},
+#                "volcanic ash": {"day": "pics/backgrounds/weather/day_ash.jpg", "night": "pics/backgrounds/weather/night_ash.jpg"},
+#                "squalls": {"day": "pics/backgrounds/weather/day_squall.jpg", "night": "pics/backgrounds/weather/night_squall.jpg"},
+#                "tornado": {"day": "pics/backgrounds/weather/day_tornado.jpg", "night": "pics/backgrounds/weather/night_tornado.jpg"},
+#                "thunderstorm": {"day": "pics/backgrounds/weather/day_thunderstorm.jpg", "night": "pics/backgrounds/weather/night_thunderstorm.jpg"},
+#                "drizzle": {"day": "pics/backgrounds/weather/day_drizzle.jpg", "night": "pics/backgrounds/weather/night_drizzle.jpg"}
+#            }
+
+#            if descr in background_map:
+#                bg = background_map[descr][period]
+#            else:
+#                main = weather_data["condition"]
+#                bg = background_map.get(main.lower(), {}).get(period, "pics/backgrounds/weather/weather.jpg")
+
+            # Finally, load and set the image
+#            if os.path.exists(bg):
+#                img = Image.open(bg).resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
+#                self.bg_image_tk = ImageTk.PhotoImage(img)
+#                if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
+#                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+#                else:
+#                    self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+#                    self.bg_canvas.pack(fill="both", expand=True)
+#                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+#            else:
+#                print(f"[Weather] Missing bg image for '{descr}' {period}")
+#        except Exception as e:
+#            print(f"[Weather background error] {e}")
 
     def on_resize(self, event):
         if hasattr(self, "bg_image_original"):
@@ -4395,8 +4471,8 @@ class WeatherApp:
             "feels_like": data["main"]["feels_like"],
             "humidity": data["main"]["humidity"],
             "wind_speed": data["wind"]["speed"],
-            "description": data["weather"][0]["description"].lower()
-#            "sys": data.get("sys", {})
+            "description": data["weather"][0]["description"].lower(),
+            "sys": data.get("sys", {})
         }
 
     def get_current_weather_condition_trip(self):
