@@ -44,6 +44,7 @@ import tkinter.font as tkFont
 import ephem
 from datetime import date as dt_date
 import calendar
+import math
 
 ## Create Root ##
 root = tk.Tk()
@@ -255,6 +256,7 @@ class OnScreenKeyboard:
                     command=lambda k=key: self._on_key_press(k)
                 )
                 #btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
+                btn.is_icon_button = True
                 btn.grid(row=r, column=c, padx=2, pady=0, sticky="ew")
 
         # Make columns expand evenly
@@ -545,17 +547,18 @@ class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
         self.spotify_token = spotify_token
+        self.icon_bg_color = "orange"
 
         # Store default paths for each page
         self.default_backgrounds = {
-            "home": "pics/backgrounds/home.jpg",
-            "cam": "pics/backgrounds/cam.jpg",
-            "card": "pics/backgrounds/card.jpg",
-            "list": "pics/backgrounds/list.jpg",
-            "music": "pics/backgrounds/music.jpg",
-            "settings": "pics/backgrounds/settings.jpg",
-            "tracker": "pics/backgrounds/tracker.jpg",
-            "weather": "pics/backgrounds/weather.jpg"
+            "home": "pics/backgrounds/Home.jpg",
+            "cam": "pics/backgrounds/Camera.jpg",
+            "card": "pics/backgrounds/Card.jpg",
+            "list": "pics/backgrounds/List.jpg",
+            "music": "pics/backgrounds/Music.jpg",
+            "settings": "pics/backgrounds/Settings.jpg",
+            "tracker": "pics/backgrounds/Tracker.jpg",
+            "weather": "pics/backgrounds/Weather.jpg"
         }
 
         #self.pages = list(self.default_backgrounds.keys())
@@ -589,6 +592,7 @@ class ExpirationApp:
         self.load_settings()
         self.apply_settings()
         self.create_home_screen()
+        self.apply_icon_bg_color()
 #        self.update_weather()
 
     ## Create Background ##
@@ -697,6 +701,7 @@ class ExpirationApp:
         # === Linux: custom Toplevel dropdown ===
         else:
             btn = tk.Button(parent, text=os.path.basename(var.get()) or "Choose...", relief="raised", bg=self.bg_color)
+            btn.is_icon_button = True
 
             def open_dropdown(event=None):
                 top = tk.Toplevel(btn)
@@ -811,8 +816,28 @@ class ExpirationApp:
             if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
         ])
 
+        # === Icon Background Color Selector ===
+        icon_color_label = tk.Label(
+            frame,
+            text="Icon Background Color:",
+            font=(self.current_font, 14),
+            bg=self.bg_color
+        )
+        icon_color_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+
+        icon_color_btn = tk.Button(
+            frame,
+            text=self.icon_bg_color,
+            font=(self.current_font, 12),
+            bg=self.icon_bg_color,
+            command=self.choose_icon_bg_color
+        )
+        icon_color_btn.is_icon_button = True
+        icon_color_btn.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        # === Background Selectors ===
         for idx, page in enumerate(self.pages):
-            actual_row = idx + 1
+            actual_row = idx + 2
             tk.Label(
                 frame,
                 text=f"{page.capitalize()} Background:",
@@ -828,7 +853,7 @@ class ExpirationApp:
                 self.bg_vars = {}
             self.bg_vars[page] = var
 
-            # --- Preview image on the right (you already had this) ---
+            # --- Preview image on the right ---
             if os.path.exists(current_path):
                 preview_img = Image.open(current_path).resize(thumb_size, Image.LANCZOS)
             else:
@@ -863,6 +888,25 @@ class ExpirationApp:
                 on_select=update_cb
             )
             img_menu.grid(row=actual_row, column=1, sticky="ew", padx=5, pady=2)
+
+        # === Icon Background Color Selector ===
+        icon_color_label = tk.Label(
+            frame,
+            text="Icon Background Color:",
+            font=(self.current_font, 14),
+            bg=self.bg_color
+        )
+        icon_color_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+
+        icon_color_btn = tk.Button(
+            frame,
+            text=self.icon_bg_color,
+            font=(self.current_font, 12),
+            bg=self.icon_bg_color,
+            command=self.choose_icon_bg_color
+        )
+        icon_color_btn.is_icon_button = True
+        icon_color_btn.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
 
     def build_settings_page_old(self, frame):
         """Build the per-page background settings section with previews."""
@@ -917,7 +961,7 @@ class ExpirationApp:
 
             var.trace_add("write", update_preview)
 
-    def build_settings_page_old(self, frame):
+    def build_settings_page_older(self, frame):
         """Build the per-page background settings section."""
         self.pages = list(self.default_backgrounds.keys())
 
@@ -1247,6 +1291,22 @@ class ExpirationApp:
             (canvas_height - new_height) // 2
         )
 
+    def choose_icon_bg_color(self):
+        from tkinter import colorchooser
+        color_code = colorchooser.askcolor(title="Choose Icon Background Color")[1]
+        if color_code:
+            self.icon_bg_color = color_code
+            self.apply_icon_bg_color()
+
+    def apply_icon_bg_color(self):
+        # Loop through all icon buttons and update their background color
+        for widget in self.root.winfo_children():
+            try:
+                if isinstance(widget, tk.Button) and hasattr(widget, "is_icon_button"):
+                    widget.config(bg=self.icon_bg_color)
+            except:
+                pass
+
     def enable_mousewheel_scroll(self, canvas):
         """Allow mouse wheel scrolling on a Tkinter canvas for Windows, macOS, and Linux."""
         def _on_mousewheel(event):
@@ -1297,6 +1357,7 @@ class ExpirationApp:
                 command=self.open_weather_page
             )
             weather_btn.image = icon_photo
+            weather_btn.is_icon_button = True
             weather_btn.pack()
 
         except Exception as e:
@@ -1407,7 +1468,8 @@ class ExpirationApp:
         frame = tk.Frame(self.root)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen, bg=self.icon_bg_color)
+        back_btn.is_icon_button = True
         back_btn.pack(anchor="nw", padx=10, pady=10)
 
         html = """
@@ -1619,6 +1681,7 @@ class ExpirationApp:
                 command=cmd
             )
             weather_btn.image = icon_photo
+            weather_btn.is_icon_button = True
             weather_btn.pack()
 
         except Exception as e:
@@ -1694,34 +1757,42 @@ class ExpirationApp:
         button_frame.pack(pady=20)
 
         item_btn = tk.Button(button_frame, cursor="hand2", image=itemImg, width=100, height=100, bg=self.bg_color, command=self.create_list_view)
+        item_btn.is_icon_button = True
         item_btn.pack(side=tk.RIGHT)
         ToolTip(item_btn, "Click to Open Food Catalog")
 
         scan_btn = tk.Button(button_frame, cursor="hand2", image=scanImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_camera_ui())
+        scan_btn.is_icon_button = True
         scan_btn.pack(side=tk.RIGHT)
         ToolTip(scan_btn, "Click to Scan New Barcodes")
 
         track_btn = tk.Button(button_frame, cursor="hand2", image=viewImg, width=100, height=100, bg=self.bg_color, command=lambda: self.add_item_popup())
+        track_btn.is_icon_button = True
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
 
         weather_btn = tk.Button(button_frame, cursor="hand2", image=weatherImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_weather_ui())
+        weather_btn.is_icon_button = True
         weather_btn.pack(side=tk.RIGHT)
         ToolTip(weather_btn, "Click to Open Weather Forcast")
 
         music_btn = tk.Button(button_frame, cursor="hand2", image=musicImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_music_ui())
+        music_btn.is_icon_button = True
         music_btn.pack(side=tk.RIGHT)
         ToolTip(music_btn, "Click to Open Radio")
 
         web_btn = tk.Button(button_frame, cursor="hand2", image=webImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_foodfacts())
+        web_btn.is_icon_button = True
         web_btn.pack(side=tk.RIGHT)
         ToolTip(web_btn, "Click to Open Web Browser")
 
         dark_mode_btn = tk.Button(button_frame, cursor="hand2", image=lightImg, width=100, height=100, bg=self.bg_color, command=self.choose_bg_color)
+        dark_mode_btn.is_icon_button = True
         dark_mode_btn.pack(side=tk.LEFT)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
         set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_settings_page())
+        set_btn.is_icon_button = True
         set_btn.pack(side=tk.LEFT)
         ToolTip(set_btn, "Click to Configure Application")
 
@@ -1847,7 +1918,8 @@ class ExpirationApp:
 
         # Refresh button
 #        refresh_btn = tk.Button(panel, cursor="hand2", image=refreshImg, command=self.load_random_recipe)
-        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe)
+        refresh_btn = tk.Button(panel, cursor="hand2", image=foodImg, command=self.load_random_recipe, bg=self.icon_bg_color)
+        refresh_btn.is_icon_button = True
         refresh_btn.pack(pady=5)
         ToolTip(refresh_btn, "Click to Load a New Recipe")
 
@@ -1924,6 +1996,7 @@ class ExpirationApp:
         # Back button
         back_btn = tk.Button(self.root, image=self.backImg, command=self.create_home_screen,
                      bd=0, cursor="hand2", background="orange", highlightthickness=0)
+        back_btn.is_icon_button = True
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         self.root.after(50, back_btn.lift)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
@@ -2120,6 +2193,7 @@ class ExpirationApp:
             cursor="hand2",
             command=lambda: self.create_home_screen(None)
         )
+        back_btn.is_icon_button = True
 
         def place_back_button(event=None):
             btn_size = min(int(self.root.winfo_width() * 0.05), 80)
@@ -2141,6 +2215,7 @@ class ExpirationApp:
             cursor="hand2",
             command=self.save_settings_and_apply
         )
+        save_btn.is_icon_button = True
 
         def place_save_button(event=None):
             btn_size = min(int(self.root.winfo_width() * 0.05), 80)
@@ -2266,10 +2341,12 @@ class ExpirationApp:
         button_frame = tk.Frame(frame, bg=self.bg_color)
         button_frame.grid(row=5, column=0, columnspan=2, pady=10)
 
-        save_btn = tk.Button(button_frame, text="Save", command=self.save_settings_and_apply)
+        save_btn = tk.Button(button_frame, text="Save", command=self.save_settings_and_apply, bg=self.icon_bg_color)
+        save_btn.is_icon_button = True
         save_btn.pack(side=tk.LEFT, padx=10)
 
-        cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen)
+        cancel_btn = tk.Button(button_frame, text="Cancel", command=self.create_home_screen, bg=self.icon_bg_color)
+        cancel_btn.is_icon_button = True
         cancel_btn.pack(side=tk.LEFT, padx=10)
 
     def clear_screen(self):
@@ -2391,10 +2468,12 @@ class ExpirationApp:
         btn_frame = tk.Frame(self.root)
         btn_frame.pack(pady=10)
 
-        save_btn = tk.Button(btn_frame, text="Save Settings", command=self.save_settings)
+        save_btn = tk.Button(btn_frame, text="Save Settings", command=self.save_settings, bg=self.icon_bg_color)
+        save_btn.is_icon_button = True
         save_btn.pack(side=tk.LEFT, padx=10)
 
-        cancel_btn = tk.Button(btn_frame, text="Cancel", command=self.create_home_screen)
+        cancel_btn = tk.Button(btn_frame, text="Cancel", command=self.create_home_screen, bg=self.icon_bg_color)
+        cancel_btn.is_icon_button = True
         cancel_btn.pack(side=tk.LEFT, padx=10)
 
         # Initial preview update
@@ -2454,6 +2533,7 @@ class ExpirationApp:
 			image=addImg,
 			#command=lambda: self.add_item_popup)
 			command=self.add_item_popup)
+        add_btn.is_icon_button = True
         add_btn.pack(pady=5)
         ToolTip(add_btn, "Click to Add Item")
 
@@ -2465,6 +2545,7 @@ class ExpirationApp:
 			### Lambda Breaks Button Here IDKY ###
 			#command=lambda: self.show_camera)
 			command=self.show_camera)
+        cam_btn.is_icon_button = True
         cam_btn.pack(pady=5)
 
 #        Hovertip(cam_btn, "Click to Open Camera", hover_delay=500)
@@ -2477,6 +2558,7 @@ class ExpirationApp:
 				image=listImg,
 				#command=lambda: self.create_list_view)
 				command=self.create_list_view)
+        list_view_btn.is_icon_button = True
         list_view_btn.pack(pady=5)
 
 #        Hovertip(list_view_btn, "Click to Open Inventory in List View", hover_delay=500)
@@ -2489,6 +2571,7 @@ class ExpirationApp:
 				image=cardImg,
 				#command=lambda: self.create_card_view)
 				command=self.create_card_view)
+        card_view_btn.is_icon_button = True
         card_view_btn.pack(pady=5)
 
 #        Hovertip(card_view_btn, "Click to Open Inventory in Card View", hover_delay=500)
@@ -2501,6 +2584,7 @@ class ExpirationApp:
 				image=lightImg,
 				#command=lambda: self.choose_bg_color)
 				command=self.choose_bg_color)
+        dark_mode_btn.is_icon_button = True
         dark_mode_btn.pack(pady=10)
 
 #        Hovertip(dark_mode_btn, "Click to Toggle Light/Dark Mode", hover_delay=500)
@@ -2512,6 +2596,7 @@ class ExpirationApp:
 			cursor="hand2",
 			image=backImg,
 			command=lambda: self.create_home_screen(None))
+        back_btn.is_icon_button = True
         back_btn.pack(pady=10)
 
 #        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
@@ -2550,11 +2635,13 @@ class ExpirationApp:
 
         # View switch button
         list_btn = tk.Button(top_left_frame, image=listImg, cursor="hand2", bg=self.bg_color, command=self.create_list_view)
+        list_btn.is_icon_button = True
         list_btn.pack(side=tk.LEFT)
         ToolTip(list_btn, "Click to View Items in a List")
 
         # Dark mode button
         dark_mode_btn = tk.Button(top_left_frame, image=lightImg, cursor="hand2", bg=self.bg_color, command=self.choose_bg_color)
+        dark_mode_btn.is_icon_button = True
         dark_mode_btn.pack(side=tk.LEFT, padx=5)
         ToolTip(dark_mode_btn, "Toggle Dark Mode")
 
@@ -2603,6 +2690,7 @@ class ExpirationApp:
             width=15, height=6, highlightthickness=0, bd=1,
             command=lambda i=item: self.show_detail_view(i)
             )
+            c_btn.is_icon_button = True
             c_btn.grid(row=row, column=col, padx=10, pady=10)
             col += 1
             if col == 3:
@@ -2611,6 +2699,7 @@ class ExpirationApp:
 
         card_back_btn = tk.Button(self.root, image=backImg,
                                 cursor="hand2", bg="orange", command=lambda: self.create_home_screen(item))
+        card_back_btn.is_icon_button = True
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
@@ -2648,11 +2737,13 @@ class ExpirationApp:
 
         # View switch button
         card_btn = tk.Button(top_left_frame, image=cardImg, cursor="hand2", bg=self.bg_color, command=self.create_card_view)
+        card_btn.is_icon_button = True
         card_btn.pack(side=tk.LEFT)
         ToolTip(card_btn, "Click to View Items in Cards")
 
         # Dark mode button
         dark_mode_btn = tk.Button(top_left_frame, image=lightImg, cursor="hand2", bg=self.bg_color, command=self.choose_bg_color)
+        dark_mode_btn.is_icon_button = True
         dark_mode_btn.pack(side=tk.LEFT, padx=5)
         ToolTip(dark_mode_btn, "Toggle Dark Mode")
 
@@ -2705,6 +2796,7 @@ class ExpirationApp:
 
         card_back_btn = tk.Button(self.root, image=backImg,
                                 cursor="hand2", bg="orange", command=lambda: self.create_home_screen(item))
+        card_back_btn.is_icon_button = True
         card_back_btn.place(relx=1.0, y=10, anchor="ne", x=-10)
         ToolTip(card_back_btn, "Click to Return to the Item Tracker Screen")
 
@@ -2817,14 +2909,17 @@ class ExpirationApp:
             self.save_items()
             self.show_detail_view(item)
 
-        edit_btn = tk.Button(detail_frame, text="Edit", font=APP_FONT_BOLD, bg="orange", fg="#2E2E2E", cursor="hand2", command=edit_item_fields)
+        edit_btn = tk.Button(detail_frame, text="Edit", font=APP_FONT_BOLD, bg=self.icon_bg_color, fg="#2E2E2E", cursor="hand2", command=edit_item_fields)
+        edit_btn.is_icon_button = True
         edit_btn.pack(pady=5)
 
-        scanner_btn = tk.Button(detail_frame, cursor="hand2", image=camImg, command=self.show_camera)
+        scanner_btn = tk.Button(detail_frame, cursor="hand2", image=camImg, command=self.show_camera, bg=self.icon_bg_color)
+        scanner_btn.is_icon_button = True
         scanner_btn.pack(pady=5)
         ToolTip(scanner_btn, "Click to Open Barcode Scanner")
 
-        barcode_btn = tk.Button(detail_frame, cursor="hand2", image=scanImg, command=lambda: self.detect_barcode("codes/barcode.png"))
+        barcode_btn = tk.Button(detail_frame, cursor="hand2", image=scanImg, command=lambda: self.detect_barcode("codes/barcode.png"), bg=self.icon_bg_color)
+        barcode_btn.is_icon_button = True
         barcode_btn.pack(pady=5)
         ToolTip(barcode_btn, "Click to Display Scanned Barcode")
 
@@ -2835,7 +2930,8 @@ class ExpirationApp:
         self.barcode_entry.pack(pady=5)
         self.barcode_entry.bind("<Button-1>", lambda e: OnScreenKeyboard(self.root, self.barcode_entry))
 
-        back_btn = tk.Button(detail_frame, cursor="hand2", image=cardImg, command=lambda: [self.stop_camera(), self.create_card_view()])
+        back_btn = tk.Button(detail_frame, cursor="hand2", image=cardImg, command=lambda: [self.stop_camera(), self.create_card_view()], bg=self.icon_bg_color)
+        back_btn.is_icon_button = True
         back_btn.pack(pady=10)
         ToolTip(back_btn, "Click to Return to Card View")
 
@@ -2984,7 +3080,8 @@ class ExpirationApp:
             label = tk.Label(info_window, text=f"{key}: {value}", font=APP_FONT, anchor="w")
             label.pack(fill=tk.X, padx=10, pady=2)
 
-        close_btn = tk.Button(info_window, text="Close", command=info_window.destroy)
+        close_btn = tk.Button(info_window, text="Close", command=info_window.destroy, bg=self.icon_bg_color)
+        close_btn.is_icon_button = True
         close_btn.pack(pady=10)
 
     def sort_items(self, sort_type):
@@ -3155,6 +3252,7 @@ class ExpirationApp:
             command=lambda: self.create_home_screen(None)
         )
         back_btn_corner.image = self.backImg
+        back_btn_corner.is_icon_button = True
         back_btn_corner.pack()
 
         # --- Panel frames ---
@@ -3288,18 +3386,21 @@ class ExpirationApp:
 #            )
 
             # --- Back button in top right ---
+            back_btn = tk.Button(
+                self.bg_canvas,
+                image=self.backImg,
+                cursor="hand2",
+                bg=self.icon_bg_color,
+                highlightthickness=0,
+                bd=0,
+                command=lambda: self.create_home_screen(None)
+            )
+            back_btn.is_icon_button = True
+
             self.bg_canvas.create_window(
                 event.width - 10, 10,
                 anchor="ne",
-                window=tk.Button(
-                    self.bg_canvas,
-                    image=self.backImg,
-                    cursor="hand2",
-                    bg="#FFA500",
-                    highlightthickness=0,
-                    bd=0,
-                    command=lambda: self.create_home_screen(None)
-                )
+                window=back_btn
             )
 
             # Top bar coords (centered above center panel)
@@ -3343,6 +3444,7 @@ class ExpirationApp:
                       self.cal.get_date(),
                       details_entry.get()
                   ))
+        submit_btn.is_icon_button = True
         submit_btn.pack(pady=10)
         ToolTip(submit_btn, "Click to Save the Item to the Inventory")
 
@@ -3791,13 +3893,14 @@ class ExpirationApp:
                              image=backImg,
         		     command=lambda: [self.stop_camera(), self.create_home_screen(None)])
                              #command=lambda: self.create_tracker_ui(None))
+        back_btn.is_icon_button = True
         back_btn.pack(pady=10, side="left")
-#        Hovertip(back_btn, "Click to Return to the Previous Screen", hover_delay=500)
         ToolTip(back_btn, "Click to Return to the Previous Screen")
 
         scan_btn = tk.Button(self.root,
                              image=scanImg,
                              command=lambda: self.detect_barcode_from_camera())
+        scan_btn.is_icon_button = True
         scan_btn.pack(pady=10, side="right")
         ToolTip(scan_btn, "Click to Scan Barcode")
 
@@ -4691,6 +4794,7 @@ class CameraApp:
             command=self.back_callback if self.back_callback else self.root.quit
         )
         back_btn_corner.image = self.backImg
+        back_btn_corner.is_icon_button = True
         back_btn_corner.pack()
 
         # Keep buttons above background
@@ -5044,6 +5148,7 @@ class SpotifyApp:
             highlightthickness=0,
             cursor="hand2"
         )
+        back_btn.is_icon_button = True
         back_btn.pack(side=tk.RIGHT, padx=15, pady=10)
 
         tk.Button(controls, text="Play", font=APP_FONT, command=self.play).pack(side=tk.LEFT, padx=10)
@@ -5585,11 +5690,13 @@ class MusicApp:
         npr_controls.pack(pady=20)
 
         # NPR button (acts as play/pause)
-        npr_btn = tk.Button(npr_controls, image=self.nprImg, command=self.toggle_npr, bd=0)
+        npr_btn = tk.Button(npr_controls, image=self.nprImg, command=self.toggle_npr, bd=0, bg=self.icon_bg_color)
+        npr_btn.is_icon_button = True
         npr_btn.pack(side=tk.LEFT, padx=10)
 
         #klpi_btn = tk.Button(parent_frame, image=klpiImg, command=self.toggle_klpi)
-        klpi_btn = tk.Button(npr_controls, image=klpiImg, command=self.toggle_klpi)
+        klpi_btn = tk.Button(npr_controls, image=klpiImg, command=self.toggle_klpi, bg=self.icon_bg_color)
+        klpi_btn.is_icon_button = True
         klpi_btn.pack(side="left", padx=10)
 
         # Podcast button next to NPR
@@ -5600,6 +5707,7 @@ class MusicApp:
             bd=0,
             highlightthickness=0
         )
+        podcast_btn.is_icon_button = True
         podcast_btn.pack(side=tk.LEFT, padx=10)
 
         # Icons side by side
@@ -5647,7 +5755,8 @@ class MusicApp:
         #podcast_btn = tk.Button(self.frame, image=self.podImg, font=APP_FONT,
         #podcast_btn.pack(pady=(2, 0))
 
-        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0, bg="orange", highlightcolor="yellow", highlightbackground="yellow")
+        back_btn = tk.Button(self.frame, image=self.backImg, command=self.back_callback, bd=0, highlightthickness=0, bg=self.icon_bg_color, highlightcolor="yellow", highlightbackground="yellow")
+        back_btn.is_icon_button = True
         back_btn.place(relx=0.98, rely=0.02, anchor="ne")
         back_btn.lift()
         ToolTip(back_btn, "Click to Return to the Previous Screen")
@@ -5914,7 +6023,8 @@ class MusicApp:
         frame = tk.Frame(self.root)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen)
+        back_btn = tk.Button(frame, image=self.backImg, command=self.create_home_screen, bg=self.icon_bg_color)
+        back_btn.is_icon_button = True
         back_btn.pack(anchor="nw", padx=10, pady=10)
 
         html = """
