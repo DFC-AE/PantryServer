@@ -773,6 +773,38 @@ class ExpirationApp:
         thumb_size = (100, 60)
         self.bg_previews = {}
 
+        # === Font Selector Row ===
+        font_label = tk.Label(
+            frame,
+            text="Font Style:",
+            font=(self.current_font, 14),
+            bg=self.bg_color
+        )
+        font_label.grid(row=0, column=0, sticky="w", padx=5, pady=2)
+
+        # Create and store StringVar directly in self
+        self.font_var = tk.StringVar(value=self.current_font)
+
+        available_fonts = sorted(set(tkFont.families()))
+        font_menu = tk.OptionMenu(frame, self.font_var, *available_fonts)
+        font_menu.config(width=20)
+        font_menu.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+
+        # Live preview label
+        self.preview_label = tk.Label(
+            frame,
+            text="Sample Text",
+            font=(self.font_var.get(), 14),
+            bg=self.bg_color
+        )
+        self.preview_label.grid(row=0, column=2, padx=5, pady=2)
+
+        # Update preview when font changes
+        def update_font_preview(*args):
+            self.preview_label.config(font=(self.font_var.get(), 14))
+
+        self.font_var.trace_add("write", update_font_preview)
+
         bg_folder = "pics/backgrounds"
         filenames = sorted([
             f for f in os.listdir(bg_folder)
@@ -780,12 +812,13 @@ class ExpirationApp:
         ])
 
         for idx, page in enumerate(self.pages):
+            actual_row = idx + 1
             tk.Label(
                 frame,
                 text=f"{page.capitalize()} Background:",
                 font=(self.current_font, 14),
                 bg=self.bg_color
-            ).grid(row=idx, column=0, sticky="w", padx=5, pady=2)
+            ).grid(row=actual_row, column=0, sticky="w", padx=5, pady=2)
 
             # Always store a *full path* in the StringVar
             current_path = self.custom_backgrounds.get(page, self.default_backgrounds[page])
@@ -804,7 +837,7 @@ class ExpirationApp:
             self.bg_previews[page] = preview_tk
 
             preview_label = tk.Label(frame, image=preview_tk, bg=self.bg_color)
-            preview_label.grid(row=idx, column=2, padx=5, pady=2)
+            preview_label.grid(row=actual_row, column=2, padx=5, pady=2)
 
             # --- When a new item is chosen, update the preview ---
             def make_update(lbl=preview_label, p=page):
@@ -829,7 +862,7 @@ class ExpirationApp:
                 thumb_size=thumb_size,
                 on_select=update_cb
             )
-            img_menu.grid(row=idx, column=1, sticky="ew", padx=5, pady=2)
+            img_menu.grid(row=actual_row, column=1, sticky="ew", padx=5, pady=2)
 
     def build_settings_page_old(self, frame):
         """Build the per-page background settings section with previews."""
@@ -2081,41 +2114,41 @@ class ExpirationApp:
         frame.pack(fill=tk.BOTH, expand=True)
 
         # Font selection
-        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg=self.bg_color).grid(row=0, column=0, sticky="w")
-        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
-        self.font_var = tk.StringVar(value=self.current_font)
-        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
-        font_menu.grid(row=0, column=1, sticky="ew")
+#        tk.Label(frame, text="Select Font:", font=(self.current_font, 14), bg=self.bg_color).grid(row=0, column=0, sticky="w")
+#        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
+#        self.font_var = tk.StringVar(value=self.current_font)
+#        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
+#        font_menu.grid(row=0, column=1, sticky="ew")
 
         # Background selection
-        tk.Label(frame, text="Select Background Theme:", font=(self.current_font, 14), bg=self.bg_color).grid(row=1, column=0, sticky="w")
-        backgrounds = ["back.jpg", "back_pastel.jpg", "back_toon.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "#2E2E2E"]
-        self.bg_var = tk.StringVar(value=self.current_background)
-        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
-        bg_menu.grid(row=1, column=1, sticky="ew")
+#        tk.Label(frame, text="Select Background Theme:", font=(self.current_font, 14), bg=self.bg_color).grid(row=1, column=0, sticky="w")
+#        backgrounds = ["back.jpg", "back_pastel.jpg", "back_toon.jpg", "settings.jpg", "white", "lightgray", "lightblue", "lightgreen", "#2E2E2E"]
+#        self.bg_var = tk.StringVar(value=self.current_background)
+#        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
+#        bg_menu.grid(row=1, column=1, sticky="ew")
 
         # Background image previews
-        tk.Label(frame, text="Choose Background Image:", font=(self.current_font, 14)).grid(row=4, column=0, sticky="w", pady=10)
+#        tk.Label(frame, text="Choose Background Image:", font=(self.current_font, 14)).grid(row=4, column=0, sticky="w", pady=10)
 
-        bg_preview_frame = tk.Frame(frame)
-        bg_preview_frame.grid(row=4, column=1, sticky="ew")
+#        bg_preview_frame = tk.Frame(frame)
+#        bg_preview_frame.grid(row=4, column=1, sticky="ew")
 
-        canvas = tk.Canvas(bg_preview_frame, height=100)
-        scrollbar = tk.Scrollbar(bg_preview_frame, orient="horizontal", command=canvas.xview)
-        scrollable_frame = tk.Frame(canvas)
+#        canvas = tk.Canvas(bg_preview_frame, height=100)
+#        scrollbar = tk.Scrollbar(bg_preview_frame, orient="horizontal", command=canvas.xview)
+#        scrollable_frame = tk.Frame(canvas)
 
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
+#        scrollable_frame.bind(
+#            "<Configure>",
+#            lambda e: canvas.configure(
+#                scrollregion=canvas.bbox("all")
+#            )
+#        )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(xscrollcommand=scrollbar.set)
+#        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+#        canvas.configure(xscrollcommand=scrollbar.set)
 
-        canvas.pack(side="top", fill="x", expand=True)
-        scrollbar.pack(side="bottom", fill="x")
+#        canvas.pack(side="top", fill="x", expand=True)
+#        scrollbar.pack(side="bottom", fill="x")
 
         self.bg_thumbnails = []  # Keep references so images don't get garbage collected
         backgrounds_dir = "pics/backgrounds"
@@ -2159,16 +2192,16 @@ class ExpirationApp:
             #self.bg_var.set(os.path.basename(img_path))
             self.preview_settings()
 
-        for img_file in image_files:
-            img_path = os.path.join(backgrounds_dir, img_file)
-            try:
-                pil_img = Image.open(img_path).resize((100, 60), Image.LANCZOS)
-                tk_img = ImageTk.PhotoImage(pil_img)
-                self.bg_thumbnails.append(tk_img)  # prevent GC
-                btn = tk.Button(scrollable_frame, image=tk_img, command=lambda p=img_path: on_select_background(p))
-                btn.pack(side="left", padx=5)
-            except Exception as e:
-                print(f"Failed to load thumbnail for {img_file}: {e}")
+        #for img_file in image_files:
+        #    img_path = os.path.join(backgrounds_dir, img_file)
+        #    try:
+        #        pil_img = Image.open(img_path).resize((100, 60), Image.LANCZOS)
+        #        tk_img = ImageTk.PhotoImage(pil_img)
+        #        self.bg_thumbnails.append(tk_img)  # prevent GC
+        #        btn = tk.Button(scrollable_frame, image=tk_img, command=lambda p=img_path: on_select_background(p))
+        #        btn.pack(side="left", padx=5)
+        #    except Exception as e:
+        #        print(f"Failed to load thumbnail for {img_file}: {e}")
 
         # Icon selection
         tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14), bg=self.bg_color).grid(row=2, column=0, sticky="w")
@@ -2185,7 +2218,8 @@ class ExpirationApp:
 
         # Live preview label
         self.preview_label = tk.Label(frame, text="Sample Text", font=(self.font_var.get(), 14),
-                                      bg=self.bg_var.get() if self.bg_var.get() in ["white", "#2E2E2E", "lightgray"] else "white")
+                                      bg=self.bg_color)
+                                      #bg=self.bg_var.get() if self.bg_var.get() in ["white", "#2E2E2E", "lightgray"] else "white")
         self.preview_label.grid(row=4, column=0, columnspan=2, pady=20)
 
         # Buttons
