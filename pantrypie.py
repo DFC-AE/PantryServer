@@ -654,6 +654,87 @@ class ExpirationApp:
         self.apply_settings()
 
     def _build_image_optionmenu(self, parent, var, folder, filenames, thumb_size=(100, 60), on_select=None):
+        import platform
+        system_name = platform.system()
+
+        if not hasattr(self, "_thumb_cache"):
+            self._thumb_cache = {}
+
+        # Preload thumbnails
+        thumbs = {}
+        for name in filenames:
+            path = os.path.join(folder, name)
+            try:
+                img = Image.open(path).resize(thumb_size, Image.LANCZOS)
+            except Exception:
+                img = Image.new("RGB", thumb_size, (200, 200, 200))
+            photo = ImageTk.PhotoImage(img)
+            self._thumb_cache[path] = photo
+            thumbs[path] = photo
+
+        if system_name in ("Darwin", "Windows"):
+            mb = tk.Menubutton(parent, text=os.path.basename(var.get()) or "Choose...", relief="raised", bg=self.bg_color)
+            menu = tk.Menu(mb, tearoff=0)
+            mb.configure(menu=menu)
+
+            if not hasattr(self, "_menus"):
+                self._menus = []
+            self._menus.append(menu)
+
+            for name in filenames:
+                path = os.path.join(folder, name)
+
+                def _choose(p=path):
+                    var.set(p)
+                    mb.config(text=os.path.basename(p))
+                    if on_select:
+                        on_select(p)
+
+                menu.add_command(label=" " + name, image=thumbs[path], compound="left", command=_choose)
+
+            return mb
+
+        # === Linux: custom Toplevel dropdown ===
+        else:
+            btn = tk.Button(parent, text=os.path.basename(var.get()) or "Choose...", relief="raised", bg=self.bg_color)
+
+            def open_dropdown(event=None):
+                top = tk.Toplevel(btn)
+                top.wm_overrideredirect(True)  # no window borders
+                x = btn.winfo_rootx()
+                y = btn.winfo_rooty() + btn.winfo_height()
+                top.geometry(f"+{x}+{y}")
+
+                for name in filenames:
+                    path = os.path.join(folder, name)
+
+                    def _choose(p=path):
+                        var.set(p)
+                        btn.config(text=os.path.basename(p))
+                        if on_select:
+                            on_select(p)
+                        top.destroy()
+
+                    item_frame = tk.Frame(top, bg="white")
+                    item_frame.pack(fill="x", padx=1, pady=1)
+
+                    tk.Label(item_frame, image=thumbs[path], bg="white").pack(side="left", padx=5)
+                    tk.Label(item_frame, text=name, bg="white").pack(side="left", anchor="w")
+                    item_frame.bind("<Button-1>", lambda e, p=path: _choose(p))
+                    for child in item_frame.winfo_children():
+                        child.bind("<Button-1>", lambda e, p=path: _choose(p))
+
+                # Close dropdown if clicking anywhere else
+                def close_on_click(event):
+                    if event.widget not in top.winfo_children():
+                        top.destroy()
+                top.bind("<FocusOut>", lambda e: top.destroy())
+                top.focus_force()
+
+            btn.config(command=open_dropdown)
+            return btn
+
+    def _build_image_optionmenu_nonlinux(self, parent, var, folder, filenames, thumb_size=(100, 60), on_select=None):
         mb = tk.Menubutton(parent, text=os.path.basename(var.get()) or "Choose...", relief="raised", bg=self.bg_color)
         menu = tk.Menu(mb, tearoff=0)
         mb.configure(menu=menu)
