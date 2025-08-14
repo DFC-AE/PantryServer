@@ -353,7 +353,7 @@ img_music = Image.open("pics/icons/music.png")
 img_music = img_music.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicImg = ImageTk.PhotoImage(img_music)
 ## Music Background Image ##
-img_music_back = Image.open("pics/backgrounds/music.jpg")
+img_music_back = Image.open("pics/backgrounds/Music.jpg")
 img_music_back = img_music_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 musicbackImg = ImageTk.PhotoImage(img_music_back)
 ## NPR Image ##
@@ -392,7 +392,7 @@ img_back_weather = Image.open("pics/backgrounds/weather/weather.jpg")
 img_back_weather = img_back_weather.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_weatherImg = ImageTk.PhotoImage(img_back_weather)
 ## Clear Weather Background Image ##
-img_back_day_clear = Image.open("pics/backgrounds/weather/day_clear.jpg")
+img_back_day_clear = Image.open("pics/backgrounds/weather/day_clear_sky.jpg")
 img_back_day_clear = img_back_day_clear.resize((img_wdt, img_hgt), Image.LANCZOS)
 back_cleardayImg = ImageTk.PhotoImage(img_back_day_clear)
 img_back_night_clear = Image.open("pics/backgrounds/weather/night_clear.jpg")
@@ -546,6 +546,40 @@ data = {
 
 resp = requests.post(token_url, headers=headers, data=data)
 spotify_token = resp.json()["access_token"]
+
+#def load_background_image(image_path, fallback_path="pics/backgrounds/default.jpg"):
+#    """
+#    Safely load a background image.
+#    - image_path: requested background path
+#    - fallback_path: path to default background if image_path is invalid
+#    Returns: PIL.Image object or None if both fail
+#    """
+#    # Ensure we have a valid path
+#    if not image_path or not os.path.exists(image_path):
+#        print(f"[Background error] Requested image not found: {image_path}")
+#        image_path = fallback_path
+
+#        if not os.path.exists(fallback_path):
+#            print(f"[Background error] Fallback image also missing: {fallback_path}")
+#            return None
+
+#    try:
+#        image = Image.open(image_path)
+#        print(f"Loaded background: {image_path}")
+#        return image
+#    except Exception as e:
+#        print(f"[Background error] Failed to load image {image_path}: {e}")
+#        return None
+
+# Usage in your Tkinter app
+#self.bg_image_original = load_background_image(bg_path)
+#if self.bg_image_original:
+#    width = self.bg_canvas.winfo_width() or 1
+#    height = self.bg_canvas.winfo_height() or 1
+#    resized = self.bg_image_original.resize((width, height), Image.LANCZOS)
+#    self.bg_image_tk = ImageTk.PhotoImage(resized)
+#    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+#    self.bg_canvas.tag_lower("bg_image")
 
 # ------- Main Application Class -------
 class ExpirationApp:
@@ -952,122 +986,6 @@ class ExpirationApp:
         for child in widget.winfo_children():
             self._apply_bg_recursive(child)
 
-    def build_settings_page_old(self, frame):
-        """Build the per-page background settings section with previews."""
-        self.pages = list(self.default_backgrounds.keys())
-
-        thumb_size = (100, 60)
-        self.bg_previews = {}
-
-        for idx, page in enumerate(self.pages):
-            tk.Label(
-                frame,
-                text=f"{page.capitalize()} Background:",
-                font=(self.current_font, 14),
-                bg=self.bg_color
-            ).grid(row=idx, column=0, sticky="w", padx=5, pady=2)
-
-            var = tk.StringVar(
-                value=self.custom_backgrounds.get(page, self.default_backgrounds[page])
-            )
-
-            if not hasattr(self, "bg_vars"):
-                self.bg_vars = {}
-            self.bg_vars[page] = var
-
-            # --- Create preview image ---
-            img_path = var.get()
-            if os.path.exists(img_path):
-                preview_img = Image.open(img_path).resize(thumb_size, Image.LANCZOS)
-            else:
-                preview_img = Image.new("RGB", thumb_size, (200, 200, 200))
-
-            preview_tk = ImageTk.PhotoImage(preview_img)
-            self.bg_previews[page] = preview_tk
-
-            preview_label = tk.Label(frame, image=preview_tk, bg=self.bg_color)
-            preview_label.grid(row=idx, column=1, padx=5, pady=2)
-
-            # --- Dropdown ---
-            bg_menu = tk.OptionMenu(frame, var, *os.listdir("pics/backgrounds"))
-            bg_menu.grid(row=idx, column=2, sticky="ew", padx=5, pady=2)
-
-            # Update preview on change
-            def update_preview(*args, p=page, v=var, lbl=preview_label):
-                path = v.get()
-                if os.path.exists(path):
-                    img = Image.open(path).resize(thumb_size, Image.LANCZOS)
-                else:
-                    img = Image.new("RGB", thumb_size, (200, 200, 200))
-                img_tk = ImageTk.PhotoImage(img)
-                lbl.config(image=img_tk)
-                self.bg_previews[p] = img_tk
-
-            var.trace_add("write", update_preview)
-
-    def build_settings_page_older(self, frame):
-        """Build the per-page background settings section."""
-        self.pages = list(self.default_backgrounds.keys())
-
-        for idx, page in enumerate(self.pages):
-            tk.Label(
-                frame,
-                text=f"{page.capitalize()} Background:",
-                font=(self.current_font, 14),
-                bg=self.bg_color
-            ).grid(row=idx, column=0, sticky="w")
-
-            var = tk.StringVar(
-                value=self.custom_backgrounds.get(page, self.default_backgrounds[page])
-            )
-
-            # Keep a reference to each page's var
-            if not hasattr(self, "bg_vars"):
-                self.bg_vars = {}
-            self.bg_vars[page] = var
-
-            bg_menu = tk.OptionMenu(frame, var, *os.listdir("pics/backgrounds"))
-            bg_menu.grid(row=idx, column=1, sticky="ew")
-
-    def set_background_new(self, page_name, path=None):
-        try:
-            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
-
-            # Determine final path to use
-            if not path:
-                path = self.custom_backgrounds.get(page_name, self.default_backgrounds.get(page_name))
-
-            if path in valid_colors:
-                self.root.configure(bg=path)
-                return
-
-            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
-                path = os.path.join("pics/backgrounds", path)
-
-            if not os.path.exists(path):
-                print(f"[Background warning] No background found for {path}, using default.")
-                path = self.default_backgrounds.get(page_name, "pics/backgrounds/default.jpg")
-
-            # Load and store original image for resizing
-            self.bg_image_original = Image.open(path)
-            self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
-            self.current_background = path
-
-            # Create label if needed
-            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
-                self.bg_label = tk.Label(self.root)
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
-
-            self.bg_label.config(image=self.bg_image)
-
-            # Bind resizing to shared method
-            self.root.bind("<Configure>", self._resize_background)
-
-        except Exception as e:
-            print(f"[Background error on {page_name}] {e}")
-            self.root.configure(bg="#2E2E2E")
-
     def _resize_background(self, event):
         try:
             if hasattr(self, 'bg_image_original'):
@@ -1077,188 +995,6 @@ class ExpirationApp:
                     self.bg_label.config(image=self.bg_image)
         except Exception as e:
             print(f"[Background resize error] {e}")
-
-    def set_background_mid(self, page_name, path=None):
-        try:
-            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
-
-            # Determine final path to use
-            if not path:
-                path = self.custom_backgrounds.get(page_name, self.default_backgrounds.get(page_name))
-
-            if path in valid_colors:
-                self.root.configure(bg=path)
-                return
-
-            # If it's only a filename, resolve to full path
-            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
-                path = os.path.join("pics/backgrounds", path)
-
-            # If .jpg missing, try .png automatically
-            if not os.path.exists(path):
-                base, ext = os.path.splitext(path)
-                if ext.lower() == ".jpg":
-                    png_path = base + ".png"
-                    if os.path.exists(png_path):
-                        path = png_path
-
-            if not os.path.exists(path):
-                print(f"[Background warning] No background found for {path}, using default.")
-                path = self.default_backgrounds.get(page_name, "pics/backgrounds/default.jpg")
-
-            # Create cache dict if it doesn't exist
-            if not hasattr(self, "bg_cache"):
-                self.bg_cache = {}
-
-            # If we already have this background cached for this page, use it
-            if page_name in self.bg_cache:
-                self.bg_image_original, self.bg_image = self.bg_cache[page_name]
-            else:
-                # Load and resize image to current window size
-                img = Image.open(path)
-                img = img.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
-                self.bg_image_original = img
-                self.bg_image = ImageTk.PhotoImage(img)
-                self.bg_cache[page_name] = (self.bg_image_original, self.bg_image)
-
-            self.current_background = path
-
-            # Create label if needed
-            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
-                self.bg_label = tk.Label(self.root)
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
-
-            self.bg_label.config(image=self.bg_image)
-
-            # Bind resize event to update background dynamically
-            def _resize_bg(event):
-                resized_img = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
-                self.bg_image = ImageTk.PhotoImage(resized_img)
-                self.bg_label.config(image=self.bg_image)
-
-            self.root.bind("<Configure>", _resize_bg)
-
-        except Exception as e:
-            print(f"[Background error on {page_name}] {e}")
-            self.root.configure(bg="#2E2E2E")
-
-    def set_background_new(self, page_name, path=None):
-        try:
-            valid_colors = ["white", "#2E2E2E", "lightgray", "lightblue", "lightgreen"]
-
-            if not path:
-                path = self.custom_backgrounds.get(page_name) or self.default_backgrounds.get(page_name)
-
-            if not path:
-                print(f"[Background warning] No background found for {page_name}, using default.")
-                path = "pics/backgrounds/home.jpg"
-
-            if path in valid_colors:
-                self.root.configure(bg=path)
-                return
-
-            if not os.path.isabs(path) and not path.startswith("pics/backgrounds"):
-                path = os.path.join("pics/backgrounds", path)
-
-            if not os.path.exists(path):
-                print(f"[Background warning] Missing background for {page_name}, using fallback.")
-                path = "pics/backgrounds/home.jpg"
-
-            # Load original image for resizing
-            self.bg_image_original = Image.open(path)
-            self.current_background = path
-
-            # Create label if needed
-            if not hasattr(self, "bg_label") or not self.bg_label.winfo_exists():
-                self.bg_label = tk.Label(self.root)
-                self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-                self.bg_label.lower()
-
-            # Function to resize background dynamically
-            def resize_bg(event=None):
-                resized = self.bg_image_original.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
-                self.bg_image = ImageTk.PhotoImage(resized)
-                self.bg_label.config(image=self.bg_image)
-
-            # Bind resize event
-            self.root.bind("<Configure>", resize_bg)
-
-            # Initial draw
-            resize_bg()
-
-        except Exception as e:
-            print(f"[Background error on {page_name}] {e}")
-            self.root.configure(bg="#2E2E2E")
-
-    def set_background_old(self, path=None):
-        if not path:
-            path = getattr(self, "current_background", "back")
-        if path == "back":
-            path = "pics/backgrounds/back.jpg"
-
-        # Destroy existing background label if any
-        if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
-            self.bg_label.destroy()
-
-        # Load and resize image
-        try:
-            self.bg_image_original = Image.open(path)
-            resized = self.bg_image_original.resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized)
-
-            self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-            self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-            self.bg_label.lower()
-        except Exception as e:
-            print("Background error:", e)
-            #self.root.configure(bg=self.bg_color)
-            #self.root.configure(bg=bg_choice if bg_choice in valid_colors else "#2E2E2E")
-#            self.set_background("")
-
-        # Bind resize only once
-        if not hasattr(self, "_resize_bound") or not self._resize_bound:
-            self.root.bind("<Configure>", self.on_resize)
-            self._resize_bound = True
-
-
-    # def set_background_old(self, path=None):
-    #     # Fallback to saved setting
-    #     if not path:
-    #         path = getattr(self, "current_background", "back")
-
-    #     # Use default image for keyword "back"
-    #     if path == "back":
-    #         path = "pics/backgrounds/back.jpg"
-
-    #     # Remove existing background label if needed
-    #     if hasattr(self, "bg_label") and self.bg_label is not None and self.bg_label.winfo_exists():
-    #         self.bg_label.destroy()
-
-    #     # Handle color backgrounds
-    #     if path.lower() in ["white", "black", "lightgray", "lightblue", "lightgreen"]:
-    #         self.root.configure(bg=path)
-    #         self.bg_label = None
-    #     else:
-    #         try:
-    #             if not os.path.exists(path):
-    #                 raise FileNotFoundError(f"Background image not found: {path}")
-
-    #             self.bg_image_original = Image.open(path)
-    #             self.backgroundImg = ImageTk.PhotoImage(self.bg_image_original)
-    #             self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-    #             self.bg_label.image = self.backgroundImg
-    #             self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-    #             self.bg_label.lower()
-
-    #             # Only bind resize once (optional guard)
-    #             if not hasattr(self, "_resize_bound") or not self._resize_bound:
-    #                 self.root.bind("<Configure>", self.on_resize)
-    #                 self._resize_bound = True
-
-    #         except Exception as e:
-    #             print(f"Error loading background image: {e}")
-    #             self.root.configure(bg=self.bg_color)
 
     def on_resize(self, event):
         self.update_background_image()
@@ -1318,30 +1054,6 @@ class ExpirationApp:
         elif hasattr(self, "bg_label") and self.bg_label.winfo_exists():
             self.bg_label.config(image=self.bg_image)
 
-
-    def resize_background_old(self, event):
-        if not hasattr(self, "bg_image_original"):
-            return
-
-        canvas_width = event.width
-        canvas_height = event.height
-
-        # Maintain aspect ratio while filling the whole area
-        img_width, img_height = self.bg_image_original.size
-        scale = max(canvas_width / img_width, canvas_height / img_height)
-        new_width = int(img_width * scale)
-        new_height = int(img_height * scale)
-
-        resized_img = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
-        self.bg_image = ImageTk.PhotoImage(resized_img)
-
-        # Center image inside canvas
-        self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
-        self.bg_canvas.coords(
-            self.bg_bg_label,
-            (canvas_width - new_width) // 2,
-            (canvas_height - new_height) // 2
-        )
 
     def choose_icon_bg_color(self):
         from tkinter import colorchooser
@@ -1435,10 +1147,6 @@ class ExpirationApp:
 
         # Start pywebview (must be on main thread)
         webview.start(func=after_browser, gui='gtk', debug=False)
-
-    def open_camera_ui_old(self):
-        self.clear_screen()
-        CameraApp(self.root, self.backgroundImg, self.backImg, self.create_home_screen, update_weather_func=self.update_weather)
 
     def open_camera_ui(self):
         # Make sure no other cv2 capture is still open
@@ -1807,6 +1515,7 @@ class ExpirationApp:
         # Buttons side by side
         button_frame = tk.Frame(self.root, bg=self.bg_color)
         button_frame.pack(pady=20)
+        #button_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         item_btn = tk.Button(button_frame, cursor="hand2", image=itemImg, width=100, height=100, bg=self.bg_color, command=self.create_list_view)
         item_btn.is_icon_button = True
@@ -1843,10 +1552,33 @@ class ExpirationApp:
         dark_mode_btn.pack(side=tk.LEFT)
         ToolTip(dark_mode_btn, "Click to Toggle Light/Dark Mode Test")
 
-        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_settings_page())
-        set_btn.is_icon_button = True
-        set_btn.pack(side=tk.LEFT)
-        ToolTip(set_btn, "Click to Configure Application")
+#        set_btn = tk.Button(button_frame, cursor="hand2", image=setImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_settings_page())
+#        set_btn.is_icon_button = True
+#        set_btn.pack(side=tk.LEFT)
+#        ToolTip(set_btn, "Click to Configure Application")
+
+        # Settings button
+        setImg = ImageTk.PhotoImage(Image.open("pics/icons/settings.png").resize((100, 100)))
+        self.set_btn_image = setImg
+
+#        if not hasattr(self, "set_btn"):
+        self.set_btn = tk.Button(
+            button_frame,
+            cursor="hand2",
+            image=setImg,
+            width=100,
+            height=100,
+            bg=self.bg_color,
+            command=lambda: self.open_settings_page()
+        )
+        self.set_btn.image = setImg  # keep reference
+        self.set_btn.is_icon_button = True
+        ToolTip(self.set_btn, "Click to Configure Application")
+        self.set_btn.pack(side=tk.LEFT)
+#        else:
+            # If it already exists, just re-pack it in the new frame
+#           self.set_btn.master = button_frame  # Change parent to the new frame 
+#           self.set_btn.pack(side=tk.LEFT)
 
         for widget in self.root.winfo_children():
             widget.lift()
@@ -2235,6 +1967,30 @@ class ExpirationApp:
 
         self.build_settings_page(frame)
 
+        # --- Floating Weather Button ---
+        weatherImg_original = Image.open("pics/icons/weather.png")
+        self.weather_btn = tk.Button(
+            self.root,
+            bg="blue",
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+            command=self.open_weather_page  # make sure this method exists
+        )
+        self.weather_btn.is_icon_button = True
+
+        def place_weather_button(event=None):
+            if not hasattr(self, "weather_btn") or not self.weather_btn.winfo_exists():
+                return
+            btn_size = min(int(self.root.winfo_width() * 0.05), 80)
+            img_resized = weatherImg_original.resize((btn_size, btn_size), Image.LANCZOS)
+            weatherImg_tk = ImageTk.PhotoImage(img_resized)
+            self.weather_btn.config(image=weatherImg_tk)
+            self.weather_btn.image = weatherImg_tk
+            self.weather_btn.place(relx=0.02, rely=0.02, anchor="nw")  # top-left corner
+
+        self.root.bind("<Configure>", place_weather_button, add="+")
+
         # Floating Back Button (root-level, not in grid)
         backImg_original = Image.open("pics/icons/back.png")
         self.back_btn = tk.Button(
@@ -2475,94 +2231,6 @@ class ExpirationApp:
         self.save_custom_backgrounds()
         self.apply_settings()
 
-    def save_settings_and_apply_old(self):
-        self.current_font = self.font_var.get()
-        self.current_background = self.bg_var.get()
-        self.current_icon = self.icon_var.get()
-        self.dark_mode = self.dark_mode_var.get()
-
-        # Store custom background for the current view/page
-        if hasattr(self, "current_view") and hasattr(self, "custom_backgrounds"):
-            self.custom_backgrounds[self.current_view] = self.current_background
-            try:
-                with open("custom_backgrounds.json", "w") as f:
-                    json.dump(self.custom_backgrounds, f, indent=4)
-            except Exception as e:
-                print(f"[Error] Could not save custom backgrounds: {e}")
-
-        self.save_settings_to_file()
-        self.apply_settings()
-
-    def open_settings_page_old(self):
-        self.clear_screen()
-
-        # Apply dynamic background based on current setting or default
-        background_path = self.current_background
-        if background_path == "back":
-            background_path = "pics/backgrounds/settings.jpg"
-
-        self.set_background(background_path)
-
-        # Title
-        tk.Label(self.root, text="Settings", font=(self.current_font, 20, "bold"),
-             bg=self.bg_color, pady=10).pack()
-
-        frame = tk.Frame(self.root, padx=20, pady=20)
-        frame.pack(fill=tk.BOTH, expand=True)
-
-        # Font selection
-        tk.Label(frame, text="Select Font:", font=(self.current_font, 14)).grid(row=0, column=0, sticky="w")
-        fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "TkDefaultFont"]
-        self.font_var = tk.StringVar(value=self.current_font)
-        font_menu = tk.OptionMenu(frame, self.font_var, *fonts, command=self.preview_settings)
-        font_menu.grid(row=0, column=1, sticky="ew")
-
-        # Background selection
-        tk.Label(frame, text="Select Background Color:", font=(self.current_font, 14)).grid(row=1, column=0, sticky="w")
-        backgrounds = ["white", "lightgray", "lightblue", "lightgreen", "#2E2E2E"]
-        self.bg_var = tk.StringVar(value=self.current_background)
-        bg_menu = tk.OptionMenu(frame, self.bg_var, *backgrounds, command=self.preview_settings)
-        bg_menu.grid(row=1, column=1, sticky="ew")
-
-        # Icon selection
-        tk.Label(frame, text="Select Icon Image:", font=(self.current_font, 14)).grid(row=2, column=0, sticky="w")
-        icons = ["Icon1.png", "Icon2.png", "Icon3.png"]
-        self.icon_var = tk.StringVar(value=self.current_icon)
-        icon_menu = tk.OptionMenu(frame, self.icon_var, *icons, command=self.preview_settings)
-        icon_menu.grid(row=2, column=1, sticky="ew")
-
-        # Dark/Light mode toggle
-        tk.Label(frame, text="Dark Mode:", font=(self.current_font, 14)).grid(row=3, column=0, sticky="w")
-        self.dark_mode_var = tk.BooleanVar(value=self.dark_mode)
-        dark_toggle = tk.Checkbutton(frame, variable=self.dark_mode_var, command=self.preview_settings)
-        dark_toggle.grid(row=3, column=1, sticky="w")
-
-        # Live preview area
-        preview_frame = tk.Frame(self.root, bd=1, relief=tk.SUNKEN, padx=10, pady=10)
-        preview_frame.pack(pady=20, fill=tk.X, padx=20)
-
-        self.preview_label = tk.Label(preview_frame, text="Preview Text",
-                                      font=(self.current_font, 16),
-                                      bg=self.current_background,
-                                      fg="#2E2E2E" if not self.dark_mode else "white",
-                                      width=30, height=5)
-        self.preview_label.pack()
-
-        # Save and Cancel buttons
-        btn_frame = tk.Frame(self.root)
-        btn_frame.pack(pady=10)
-
-        save_btn = tk.Button(btn_frame, text="Save Settings", command=self.save_settings, bg=self.icon_bg_color)
-        save_btn.is_icon_button = True
-        save_btn.pack(side=tk.LEFT, padx=10)
-
-        cancel_btn = tk.Button(btn_frame, text="Cancel", command=self.create_home_screen, bg=self.icon_bg_color)
-        cancel_btn.is_icon_button = True
-        cancel_btn.pack(side=tk.LEFT, padx=10)
-
-        # Initial preview update
-        self.preview_settings()
-
     def preview_settings(self, *args):
         font_choice = self.font_var.get()
         bg_choice = self.bg_var.get()
@@ -2716,6 +2384,7 @@ class ExpirationApp:
 
         # Top left button frame
         top_left_frame = tk.Frame(self.root, bg=self.bg_color)
+#        top_left_frame = tk.Frame(self.root, bg="")
         top_left_frame.place(x=10, y=10)
 
         # View switch button
@@ -2746,7 +2415,8 @@ class ExpirationApp:
         canvas = tk.Canvas(self.root, height=450, bg=self.bg_color, highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
         self.enable_mousewheel_scroll(canvas)
-        scroll_frame = tk.Frame(canvas, bg=self.bg_color)
+#        scroll_frame = tk.Frame(canvas, bg=self.bg_color)
+        scroll_frame = tk.Frame(canvas, bg="")
 
         scroll_frame.bind(
             "<Configure>",
@@ -2818,6 +2488,7 @@ class ExpirationApp:
 
         # Top left button frame
         top_left_frame = tk.Frame(self.root, bg=self.bg_color)
+#        top_left_frame = tk.Frame(self.root, bg="")
         top_left_frame.place(x=10, y=10)
 
         # View switch button
@@ -2847,7 +2518,8 @@ class ExpirationApp:
         # Scrollable canvas
         canvas = tk.Canvas(self.root, height=450, bg=self.bg_color, highlightthickness=0, bd=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg=self.bg_color)
+#        scroll_frame = tk.Frame(canvas, bg=self.bg_color)
+        scroll_frame = tk.Frame(canvas, bg="")
 
         scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
@@ -3235,29 +2907,6 @@ class ExpirationApp:
                 json.dump([item.to_dict() for item in self.items], f)
         except Exception as e:
             print(f"[Error] Failed to save items.json: {e}")
-
-    ## Loads items from file
-    def load_items_old(self):
-        if not os.path.exists(SAVE_FILE) or os.path.getsize(SAVE_FILE) == 0:
-            self.items = []
-            return
-        try:
-            with open(SAVE_FILE, 'r') as f:
-              try:
-                data = json.load(f)
-              except json.JSONDecodeError:
-                data = []
-                self.items = [Item.from_dict(d) for d in data]
-                self.items = [Item.from_dict(item) for item in data]
-        except json.JSONDecodeError as e:
-            print(f"Error loading items.json: {e}")
-            messagebox.showerror("Load Error", "The items.json file is corrupted or invalid.")
-            self.items = []
-
-    ## Saves items to file ##
-    def save_items_old(self):
-        with open(SAVE_FILE, 'w') as f:
-            json.dump([item.to_dict() for item in self.items], f)
 
     def delete_item(self, item):
         if messagebox.askyesno("Delete", f"Delete {item.name}?"):
@@ -3824,96 +3473,6 @@ class ExpirationApp:
             tk.Label(self.right_panel, text="Nutrition Facts:", font=APP_FONT_BOLD, bg=self.bg_color).pack(pady=(10, 2))
             for key, value in nutrition_info.items():
                 tk.Label(self.right_panel, text=f"{key}: {value}", font=APP_FONT, bg=self.bg_color, anchor="w", justify="left").pack(anchor="w")
-    
-    ## Saves item to list ##
-    def save_new_item_old(self, name, barcode, expiration_date, category):
-#        self.item_name_var.set(name)
-#        self.item_barcode_var.set(barcode)
-#        self.cal.selection_set(expiration_date)
-        name = self.item_name_var.get().strip()
-        barcode = self.item_barcode_var.get().strip()
-        expiration_date = self.cal.get_date()
-        category = self.item_details_var.get().strip()
-
-        nutrition_info = {}
-        product_name = None
-
-        # Step 1: Fetch nutrition and product name if barcode exists
-        if barcode:
-            fetched_info = self.fetch_open_food_facts(barcode)
-            if fetched_info:
-                nutrition_info = fetched_info
-                product_name = fetched_info.get("Product Name", "")
-                if product_name and product_name != "Unknown":
-                    name = product_name  #Force overwrite with product name
-                    self.name_entry.delete(0, tk.END)
-                    self.name_entry.insert(0, name)
-        # Step 2: Validate name
-        if not name:
-            messagebox.showerror("Error", "Item name is required.")
-            return
-
-        # Step 3: Create and save item
-        try:
-            item = Item(name, date, nutrition_info)
-            self.items.append(item)
-            self.save_items()
-
-            self.create_home_screen()
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not save item: {e}")
-
-        # Prevent duplicate entries
-        existing_items = self.items
-        #if any(item['name'].lower() == name.lower() for item in existing_items):
-        if any(item.name.lower() == name.lower() for item in existing_items):
-            messagebox.showwarning("Duplicate", f"'{name}' already exists.")
-            return
-
-        # Save item
-        self.items.append({
-            "name": name,
-            "barcode": barcode,
-            "expiration_date": expiration_date,
-            "category": category
-        })
-        self.save_items()
-
-        # Clear fields for next entry and reset calendar
-        self.item_name_var.set("")
-        self.item_barcode_var.set("")
-        self.cal.selection_set(dt.date.today())
-
-        # Clear right frame and show details
-        for widget in right_frame.winfo_children():
-            widget.destroy()
-
-        tk.Label(
-            right_frame,
-            text=name,
-            font=APP_FONT_BOLD,
-            bg=self.bg_color
-        ).pack(pady=(5, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Barcode: {barcode}",
-            font=APP_FONT,
-            bg=self.bg_color
-        ).pack(pady=(0, 2))
-
-        tk.Label(
-            right_frame,
-            text=f"Expires: {expiration_date}",
-            font=APP_FONT,
-            bg=self.bg_color
-        ).pack(pady=(0, 5))
-        tk.Label(
-            right_frame,
-            text=f"Category: {category}",
-            font=APP_FONT,
-            bg=self.bg_color
-        ).pack(pady=(0, 5))
 
     def populate_right_panel(self, name, barcode, expiration_date, category):
          for widget in self.right_panel.winfo_children():
@@ -4134,109 +3693,50 @@ weather_label = tk.Label(root, text="Loading weather...", font=APP_FONT)
 weather_label.pack(pady=20)
 
 class WeatherApp:
-    def __init__(self, root, backImg, back_callback=None, bg_color="#2E2E2E"):
+    def __init__(self, root, backImg=None, back_callback=None, bg_color="#2E2E2E"):
         self.root = root
         self.root.title("Weather Forecast")
-        self.backImg = backImg
         self.back_callback = back_callback
-        self.bg_color = bg_color  # store color for later use
+        self.bg_color = bg_color
 
-        # Frame for Weather App content
-        self.frame = tk.Frame(self.root, bg=self.bg_color)
+        # Main frame
+        self.frame = tk.Frame(self.root)
         self.frame.pack(fill="both", expand=True)
-        self.frame.bind("<Configure>", lambda event: self.update_background_image())
 
-        weather_data = self.get_current_weather_condition()
-        self.set_weather_background(weather_data)
+        # Background canvas
+        self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.bg_canvas.pack(fill="both", expand=True)
 
-        # Back button image
-        self.backImg = ImageTk.PhotoImage(Image.open("pics/icons/back.png"))
-        self.back_callback = back_callback
+        # Frame for widgets on top of background
+        # Use place at (0,0) and anchor NW to avoid widgets pushed down
+        self.widget_frame = tk.Frame(self.frame, bg="", highlightthickness=0)
+        self.widget_frame.place(x=0, y=0, relwidth=1, relheight=1, anchor="nw")
 
-        self.city = CITY
-        self.api_key = KEY_WEATHER
+        # Keep reference to prevent garbage collection
+        self.bg_image_tk = None
 
+        # Load initial background image
+        self.bg_image_original = Image.open("pics/backgrounds/weather/weather.jpg")
+
+        # Bind resize
+        self.frame.bind("<Configure>", lambda e: self.update_background_image())
+
+        # Draw background initially
+        self.update_background_image()
+
+        # Build your existing UI inside self.widget_frame
         self.weather_ui()
-
-    def set_background_old(self):
-#    def set_background(self, path=None):
-#        if path is None:
-#            path = self.current_background or "pics/backgrounds/back.jpg"
-        default_path = "pics/backgrounds/weather/weather.jpg"
-        background_path = default_path
-
-        try:
-            # Get current weather condition and icon code
-            #condition, icon_code = self.get_current_weather_condition()
-            #background_path = self.get_background_path_for_condition(condition, icon_code)
-            condition, icon_code = self.get_current_weather_condition()
-            background_path = self.get_background_path_for_condition(condition, icon_code)
-
-            print(f"Detected weather condition: {condition}")
-            print(f"Icon Code: {icon_code}")
-
-            # Normalize condition and day/night
-            is_night = icon_code.endswith("n")
-            condition = condition.lower()
-
-            # Mapping for day conditions
-            condition_map = {
-                "clear": "clear",
-                "clouds": "cloudy",
-                "rain": "rain",
-                "drizzle": "rain",
-                "thunderstorm": "stormy",
-                "snow": "snowy",
-                "mist": "foggy",
-                "fog": "foggy",
-                "haze": "foggy",
-                "smoke": "foggy",
-                "dust": "foggy",
-                "sand": "foggy",
-                "ash": "foggy",
-                "squall": "stormy",
-                "tornado": "stormy"
-            }
-
-            condition_key = condition_map.get(condition, "weather")
-            prefix = "night_" if is_night else "day_"
-            if not condition_key.startswith(prefix) and condition_key != "weather":
-               condition_key = prefix + condition_key
-
-           # if is_night:
-           #     # Apply your preferred naming pattern
-           #     if condition_key == "cloudy":
-           #         condition_key = "night_cloudy"
-           #     elif condition_key == "snowy":
-           #         condition_key = "night_snowy"
-           #     else:
-           #         condition_key = f"night_{condition_key}"
-
-            background_path = f"pics/backgrounds/{condition_key}.jpg"
-
-            print(f"Using Background: {background_path}")
-
-            # Load the image and store original for frosted effect
-            self.bg_image_original = Image.open(background_path).copy()
-            self.update_background_image()
-            return
-
-        except Exception as e:
-            print(f"Error setting background image: {e}")
-            print(f"Falling back to default background: {default_path}")
-            self.bg_image_original = Image.open(default_path).copy()
-            self.update_background_image()
 
     def set_weather_background(self, weather_data):
         try:
             # Extract description and decide day/night by sunrise/sunset
 #            descr = weather_data["description"].lower().strip()
 #            now = datetime.now().timestamp()
-            sunrise = weather_data["sys"]["sunrise"]
-            sunset = weather_data["sys"]["sunset"]
+#            sunrise = weather_data["sys"]["sunrise"]
+#            sunset = weather_data["sys"]["sunset"]
 
-            descr = weather_data.get("description", "").lower()
-            main = weather_data.get("condition", "").lower()
+            descr = weather_data.get("description", "").lower().strip()
+            main = weather_data.get("condition", "").lower().strip()
             icon_code = weather_data.get("icon", "")
 
             #period = "day" if sunrise <= now <= sunset else "night"
@@ -4289,76 +3789,40 @@ class WeatherApp:
                 "tornado": {"day": "day_tornado", "night": "night_tornado"},
             }
 
-            # Determine background path
-            if descr in description_map:
-                background_path = f"pics/backgrounds/weather/{description_map[descr][period]}.jpg"
-            elif main in description_map:
-                background_path = f"pics/backgrounds/weather/{description_map[main][period]}.jpg"
-            else:
-                background_path = "pics/backgrounds/weather/weather.jpg"  # default
+            background_path = None
+
+            # First try exact matches
+            for key in (descr, main):
+                if key in description_map:
+                    candidate_path = f"pics/backgrounds/weather/{description_map[key][period]}.jpg"
+                    if os.path.exists(candidate_path):
+                        background_path = candidate_path
+                        break
+
+            # Fallback: partial keyword matching
+            if not background_path:
+                if "rain" in descr:
+                    background_path = f"pics/backgrounds/weather/day_rain.jpg" if period == "day" else f"pics/backgrounds/weather/night_rain.jpg"
+                elif "snow" in descr:
+                    background_path = f"pics/backgrounds/weather/day_snow.jpg" if period == "day" else f"pics/backgrounds/weather/night_snow.jpg"
+                elif "cloud" in descr:
+                    background_path = f"pics/backgrounds/weather/day_cloud.jpg" if period == "day" else f"pics/backgrounds/weather/night_cloud.jpg"
+                elif "mist" in descr or "fog" in descr:
+                    background_path = f"pics/backgrounds/weather/day_mist.jpg" if period == "day" else f"pics/backgrounds/weather/night_mist.jpg"
+
+            # Absolute final fallback
+            if not background_path or not os.path.exists(background_path):
+                background_path = "pics/backgrounds/weather/weather.jpg"
 
             print(f"Using weather background: {background_path}")
             self.set_background_from_path(background_path)
+            return background_path
 
         except Exception as e:
             print(f"[Weather background error] {e}")
             fallback_path = "pics/backgrounds/weather/weather.jpg"
-            print(f"Falling back to default: {fallback_path}")
             self.set_background_from_path(fallback_path)
-
-#            descr = weather_data["description"]
-#            if descr in description_map:
-#               bg_name = description_map[descr][period]
-#               background_path = f"pics/backgrounds/weather/{bg_name}.jpg"
-#            else:
-#               background_path = "pics/backgrounds/weather/weather.jpg"
-
-#            background_map = {
-#                "clear sky": {"day": "pics/backgrounds/weather/day_clear.jpg", "night": "pics/backgrounds/weather/night_clear.jpg"},
-#                "few clouds": {"day": "pics/backgrounds/weather/day_few_clouds.jpg", "night": "pics/backgrounds/weather/night_few_clouds.jpg"},
-#                "scattered clouds": {"day": "pics/backgrounds/weather/day_scattered_clouds.jpg", "night": "pics/backgrounds/weather/night_scattered_clouds.jpg"},
-#                "broken clouds": {"day": "pics/backgrounds/weather/day_broken_clouds.jpg", "night": "pics/backgrounds/weather/night_broken_clouds.jpg"},
-#                "overcast clouds": {"day": "pics/backgrounds/weather/day_overcast.jpg", "night": "pics/backgrounds/weather/night_overcast.jpg"},
-#                "light rain": {"day": "pics/backgrounds/weather/day_rain_light.jpg", "night": "pics/backgrounds/weather/night_rain_light.jpg"},
-#                "moderate rain": {"day": "pics/backgrounds/weather/day_rain.jpg",       "night": "pics/backgrounds/weather/night_rain.jpg"},
-#                "heavy intensity rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
-#                "very heavy rain": {"day": "pics/backgrounds/weather/day_rain_heavy.jpg", "night": "pics/backgrounds/weather/night_rain_heavy.jpg"},
-#                "shower rain": {"day": "pics/backgrounds/weather/day_shower_rain.jpg", "night": "pics/backgrounds/weather/night_shower_rain.jpg"},
-#                "light snow": {"day": "pics/backgrounds/weather/day_snow_light.jpg", "night": "pics/backgrounds/weather/night_snow_light.jpg"},
-#                "snow": {"day": "pics/backgrounds/weather/day_snow.jpg", "night": "pics/backgrounds/weather/night_snow.jpg"},
-#                "mist": {"day": "pics/backgrounds/weather/day_mist.jpg", "night": "pics/backgrounds/weather/night_mist.jpg"},
-#                "smoke": {"day": "pics/backgrounds/weather/day_smoke.jpg", "night": "pics/backgrounds/weather/night_smoke.jpg"},
-#                "haze": {"day": "pics/backgrounds/weather/day_haze.jpg", "night": "pics/backgrounds/weather/night_haze.jpg"},
-#                "fog": {"day": "pics/backgrounds/weather/day_fog.jpg", "night": "pics/backgrounds/weather/night_fog.jpg"},
-#                "sand": {"day": "pics/backgrounds/weather/day_sand.jpg", "night": "pics/backgrounds/weather/night_sand.jpg"},
-#                "dust": {"day": "pics/backgrounds/weather/day_dust.jpg", "night": "pics/backgrounds/weather/night_dust.jpg"},
-#                "volcanic ash": {"day": "pics/backgrounds/weather/day_ash.jpg", "night": "pics/backgrounds/weather/night_ash.jpg"},
-#                "squalls": {"day": "pics/backgrounds/weather/day_squall.jpg", "night": "pics/backgrounds/weather/night_squall.jpg"},
-#                "tornado": {"day": "pics/backgrounds/weather/day_tornado.jpg", "night": "pics/backgrounds/weather/night_tornado.jpg"},
-#                "thunderstorm": {"day": "pics/backgrounds/weather/day_thunderstorm.jpg", "night": "pics/backgrounds/weather/night_thunderstorm.jpg"},
-#                "drizzle": {"day": "pics/backgrounds/weather/day_drizzle.jpg", "night": "pics/backgrounds/weather/night_drizzle.jpg"}
-#            }
-
-#            if descr in background_map:
-#                bg = background_map[descr][period]
-#            else:
-#                main = weather_data["condition"]
-#                bg = background_map.get(main.lower(), {}).get(period, "pics/backgrounds/weather/weather.jpg")
-
-            # Finally, load and set the image
-#            if os.path.exists(bg):
-#                img = Image.open(bg).resize((self.root.winfo_width(), self.root.winfo_height()), Image.LANCZOS)
-#                self.bg_image_tk = ImageTk.PhotoImage(img)
-#                if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
-#                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
-#                else:
-#                    self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
-#                    self.bg_canvas.pack(fill="both", expand=True)
-#                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
-#            else:
-#                print(f"[Weather] Missing bg image for '{descr}' {period}")
-#        except Exception as e:
-#            print(f"[Weather background error] {e}")
+            return fallback_path
 
     def on_resize(self, event):
         if hasattr(self, "bg_image_original"):
@@ -4370,61 +3834,18 @@ class WeatherApp:
                 #self.bg_label.lower()
 
     def update_background_image(self):
-        if hasattr(self, 'bg_image_original'):
-            width = self.root.winfo_width()
-            height = self.root.winfo_height()
-
-            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
-
-            # Create bg_label if it doesn't exist
-            #if not hasattr(self, 'bg_label'):
-            #    self.bg_label = tk.Label(self.root, image=self.backgroundImg)
-            #    self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-            #self.bg_label.config(image=self.backgroundImg)
-            #self.bg_label.image = self.backgroundImg
-
-            # Always send background to the very back
-            #self.bg_label.lower()
-
-    def update_background_image_new(self):
-        if hasattr(self, 'bg_image_original'):
-            width = self.root.winfo_width()
-            height = self.root.winfo_height()
-
-            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
-
-            if hasattr(self, 'bg_label'):
-                self.bg_label.config(image=self.backgroundImg)
-                self.bg_label.image = self.backgroundImg
-                self.bg_label.lower()
-
-    def update_background_image_old(self):
-        if not hasattr(self, 'bg_image_original'):
-            print("No original background image loaded.")
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
             return
 
-        try:
-            window_width = self.frame.winfo_width()
-            window_height = self.frame.winfo_height()
+        width = self.bg_canvas.winfo_width() or 1
+        height = self.bg_canvas.winfo_height() or 1
 
-            if window_width < 10 or window_height < 10:
-                return  # Don't resize to invalid dimensions
+        resized = self.bg_image_original.resize((width, height), Image.LANCZOS)
+        self.bg_image_tk = ImageTk.PhotoImage(resized)
 
-            resized_image = self.bg_image_original.resize((window_width, window_height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
-
-            if not hasattr(self, 'bg_label') or not self.bg_label.winfo_exists():
-                self.bg_label = tk.Label(self.frame)
-                self.bg_label.place(relwidth=1, relheight=1)
-
-            self.bg_label.configure(image=self.backgroundImg)
-            self.bg_label.image = self.backgroundImg  # Keep reference
-
-        except Exception as e:
-            print("Error updating background image:", e)
+        self.bg_canvas.delete("bg_image")
+        self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+        self.bg_canvas.tag_lower("bg_image")
 
     def get_background_path_for_condition(self, condition, icon_code):
         condition = condition.lower().replace(" ", "_")
@@ -4434,7 +3855,7 @@ class WeatherApp:
         condition = condition.replace("clouds", "cloudy")
         condition = condition.replace("snow", "snowy")
 
-        base_path = "pics/backgrounds"
+        base_path = "pics/backgrounds/weather"
         preferred = f"{base_path}/{time_of_day}_{condition}.jpg"
         fallback = f"{base_path}/{time_of_day}_clear.jpg"
         default = f"{base_path}/weather.jpg"
@@ -4450,14 +3871,179 @@ class WeatherApp:
             return default
 
     def set_background_from_path(self, image_path):
-        print(f"Loading background image from: {image_path}")
+        """
+        Loads and resizes a background image into the Tkinter canvas.
+        Automatically resizes on window resize.
+        """
+        if not image_path:
+            image_path = "pics/backgrounds/weather/weather.jpg"
+
+        # Make sure the canvas exists
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+            print("Background canvas not ready.")
+            return
+
+        # Skip if already loaded
+        if getattr(self, "current_bg_path", None) == image_path:
+            return
+
         try:
+            # Keep original image
             self.bg_image_original = Image.open(image_path)
-            self.update_background_image()
+
+            def _resize_bg(event=None):
+                if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+                    return
+                width = max(self.bg_canvas.winfo_width(), 1)
+                height = max(self.bg_canvas.winfo_height(), 1)
+                resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+                self.bg_image_tk = ImageTk.PhotoImage(resized_image)
+                self.bg_canvas.delete("bg_image")
+                self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+                self.bg_canvas.tag_lower("bg_image")
+
+            # Draw initially
+            self.bg_canvas.update_idletasks()
+            _resize_bg()
+
+            # Bind to window resize for dynamic updates
+            self.bg_canvas.bind("<Configure>", _resize_bg)
+
+            self.current_bg_path = image_path
+            print(f"Loaded background: {image_path}")
+
         except Exception as e:
             print(f"Failed to load background image: {image_path}\n{e}")
-            self.bg_image_original = Image.open("pics/backgrounds/weather.jpg")
-            self.update_background_image()
+
+    def set_background_from_path_b(self, image_path):
+        """
+        Loads a background image into the Tkinter canvas and auto-resizes it
+        whenever the window is resized.
+        """
+        if not image_path:
+            image_path = "pics/backgrounds/weather/weather.jpg"
+
+        # Ensure the canvas exists
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+            return
+
+        if getattr(self, "current_bg_path", None) == image_path:
+            return  # Already loaded
+
+        try:
+            # Store original image for resizing
+            self.bg_image_original = Image.open(image_path)
+
+            # Force the canvas to update so we can get real dimensions
+            self.bg_canvas.update_idletasks()
+            width = self.bg_canvas.winfo_width() or 1
+            height = self.bg_canvas.winfo_height() or 1
+
+            # Create initial resized background
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(resized_image)
+
+            self.bg_canvas.delete("bg_image")
+            self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+            self.bg_canvas.tag_lower("bg_image")
+
+            self.current_bg_path = image_path
+            print(f"Loaded background: {image_path}")
+
+            # Bind resize event to dynamically adjust background
+            def _resize_bg(event):
+                try:
+                    new_width = event.width
+                    new_height = event.height
+                    resized = self.bg_image_original.resize((new_width, new_height), Image.LANCZOS)
+                    self.bg_image_tk = ImageTk.PhotoImage(resized)
+                    self.bg_canvas.delete("bg_image")
+                    self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+                    self.bg_canvas.tag_lower("bg_image")
+                except Exception as resize_err:
+                    print(f"Background resize error: {resize_err}")
+
+            self.bg_canvas.bind("<Configure>", _resize_bg)
+
+        except Exception as e:
+            print(f"Failed to load background image: {image_path}\n{e}")
+
+    def set_background_from_path_b(self, image_path):
+        """
+        Loads a background image into the Tkinter canvas, creating the canvas if needed.
+        """
+        if not image_path:
+            image_path = "pics/backgrounds/weather/weather.jpg"
+
+        # Create bg_canvas if it doesn't exist
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+            self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, borderwidth=0)
+            self.bg_canvas.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Avoid redundant reload
+        if getattr(self, "current_bg_path", None) == image_path:
+            return
+
+        try:
+            # Load original image
+            self.bg_image_original = Image.open(image_path)
+
+            self.bg_canvas.update_idletasks()
+            width = self.bg_canvas.winfo_width() or 1
+            height = self.bg_canvas.winfo_height() or 1
+
+            # Resize and store reference
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(resized_image)
+
+            # Draw and lower behind everything
+            self.bg_canvas.delete("bg_image")
+            self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+            self.bg_canvas.tag_lower("bg_image")
+            self.bg_canvas.lower()
+
+            self.current_bg_path = image_path
+            print(f"Loaded background: {image_path}")
+
+        except Exception as e:
+            print(f"Failed to load background image: {image_path}\n{e}")
+
+    def set_background_from_path_a(self, image_path):
+        """
+        Loads a background image into the Tkinter canvas only if not already loaded.
+        """
+        if not image_path:
+            image_path = "pics/backgrounds/weather/weather.jpg"
+
+        # Make sure the canvas exists
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+            return
+
+        if getattr(self, "current_bg_path", None) == image_path:
+            return  # Already loaded
+
+        try:
+            # Keep the original image
+            self.bg_image_original = Image.open(image_path)
+
+            # Wait until canvas is fully initialized
+            self.bg_canvas.update_idletasks()
+            width = self.bg_canvas.winfo_width() or 1
+            height = self.bg_canvas.winfo_height() or 1
+
+            # Resize and keep PhotoImage reference
+            resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(resized_image)
+
+            self.bg_canvas.delete("bg_image")
+            self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+            self.bg_canvas.tag_lower("bg_image")  # send to back
+
+            self.current_bg_path = image_path
+            print(f"Loaded background: {image_path}")
+
+        except Exception as e:
+            print(f"Failed to load background image: {image_path}\n{e}")
 
     def get_current_weather_condition(self):
         if not hasattr(self, 'city'):
@@ -4480,79 +4066,6 @@ class WeatherApp:
             "description": data["weather"][0]["description"].lower(),
             "sys": data.get("sys", {})
         }
-
-    def get_current_weather_condition_trip(self):
-        if not hasattr(self, 'city'):
-            self.city = CITY
-        if not hasattr(self, 'api_key'):
-            self.api_key = KEY_WEATHER
-
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}&units=metric"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-
-        # Extract the basics
-        condition = data['weather'][0]['main']
-        icon_code = data['weather'][0]['icon']
-
-        # Return everything: condition, icon, and full API data
-        return condition, icon_code, data
-
-    def get_current_weather_condition_json(self):
-         if not hasattr(self, 'city'):
-            self.city = CITY
-         if not hasattr(self, 'api_key'):
-            self.api_key = KEY_WEATHER
-
-         url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}&units=metric"
-         response = requests.get(url)
-         response.raise_for_status()
-         return response.json()
-
-    def get_current_weather_condition_new(self):
-        if not hasattr(self, 'city'):
-            self.city = CITY
-        if not hasattr(self, 'api_key'):
-            self.api_key = KEY_WEATHER
-
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-
-        condition = data['weather'][0]['main']
-        icon_code = data['weather'][0]['icon']
-#        return condition, icon_code
-        return data
-
-    def get_current_weather_condition_full(self):
-        if not hasattr(self, 'city'):
-            self.city = CITY
-        if not hasattr(self, 'api_key'):
-            self.api_key = KEY_WEATHER
-
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-
-        return data
-
-    def get_current_weather_condition_old(self):
-        if not hasattr(self, 'city'):
-            self.city = CITY
-        if not hasattr(self, 'api_key'):
-            self.api_key = KEY_WEATHER
-
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={self.city}&appid={self.api_key}"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-
-        condition = data['weather'][0]['main']
-        icon_code = data['weather'][0]['icon']
-        return condition, icon_code
 
     def load_background_image(self, primary_path, condition=None, is_night=False):
         """
@@ -4593,33 +4106,24 @@ class WeatherApp:
 
     def update_background_image(self):
         """
-        Resize the loaded background image to the window size and apply it to the background label.
+        Resizes the background image to the current canvas size.
+        Only runs if the canvas exists.
         """
-        if not hasattr(self, 'bg_image_original'):
-            print("No original background image loaded.")
-            return
+        if not hasattr(self, "bg_canvas") or not self.bg_canvas.winfo_exists():
+            return  # canvas not ready
 
-        try:
-            window_width = self.frame.winfo_width()
-            window_height = self.frame.winfo_height()
+        if getattr(self, "bg_image_original", None) is None:
+            return  # no background loaded
 
-            # Fallback to default size if dimensions aren't ready yet
-            if window_width < 10 or window_height < 10:
-                window_width, window_height = 800, 600
+        width = self.bg_canvas.winfo_width() or 1
+        height = self.bg_canvas.winfo_height() or 1
 
-            resized_image = self.bg_image_original.resize((window_width, window_height), Image.LANCZOS)
-            self.backgroundImg = ImageTk.PhotoImage(resized_image)
+        resized_image = self.bg_image_original.resize((width, height), Image.LANCZOS)
+        self.bg_image_tk = ImageTk.PhotoImage(resized_image)
 
-#            if hasattr(self, 'bg_label'):
-#                self.bg_label.config(image=self.backgroundImg)
-#                self.bg_label.image = self.backgroundImg
-#            else:
-#                self.bg_label = tk.Label(self.frame, image=self.backgroundImg)
-#                self.bg_label.place(relwidth=1, relheight=1)
-#                self.bg_label.image = self.backgroundImg
-
-        except Exception as e:
-            print("Error updating background image:", e)
+        self.bg_canvas.delete("bg_image")
+        self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk, tags="bg_image")
+        self.bg_canvas.tag_lower("bg_image")
 
     def clear_screen(self):
         self.root.unbind("<Configure>")
@@ -4628,79 +4132,54 @@ class WeatherApp:
 
     def weather_ui(self):
         self.clear_screen()
-#        self.set_background()
-        self.frame = tk.Frame(self.root)
-        self.frame.pack(fill=tk.BOTH, expand=True)
-        self.get_current_weather_data()
 
-        # Load weather condition-based background BEFORE creating bg_label
-        #condition, icon_code = self.get_current_weather_condition()
-        weather_data = self.get_current_weather_condition()
-        condition = weather_data["condition"]
-        icon_code = weather_data["icon"]
-        background_path = self.get_background_path_for_condition(condition, icon_code)
-        self.set_background_from_path(background_path)
+        # --- Create background canvas first ---
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
 
-        # 1. Load and place the background first
-        self.bg_image = Image.open("pics/backgrounds/weather.jpg")
-        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
-
-        self.bg_label = tk.Label(self.root, image=self.bg_photo)
-        self.bg_label.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # 2. Resize background dynamically
-        def resize_bg(event):
-            if hasattr(self, "bg_label") and self.bg_label.winfo_exists():
-                new_width = event.width
-                new_height = event.height
-                resized = self.bg_image.resize((new_width, new_height), Image.LANCZOS)
-                self.bg_photo = ImageTk.PhotoImage(resized)
-                self.bg_label.config(image=self.bg_photo)
-
-        self.root.bind("<Configure>", resize_bg)
-
-        # Sun banner in the top-left corner
+        # --- Load background image ---
         try:
-            current_weather = self.get_current_weather_data()
-            if current_weather and "sys" in current_weather:
-                sunrise_ts = current_weather["sys"]["sunrise"]
-                sunset_ts = current_weather["sys"]["sunset"]
-                sun_frame = tk.Frame(self.root, bg="")
-                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")  # top-left position
+            current_weather_data = self.get_current_weather_data()
+            condition_data = self.get_current_weather_condition()
+            background_path = self.set_weather_background(condition_data)
+            self.set_background_from_path(background_path)
+        except Exception as e:
+            print(f"[Weather UI error] {e}")
+            self.set_background_from_path("pics/backgrounds/weather/weather.jpg")
+            current_weather_data = None
+
+        # --- Main frame (covers entire canvas) ---
+        self.frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+        self.frame.place(relwidth=1, relheight=1)  # fill canvas completely
+
+        # --- Sun Banner (Top-left) ---
+        try:
+            if current_weather_data and "sys" in current_weather_data:
+                sunrise_ts = current_weather_data["sys"]["sunrise"]
+                sunset_ts = current_weather_data["sys"]["sunset"]
+                sun_frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")
                 self.draw_sun_banner(sun_frame, sunrise_ts, sunset_ts)
             else:
                 print("Sunrise/Sunset data not found in API response.")
         except Exception as e:
             print(f"Could not draw sun banner: {e}")
 
-        # 3. Forecast frame (top)
-        self.forecast_frame = tk.Frame(self.root, bg="")
+        # --- Forecast Frame ---
+        self.forecast_frame = tk.Frame(self.bg_canvas, bg="")
         self.forecast_frame.pack(fill="x", pady=10)
-
-        # Inner frame to center forecast content
         forecast_content = tk.Frame(self.forecast_frame, bg="")
         forecast_content.pack(anchor="center")
 
-        # --- Add Sun Banner on the left side ---
-#        try:
-#            current_weather = self.get_current_weather_data()
-#            if current_weather and "sys" in current_weather:
-#                sunrise_ts = current_weather["sys"]["sunrise"]
-#                sunset_ts = current_weather["sys"]["sunset"]
-#                self.draw_sun_banner(forecast_content, sunrise_ts, sunset_ts)
-#            else:
-#                print("Sunrise/Sunset data not found in API response.")
-#        except Exception as e:
-#            print(f"Could not draw sun banner: {e}")
-
-        ## Current Weather Label ##
+        # Current Weather Label
         self.weather_label = tk.Label(forecast_content, font=APP_FONT)
         self.weather_label.pack(pady=10)
 
-        ## Weather Icon ##
+        # Weather Icon
         self.weather_icon_label = tk.Label(forecast_content)
         self.weather_icon_label.pack()
 
+        # Forecast Labels (5 days)
         self.forecast_labels = []
         for _ in range(5):
             day_frame = tk.Frame(forecast_content, borderwidth=1, relief="solid", padx=5, pady=5)
@@ -4714,82 +4193,249 @@ class WeatherApp:
 
             self.forecast_labels.append({"icon": icon_label, "text": text_label})
 
-        self.calendar_frame = tk.Frame(self.root, bg="")
+        # --- Moon Calendar Section ---
+        self.calendar_frame = tk.Frame(self.bg_canvas, bg="")
         self.calendar_frame.pack(fill="both", expand=True, pady=10)
 
-        # 4. Bottom section: Sun banner + Moon calendar
         bottom_frame = tk.Frame(self.calendar_frame, bg="")
         bottom_frame.pack(fill="both", expand=True, pady=10)
 
-        # Left: Sun banner
-#        try:
-#            current_weather = self.get_current_weather_data()
-#            if current_weather and "sys" in current_weather:
-#                sunrise_ts = current_weather["sys"]["sunrise"]
-#                sunset_ts = current_weather["sys"]["sunset"]
-#                self.draw_sun_banner(bottom_frame, sunrise_ts, sunset_ts)
-#            else:
-#                print("Sunrise/Sunset data not found in API response.")
-#        except Exception as e:
-#            print(f"Could not draw sun banner: {e}")
-
-        # Right: Moon calendar
-        moon_frame = tk.Frame(bottom_frame, bg=self.bg_color, highlightbackground="#2E2E2E", highlightthickness=1)
-#        moon_frame.pack(side="left", padx=10, pady=10)
+        moon_frame = tk.Frame(bottom_frame, bg=self.bg_color, highlightbackground="#2E2E2E")
         moon_frame.pack(expand=True, padx=10)
 
-        # Moon phase title above the calendar
         moon_text = self.get_moon_phase()
         moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="#2E2E2E", fg="white")
         moon_label.pack(pady=(0, 5))
 
-        # Moon calendar below the title
         self.draw_moon_calendar(moon_frame)
 
-        #moon_frame = tk.Frame(bottom_frame, bg=self.bg_color, highlightbackground="black", highlightthickness=1)
-        #moon_frame.pack(side="left", padx=10, pady=10)
-        #self.draw_moon_calendar(moon_frame)
-
-        #moon_text = self.get_moon_phase()
-        #moon_label = tk.Label(bottom_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
-        #moon_label.pack(side="left", padx=10, pady=5)
-
-        # 4. Moon calendar frame (bottom)
-#        self.calendar_frame = tk.Frame(self.root, bg="")
-#        self.calendar_frame.pack(fill="both", expand=True, pady=10)
-
-#        moon_frame = tk.Frame(self.calendar_frame, bg=self.bg_color, highlightbackground="black", highlightthickness=1)
-#        moon_frame.pack(pady=10)
-#        self.draw_moon_calendar(moon_frame)
-
-#        moon_text = self.get_moon_phase()
-#        moon_label = tk.Label(self.calendar_frame, text=moon_text, font=APP_FONT_TITLE_BOLD, bg="black", fg="white")
-#        moon_label.pack(pady=5)
-
-        ## Back Button ##
-        cmd = self.back_callback if callable(self.back_callback) else (self.create_home_screen if hasattr(self, "create_home_screen") else self.root.quit)
-        self.back_btn = tk.Button(self.root,
-                              cursor="hand2",
-                              background="orange",
-                              #image=self.backImg,
-                              image=backsmallImg,
-                              #command=self.back_callback if callable(self.back_callback) else self.root.destroy)
-                              command=self.back_callback)
-                                  #command=lambda: self.create_home_screen(None))
+        # --- Back Button ---
+        cmd = self.back_callback if callable(self.back_callback) else None
+        self.back_btn = tk.Button(
+            self.bg_canvas,
+            cursor="hand2",
+            background="orange",
+            image=backsmallImg,
+            command=cmd
+        )
         self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
-        self.root.after(50, lambda: self.back_btn.lift())
-        #self.back_btn.image = self.backImg
+        self.bg_canvas.after(50, lambda: self.back_btn.lift())
+
         ToolTip(self.back_btn, "Click to Return to the Previous Screen")
 
+        # --- Start updating weather ---
+        self.update_weather()
+
+    def weather_ui_c(self):
+        self.clear_screen()
+
+        # --- Create background canvas first ---
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+
+        # --- Main frame (placed above background) ---
+#        self.frame = tk.Frame(self.root, bg="")
+        self.frame = tk.Frame(self.bg_canvas, bg="")
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        # --- Create and set background first ---
+        try:
+            # --- Get RAW API JSON for sun times ---
+            current_weather_data = self.get_current_weather_data()
+
+            # --- Get simplified condition dict for background ---
+            condition_data = self.get_current_weather_condition()
+
+            # Set background once, based on condition
+            background_path = self.set_weather_background(condition_data)
+            self.set_background_from_path(background_path)
+
+        except Exception as e:
+            print(f"[Weather UI error] {e}")
+            self.set_background_from_path("pics/backgrounds/weather/weather.jpg")
+            current_weather_data = None
+
+        # --- Sun Banner (Top-left) ---
+        try:
+            if current_weather_data and "sys" in current_weather_data:
+                sunrise_ts = current_weather_data["sys"]["sunrise"]
+                sunset_ts = current_weather_data["sys"]["sunset"]
+                sun_frame = tk.Frame(self.root, bg="")
+                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")
+                self.draw_sun_banner(sun_frame, sunrise_ts, sunset_ts)
+            else:
+                print("Sunrise/Sunset data not found in API response.")
+        except Exception as e:
+            print(f"Could not draw sun banner: {e}")
+
+        # --- Forecast Frame ---
+        self.forecast_frame = tk.Frame(self.root, bg="")
+        self.forecast_frame.pack(fill="x", pady=10)
+
+        forecast_content = tk.Frame(self.forecast_frame, bg="")
+        forecast_content.pack(anchor="center")
+
+        # Current Weather Label
+        self.weather_label = tk.Label(forecast_content, font=APP_FONT)
+        self.weather_label.pack(pady=10)
+
+        # Weather Icon
+        self.weather_icon_label = tk.Label(forecast_content)
+        self.weather_icon_label.pack()
+
+        # Forecast Labels (5 days)
+        self.forecast_labels = []
+        for _ in range(5):
+            day_frame = tk.Frame(forecast_content, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame.pack(side="left", padx=5)
+
+            icon_label = tk.Label(day_frame)
+            icon_label.pack()
+
+            text_label = tk.Label(day_frame, font=APP_FONT)
+            text_label.pack()
+
+            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        # --- Moon Calendar Section ---
+        self.calendar_frame = tk.Frame(self.root, bg="")
+        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+
+        bottom_frame = tk.Frame(self.calendar_frame, bg="")
+        bottom_frame.pack(fill="both", expand=True, pady=10)
+
+        moon_frame = tk.Frame(bottom_frame, bg=self.bg_color, highlightbackground="#2E2E2E")
+        moon_frame.pack(expand=True, padx=10)
+
+        moon_text = self.get_moon_phase()
+        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="#2E2E2E", fg="white")
+        moon_label.pack(pady=(0, 5))
+
+        self.draw_moon_calendar(moon_frame)
+
+        # --- Back Button ---
+        cmd = self.back_callback if callable(self.back_callback) else None
+        self.back_btn = tk.Button(
+            self.root,
+            cursor="hand2",
+            background="orange",
+            image=backsmallImg,
+            command=cmd
+        )
+        self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
+        self.root.after(50, lambda: self.back_btn.lift())
+
+        ToolTip(self.back_btn, "Click to Return to the Previous Screen")
+
+        # --- Start updating weather ---
+        self.update_weather()
+
+    def weather_ui_a(self):
+        self.clear_screen()
+
+        # Main frame
+        self.frame = tk.Frame(self.root, bg="")
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        try:
+            # --- 1. Get RAW API JSON for sun times ---
+            current_weather_data = self.get_current_weather_data()
+
+            # --- 2. Get simplified condition dict for background ---
+            condition_data = self.get_current_weather_condition()
+
+            # Set background once, based on condition
+            background_path = self.set_weather_background(condition_data)
+            self.set_background_from_path(background_path)
+
+            # --- 3. Display forecast ---
+#            self.display_forecast(current_weather_data)
+
+        except Exception as e:
+            print(f"[Weather UI error] {e}")
+            self.set_background_from_path("pics/backgrounds/weather/weather.jpg")
+
+        # --- Sun Banner (Top-left) ---
+        try:
+            if current_weather_data and "sys" in current_weather_data:
+                sunrise_ts = current_weather_data["sys"]["sunrise"]
+                sunset_ts = current_weather_data["sys"]["sunset"]
+                sun_frame = tk.Frame(self.root, bg="")
+                sun_frame.place(relx=0.0, rely=0.0, anchor="nw")
+                self.draw_sun_banner(sun_frame, sunrise_ts, sunset_ts)
+            else:
+                print("Sunrise/Sunset data not found in API response.")
+        except Exception as e:
+            print(f"Could not draw sun banner: {e}")
+
+        # --- Forecast Frame ---
+        self.forecast_frame = tk.Frame(self.root, bg="")
+        self.forecast_frame.pack(fill="x", pady=10)
+
+        forecast_content = tk.Frame(self.forecast_frame, bg="")
+        forecast_content.pack(anchor="center")
+
+        # Current Weather Label
+        self.weather_label = tk.Label(forecast_content, font=APP_FONT)
+        self.weather_label.pack(pady=10)
+
+        # Weather Icon
+        self.weather_icon_label = tk.Label(forecast_content)
+        self.weather_icon_label.pack()
+
+        # Forecast Labels (5 days)
+        self.forecast_labels = []
+        for _ in range(5):
+            day_frame = tk.Frame(forecast_content, borderwidth=1, relief="solid", padx=5, pady=5)
+            day_frame.pack(side="left", padx=5)
+
+            icon_label = tk.Label(day_frame)
+            icon_label.pack()
+
+            text_label = tk.Label(day_frame, font=APP_FONT)
+            text_label.pack()
+
+            self.forecast_labels.append({"icon": icon_label, "text": text_label})
+
+        # --- Moon Calendar Section ---
+        self.calendar_frame = tk.Frame(self.root, bg="")
+        self.calendar_frame.pack(fill="both", expand=True, pady=10)
+
+        bottom_frame = tk.Frame(self.calendar_frame, bg="")
+        bottom_frame.pack(fill="both", expand=True, pady=10)
+
+        moon_frame = tk.Frame(bottom_frame, bg=self.bg_color, highlightbackground="#2E2E2E")
+        moon_frame.pack(expand=True, padx=10)
+
+        moon_text = self.get_moon_phase()
+        moon_label = tk.Label(moon_frame, text=moon_text, font=APP_FONT, bg="#2E2E2E", fg="white")
+        moon_label.pack(pady=(0, 5))
+
+        self.draw_moon_calendar(moon_frame)
+
+        # --- Back Button ---
+        cmd = self.back_callback if callable(self.back_callback) else None
+        self.back_btn = tk.Button(
+            self.root,
+            cursor="hand2",
+            background="orange",
+            image=backsmallImg,
+            command=cmd
+        )
+        self.back_btn.place(relx=1.0, x=-10, y=10, anchor="ne")
+        self.root.after(50, lambda: self.back_btn.lift())
+
+        ToolTip(self.back_btn, "Click to Return to the Previous Screen")
+
+        # --- Start updating weather ---
         self.update_weather()
 
     def update_weather(self, return_callback=None, target_frame=None):
         try:
             if not hasattr(self, 'city'):
-                  self.city = CITY
+                self.city = CITY
             if not hasattr(self, 'api_key'):
-                  #self.api_key = "f63847d7129eb9be9c7a464e1e5ef67b"
-                  self.api_key = KEY_WEATHER
+                self.api_key = KEY_WEATHER
 
             url = f"http://api.openweathermap.org/data/2.5/forecast?q={self.city}&appid={self.api_key}&units=imperial"
             response = requests.get(url)
@@ -4797,7 +4443,7 @@ class WeatherApp:
             data = response.json()
 
             if "list" not in data or len(data["list"]) < 6:
-               raise ValueError("Incomplete Forecast Data")
+                raise ValueError("Incomplete Forecast Data")
 
             # Current weather
             current = data['list'][0]
@@ -4807,26 +4453,38 @@ class WeatherApp:
             icon_code = current['weather'][0]['icon']
             icon_img = self.get_icon(icon_code)
 
-            # Set background based on condition
-            background_path = self.get_background_path_for_condition(condition, icon_code)
+            # Build weather_data dict for set_weather_background
+            weather_data = {
+                "condition": current["weather"][0]["main"].lower(),
+                "icon": current["weather"][0]["icon"],
+                "temp": current["main"]["temp"],
+                "feels_like": current["main"]["feels_like"],
+                "humidity": current["main"]["humidity"],
+                "wind_speed": current["wind"]["speed"],
+                "description": current["weather"][0]["description"].lower()
+            }
+
+            background_path = self.set_weather_background(weather_data)
             self.set_background_from_path(background_path)
 
             if not hasattr(self, 'weather_label') or not self.weather_label.winfo_exists():
-               return
+                return
 
             self.weather_icon_label.config(image=icon_img)
             self.weather_icon_label.image = icon_img
             self.weather_label.config(text=f"{self.city}: {temp:.1f}\u00b0F, {condition}")
 
             # 5-day forecast
-            for i in range(1, 6):
+            num_days = min(5, len(data['list']) // 8)
+            for i in range(1, num_days + 1):
                 index = i * 8
+#                if index >= len(data['list']):
+#                    print(f"Skipping Forecast Index {index} (out of range)")
+#                    continue
+#                forecast = data['list'][index]  # 24 hours apart
                 if index >= len(data['list']):
-                   print(f"Skipping Forecast Index {index} (out of range)")
-                   continue
-
-                #forecast = data['list'][i * 8]  # 24 hours apart
-                forecast = data['list'][index]  # 24 hours apart
+                    continue  # or break if you only want full days
+                forecast = data['list'][index]
                 day = datetime.fromtimestamp(forecast['dt']).strftime('%a')
                 temp = forecast['main']['temp']
                 condition = forecast['weather'][0]['main']
@@ -4842,8 +4500,9 @@ class WeatherApp:
         except Exception as e:
             import traceback
             print("Error fetching weather:", e)
+            traceback.print_exc()
             if hasattr(self, "weather_label"):
-                 self.weather_label.config(text="Weather: Unable to load")
+                self.weather_label.config(text="Weather: Unable to load")
 
     def get_current_weather_data(self):
         """Fetch and return raw current weather data from OpenWeatherMap API."""
@@ -5052,6 +4711,17 @@ class WeatherApp:
                              font=cell_font, width=3, height=2,
                              bg=self.bg_color, fg=fg_color).grid(row=row_idx, column=col_idx, padx=1, pady=1)
 
+    def display_forecast(self, forecast_data):
+        """Safely display the forecast without index errors."""
+        for i, forecast in enumerate(forecast_data[:5]):  # Limit to 5 entries
+            try:
+                time = forecast.get("dt_txt", "N/A")
+                temp = forecast.get("main", {}).get("temp", "N/A")
+                desc = forecast.get("weather", [{}])[0].get("description", "N/A")
+                print(f"{time}: {temp}\u00b0C, {desc}")
+            except Exception as e:
+                print(f"Skipping Forecast Index {i} ({e})")
+
 class CameraApp:
     def __init__(self, root, backgroundImg, backImg, back_callback=None, update_weather_func=None):
         self.root = root
@@ -5059,6 +4729,7 @@ class CameraApp:
         self.backImg = backImg
         self.back_callback = back_callback
         self.update_weather_func = update_weather_func
+        self.update_frame_active = True
 
         # Frame container
         self.frame = tk.Frame(self.root)
@@ -5070,7 +4741,7 @@ class CameraApp:
         self.entry_var = tk.StringVar()
 
         # Load background for scaling
-        self.bg_image_original = Image.open("pics/backgrounds/cam.jpg")
+        self.bg_image_original = Image.open("pics/backgrounds/Camera.jpg")
         self.bg_image = ImageTk.PhotoImage(self.bg_image_original)
 
         # Background canvas
@@ -5138,6 +4809,29 @@ class CameraApp:
 
         self.update_frame()
 
+        self.frame_update_job = None
+
+    def close_camera_new(self):
+        """Safely close the camera and destroy UI."""
+        # Release camera if opened
+        if hasattr(self, "cap") and self.cap.isOpened():
+            self.cap.release()
+
+        # Stop updating frames
+        if hasattr(self, "frame_update_job"):
+            self.bg_canvas.after_cancel(self.frame_update_job)
+
+        # Destroy the frame holding everything
+        if hasattr(self, "frame") and self.frame.winfo_exists():
+            self.frame.destroy()
+
+        # Remove references
+        self.cap = None
+        self.camera_window = None
+        self.canvas = None
+        self.bg_canvas = None
+        self.frame = None
+
     def resize_background(self, event):
         if hasattr(self, "bg_image_original"):
             resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
@@ -5145,6 +4839,21 @@ class CameraApp:
             self.bg_canvas.itemconfig(self.bg_bg_label, image=self.bg_image)
 
     def camera_ui(self):
+        # Close previous camera instance if exists
+        if hasattr(self, "cap") and self.cap is not None:
+            self.cap.release()
+            self.cap = None
+        if hasattr(self, "camera_label") and self.camera_label.winfo_exists():
+            self.camera_label.destroy()
+        if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
+            self.bg_canvas.destroy()
+        if hasattr(self, "back_btn") and self.back_btn.winfo_exists():
+            self.back_btn.destroy()
+
+        # Frame container
+        self.frame = tk.Frame(self.root)
+        self.frame.place(x=0, y=0, relwidth=1, relheight=1)
+
         # Background canvas
         self.bg_canvas = tk.Canvas(self.frame, highlightthickness=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
@@ -5183,7 +4892,7 @@ class CameraApp:
         # OpenCV camera
         self.cap = cv2.VideoCapture(0)
 
-        def update_frame():
+        def update_frame_old():
             ret, frame = self.cap.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -5199,6 +4908,23 @@ class CameraApp:
                 self.camera_label.image = img
 
             self.camera_label.after(15, update_frame)
+
+        def update_frame(self):
+          # Stop if no longer active
+          if not getattr(self, "update_frame_active", True):
+              return
+
+          if hasattr(self, 'cap') and self.cap.isOpened() and hasattr(self, 'canvas') and self.canvas.winfo_exists():
+              ret, frame = self.cap.read()
+              if ret:
+                  frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                  imgtk = ImageTk.PhotoImage(Image.fromarray(frame))
+                  self.canvas.imgtk = imgtk  # keep reference
+                  self.canvas.create_image(0, 0, anchor="nw", image=imgtk)
+
+          # Schedule next frame update only if still active
+          if getattr(self, "update_frame_active", True):
+              self.root.after(30, self.update_frame)
 
         update_frame()
 
@@ -5347,10 +5073,28 @@ class CameraApp:
         self.frame.destroy()
         self.create_home_screen()
 
-    def close_camera(self):
+    def close_camera_old(self):
         if hasattr(self, 'cap') and self.cap.isOpened():
             self.cap.release()
         cv2.destroyAllWindows()
+
+    def close_camera(self):
+        # Stop the frame updates
+        self.update_frame_active = False
+
+        # Release camera
+        if hasattr(self, 'cap') and self.cap.isOpened():
+            self.cap.release()
+
+        # Destroy canvas and frame safely
+        if hasattr(self, 'canvas') and self.canvas.winfo_exists():
+            self.canvas.destroy()
+        if hasattr(self, 'bg_canvas') and self.bg_canvas.winfo_exists():
+            self.bg_canvas.destroy()
+        if hasattr(self, 'frame') and self.frame.winfo_exists():
+            self.frame.destroy()
+        if hasattr(self, 'back_btn') and self.back_btn.winfo_exists():
+            self.back_btn.destroy()
 
     def create_home_screen(self):
         """Fallback main menu method if not provided."""
@@ -5784,7 +5528,7 @@ class MusicApp:
 #        self.set_background = set_background_callback
 #        self.set_background("pics/backgrounds/music.jpg")
 #        self.backgroundImg = backgroundImg
-        self.set_background("music")
+        self.set_background("Music")
         self.backImg = backImg
         self.back_callback = back_callback
         self.token = token
@@ -5796,6 +5540,7 @@ class MusicApp:
         self.frame = tk.Frame(self.root)
         self.frame.pack(fill=tk.BOTH, expand=True)
         self.bg_color = bg_color
+        self.icon_bg_color = bg_color
 
 #        self.set_background()
 #        self.set_background_image("pics/backgrounds/music_bg.jpg")
@@ -5909,7 +5654,7 @@ class MusicApp:
 
     def create_music_screen(self):
         self.clear_screen()
-        self.set_background("pics/backgrounds/music.jpg")
+        self.set_background("pics/backgrounds/Music.jpg")
 
         # Remove home screen background if still visible
         if hasattr(self, "bg_label") and self.bg_label:
@@ -5920,9 +5665,9 @@ class MusicApp:
         self.frame.pack(fill=tk.BOTH, expand=True)
 
         # Custom music background
-        music_bg_path = "pics/backgrounds/music.jpg"
+        music_bg_path = "pics/backgrounds/Music.jpg"
         if not os.path.exists(music_bg_path):
-            music_bg_path = "pics/backgrounds/back.jpg"
+            music_bg_path = "pics/backgrounds/Home.jpg"
 
         try:
             image = Image.open(music_bg_path)
