@@ -4066,7 +4066,7 @@ class WeatherApp:
             if current_weather_data and "sys" in current_weather_data:
                 sunrise_ts = current_weather_data["sys"]["sunrise"]
                 sunset_ts = current_weather_data["sys"]["sunset"]
-                sun_frame = tk.Frame(self.bg_canvas, bg="skyblue", highlightthickness=0)
+                sun_frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
                 #sun_frame = tk.Frame(self.frame, bg="", highlightthickness=0)
                 #sun_frame.place(relx=0.0, rely=0.0, anchor="nw")
                 self.bg_canvas.create_window(10, 10, anchor="nw", window=sun_frame)
@@ -4251,45 +4251,160 @@ class WeatherApp:
             fraction_of_day = 1
         else:
             fraction_of_day = (now - sunrise_ts) / (sunset_ts - sunrise_ts)
-
         fraction_of_day = max(0, min(1, fraction_of_day))
 
-        # Create canvas for banner
+        # Initial canvas size
+        initial_width = 200
+        initial_height = 80
+
+        # Create canvas with transparent background
+        sun_canvas = tk.Canvas(
+            parent,
+            width=initial_width,
+            height=initial_height,
+            bg="skyblue",
+            highlightthickness=0
+        )
+        sun_canvas.place(x=10, y=10)
+
+        def redraw_sun(event=None):
+            width = sun_canvas.winfo_width()
+            height = sun_canvas.winfo_height()
+            sun_canvas.delete("all")
+
+            margin = 10
+            sun_radius = max(5, min(width, height) * 0.05)  # scale sun radius with canvas size
+
+            # Draw semi-transparent sun path arc
+            sun_canvas.create_arc(
+                margin, margin,
+                width - margin, height * 2,
+                start=180, extent=180,
+                style="arc",
+                #outline="#FFD70080",  # yellow with transparency (alpha not supported by default in Tkinter, so using light yellow)
+                outline="yellow",
+                width=2
+            )
+
+            # Calculate current sun position along the semi-circle
+            import math
+            angle = math.pi * fraction_of_day  # 0 -> pi
+            arc_radius = (width - 2 * margin) / 2
+            center_x = width / 2
+            center_y = height
+            sun_x = center_x + arc_radius * math.cos(math.pi - angle)
+            sun_y = center_y - arc_radius * math.sin(angle)
+
+            # Draw sun as a circle
+            sun_canvas.create_oval(
+                sun_x - sun_radius, sun_y - sun_radius,
+                sun_x + sun_radius, sun_y + sun_radius,
+                fill="yellow", outline=""
+            )
+
+            # Draw sunrise and sunset labels
+            sun_canvas.create_text(
+                margin, height - 5,
+                text=sunrise_str,
+                anchor="sw",
+                font=("Arial", int(height * 0.12)),
+                fill="white"
+            )
+            sun_canvas.create_text(
+                width - margin, height - 5,
+                text=sunset_str,
+                anchor="se",
+                font=("Arial", int(height * 0.12)),
+                fill="white"
+            )
+
+        # Bind canvas resize to redraw function
+        sun_canvas.bind("<Configure>", redraw_sun)
+        redraw_sun()
+
+    def draw_sun_banner_a(self, parent, sunrise_ts, sunset_ts):
+        # Convert timestamps to datetime strings
+        sunrise_dt = datetime.fromtimestamp(sunrise_ts)
+        sunset_dt = datetime.fromtimestamp(sunset_ts)
+        sunrise_str = sunrise_dt.strftime("%H:%M")
+        sunset_str = sunset_dt.strftime("%H:%M")
+
+        # Calculate fraction of the day passed between sunrise and sunset
+        now = time.time()
+        if now < sunrise_ts:
+            fraction_of_day = 0
+        elif now > sunset_ts:
+            fraction_of_day = 1
+        else:
+            fraction_of_day = (now - sunrise_ts) / (sunset_ts - sunrise_ts)
+        fraction_of_day = max(0, min(1, fraction_of_day))
+
+        # Create canvas for sun banner
         canvas_width = 150
         canvas_height = 100
         sun_radius = 8
 
         sun_canvas = tk.Canvas(
-            parent,
+            #parent,
+            self.frame,
             width=canvas_width,
             height=canvas_height,
-            bg="skyblue",
+            bg="skyblue",  # transparent background so background image shows
             highlightthickness=0
         )
-        sun_canvas.pack(side="left", padx=10, pady=10)
+        #sun_canvas.pack(side="left", padx=10, pady=10)
+        sun_canvas.pack(anchor="nw", padx=10, pady=10)
+        #sun_canvas.place(x=10, y=10)
 
-        # --- Draw the sun graph ---
+        def redraw_graph(event=None):
+            # Clear previous drawings
+            sun_canvas.delete("all")
 
-        # Draw horizon line
-        sun_canvas.create_line(0, canvas_height-20, canvas_width, canvas_height-20, fill="white", width=2)
+            # Dynamically adjust sizing
+            w = sun_canvas.winfo_width()
+            h = sun_canvas.winfo_height()
+            margin = 10
+            radius = (w - 2 * margin) / 2
 
-        # Draw sun trajectory (arc using a parabola)
-        for i in range(canvas_width):
-            y = canvas_height - 20 - (canvas_height-20) * (1 - (i / canvas_width * 2 - 1)**2)**0.5
-            sun_canvas.create_line(i, y, i+1, y, fill="yellow")
+            # Draw sun path arc
+            sun_canvas.create_arc(
+                margin,
+                margin,
+                w - margin,
+                h * 2 - margin,  # semicircle
+                start=180,
+                extent=180,
+                style="arc",
+                width=2,
+                outline="yellow"
+            )
 
-        # Draw sun at current position
-        sun_x = fraction_of_day * canvas_width
-        sun_y = canvas_height - 20 - (canvas_height-20) * (1 - (fraction_of_day * 2 - 1)**2)**0.5
-        sun_canvas.create_oval(
-            sun_x - sun_radius, sun_y - sun_radius,
-            sun_x + sun_radius, sun_y + sun_radius,
-            fill="yellow", outline=""
-        )
+            # Calculate sun position along arc
+            import math
+            angle_rad = math.pi * fraction_of_day
+            center_x = w / 2
+            center_y = h
+            sun_x = center_x + radius * math.cos(math.pi - angle_rad)
+            sun_y = center_y - radius * math.sin(angle_rad)
 
-        # Draw sunrise/sunset labels
-        sun_canvas.create_text(10, canvas_height-10, text=sunrise_str, anchor="w", fill="white", font=("Arial", 8))
-        sun_canvas.create_text(canvas_width-10, canvas_height-10, text=sunset_str, anchor="e", fill="white", font=("Arial", 8))
+            # Draw sun
+            sun_canvas.create_oval(
+                sun_x - sun_radius,
+                sun_y - sun_radius,
+                sun_x + sun_radius,
+                sun_y + sun_radius,
+                fill="yellow",
+                outline="orange"
+            )
+
+            # Draw sunrise and sunset times
+            sun_canvas.create_text(margin, h - 5, text=sunrise_str, anchor="sw", font=("Arial", 8))
+            sun_canvas.create_text(w - margin, h - 5, text=sunset_str, anchor="se", font=("Arial", 8))
+
+        # Initial draw
+        redraw_graph()
+        # Redraw on resize
+        sun_canvas.bind("<Configure>", redraw_graph)
 
     def draw_sun_banner_old(self, parent, sunrise_ts, sunset_ts):
         # Convert timestamps to datetime strings
