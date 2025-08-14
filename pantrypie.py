@@ -3871,6 +3871,39 @@ class WeatherApp:
             return default
 
     def set_background_from_path(self, image_path):
+        if not image_path:
+            image_path = "pics/backgrounds/weather/weather.jpg"
+
+        try:
+            # Keep original
+            self.bg_image_original = Image.open(image_path)
+            # If canvas already exists, draw first image
+            if hasattr(self, "bg_canvas") and self.bg_canvas.winfo_exists():
+                width = self.bg_canvas.winfo_width() or 1
+                height = self.bg_canvas.winfo_height() or 1
+                resized = self.bg_image_original.resize((width, height), Image.LANCZOS)
+                self.bg_image_tk = ImageTk.PhotoImage(resized)
+
+                # Only one background image item
+                if getattr(self, "bg_image_id", None):
+                    self.bg_canvas.itemconfig(self.bg_image_id, image=self.bg_image_tk)
+                else:
+                    self.bg_image_id = self.bg_canvas.create_image(0, 0, anchor="nw", image=self.bg_image_tk)
+                    self.bg_canvas.tag_lower(self.bg_image_id)
+        except Exception as e:
+            print(f"Failed to load background: {image_path}\n{e}")
+
+    # Resize callback
+    def _resize_bg(self, event):
+        if hasattr(self, "bg_image_original"):
+            resized = self.bg_image_original.resize((event.width, event.height), Image.LANCZOS)
+            self.bg_image_tk = ImageTk.PhotoImage(resized)
+            if hasattr(self, "bg_image_id"):
+                self.bg_canvas.itemconfig(self.bg_image_id, image=self.bg_image_tk)
+            # Keep frame positioned correctly
+            self.bg_canvas.coords(self.frame_id, 0, 0)
+
+    def set_background_from_path_old(self, image_path):
         """
         Loads and resizes a background image into the Tkinter canvas.
         Automatically resizes on window resize.
@@ -4006,6 +4039,7 @@ class WeatherApp:
         # --- Create background canvas first ---
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
+        self.bg_canvas.bind("<Configure>", self._resize_bg)
 
         # --- Load background image ---
         try:
@@ -4020,7 +4054,12 @@ class WeatherApp:
 
         # --- Main frame (covers entire canvas) ---
         self.frame = tk.Frame(self.bg_canvas, bg="", highlightthickness=0)
+        self.frame_id = self.bg_canvas.create_window(
+            0, 0, anchor="nw", window=self.frame
+        )
         self.frame.place(relwidth=1, relheight=1)  # fill canvas completely
+
+        self.set_background_from_path(background_path)
 
         # --- Sun Banner (Top-left) ---
         try:
