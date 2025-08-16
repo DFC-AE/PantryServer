@@ -50,6 +50,8 @@ import ephem
 from datetime import date as dt_date
 import calendar
 import math
+from caldav import DAVClient
+from apps.app_calendar import CalendarPage
 
 ## Create Root ##
 root = tk.Tk()
@@ -71,6 +73,8 @@ APP_FONT_SMALL_BOLD = ("Arial", 8, "bold")
 CITY = "Shreveport, US"
 KEY_WEATHER = "f63847d7129eb9be9c7a464e1e5ef67b"  # Your OpenWeatherMap API key
 CONFIG_FILE = "config.json"
+ICLOUD_USERNAME = "dfc008@latech.edu"
+ICLOUD_PASSWORD = "?V@ugl@ge69!"
 SAVE_FILE = "items.json"
 SPOT_ID = "a25567f1dbcb4a17ab52a0732fae30c5"
 SPOT_SECRET = "3ef33e87da0f44d593ee29a00b250b28"
@@ -314,6 +318,10 @@ addImg = ImageTk.PhotoImage(img_add)
 img_back = Image.open("pics/icons/back.png")
 img_back = img_back.resize((img_wdt, img_hgt), Image.LANCZOS)
 backImg = ImageTk.PhotoImage(img_back)
+## Calendar Image ##
+img_cal = Image.open("pics/icons/calendar.png")
+img_cal = img_cal.resize((img_wdt, img_hgt), Image.LANCZOS)
+calendarImg = ImageTk.PhotoImage(img_cal)
 ## Camera Image ##
 img_cam = Image.open("pics/icons/cam.jpg")
 img_cam = img_cam.resize((img_wdt, img_hgt), Image.LANCZOS)
@@ -585,12 +593,18 @@ spotify_token = resp.json()["access_token"]
 class ExpirationApp:
     def __init__(self, root, spotify_token):
         self.root = root
+
+        # Container for pages
+#        self.page_container = tk.Frame(self.root)
+#        self.page_container.place(x=0, y=0, relwidth=1, relheight=1)
+
         self.spotify_token = spotify_token
         self.icon_bg_color = "orange"
 
         # Store default paths for each page
         self.default_backgrounds = {
             "home": "pics/backgrounds/Home.jpg",
+            "calendar": "pics/backgrounds/Calendar.jpg",
             "cam": "pics/backgrounds/Camera.jpg",
             "card": "pics/backgrounds/Card.jpg",
             "list": "pics/backgrounds/List.jpg",
@@ -634,6 +648,11 @@ class ExpirationApp:
         self.apply_icon_bg_color()
 #        self.update_weather()
 
+#        self.frames = {}  # Dictionary of pages
+#        # Create CalendarPage instance
+#        self.frames["CalendarPage"] = CalendarPage(self.page_container, self)
+#        self.frames["CalendarPage"].place(relwidth=1, relheight=1)
+
     ## Create Background ##
 #    def set_background(self):
 #        background = tk.Label(self.root, image=self.backgroundImg)
@@ -671,6 +690,28 @@ class ExpirationApp:
             self.root.bind("<Configure>", self.resize_background)
         except Exception as e:
             print(f"[Background error on {page_name}] {e}")
+
+#    self.frames = {}  # Dictionary of pages
+#    # Create CalendarPage instance
+#    self.frames["CalendarPage"] = CalendarPage(self.page_container, self)
+#    self.frames["CalendarPage"].place(relwidth=1, relheight=1)
+
+#    def show_frame(self, page_name):
+#        # Hide all pages
+#        for frame in self.frames.values():
+#            frame.place_forget()
+#        # Show selected page
+#        frame = self.frames.get(page_name)
+#        if frame:
+#            frame.place(relwidth=1, relheight=1)
+
+    def open_calendar_page(self):
+        # Clear the current screen
+        self.clear_screen()
+
+        # Create CalendarPage as a child of root (or your main content frame)
+        calendar_page = CalendarPage(self.root, self)
+        calendar_page.pack(expand=True, fill="both")
 
     # Settings page per-page dropdowns
     #pages = list(self.default_backgrounds.keys())
@@ -1531,6 +1572,12 @@ class ExpirationApp:
         track_btn.is_icon_button = True
         track_btn.pack(side=tk.RIGHT)
         ToolTip(track_btn, "Click to Enter the Expiration Tracker")
+
+        #calendar_btn = tk.Button(button_frame, cursor="hand2", image=calendarImg, width=100, height=100, bg=self.bg_color, command=lambda: self.show_frame("CalendarPage"))
+        calendar_btn = tk.Button(button_frame, cursor="hand2", image=calendarImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_calendar_page())
+        calendar_btn.is_icon_button = True
+        calendar_btn.pack(side=tk.RIGHT)
+        ToolTip(calendar_btn, "Click to Open Calendar")
 
         weather_btn = tk.Button(button_frame, cursor="hand2", image=weatherImg, width=100, height=100, bg=self.bg_color, command=lambda: self.open_weather_ui())
         weather_btn.is_icon_button = True
